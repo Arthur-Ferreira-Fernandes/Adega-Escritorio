@@ -27,6 +27,13 @@
         </nav>
     </header>
     <main class="conteudo">
+        {% if messages %}
+        <ul class="mensagens">
+            {% for message in messages %}
+            <li class="mensagem mensagem--{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
         {% block conteudo %}{% endblock %}
     </main>
 </body>

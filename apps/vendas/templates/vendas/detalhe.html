@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block titulo %}{{ venda }} · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<h1 class="titulo-pagina">{{ venda }}</h1>
+<p class="subtitulo-pagina">
+    {% if venda.cliente %}Cliente: {{ venda.cliente }} · {% endif %}
+    <span class="emblema emblema--{{ venda.status }}">{{ venda.get_status_display }}</span>
+</p>
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>Produto</th>
+            <th>Quantidade</th>
+            <th>Preço unitário</th>
+            <th>Subtotal</th>
+            {% if venda.status == "aberta" %}<th></th>{% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in itens %}
+        <tr>
+            <td>{{ item.produto.nome }}</td>
+            <td>{{ item.quantidade }}</td>
+            <td>R$ {{ item.preco_unitario }}</td>
+            <td>R$ {{ item.subtotal }}</td>
+            {% if venda.status == "aberta" %}
+            <td>
+                <form method="post" action="{% url 'vendas:remover_item' pk=venda.pk item_id=item.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="botao botao--perigo">Remover</button>
+                </form>
+            </td>
+            {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">Nenhum item adicionado ainda.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="grade-stats">
+    <div class="stat">
+        <span class="stat__valor">R$ {{ venda.total }}</span>
+        <span class="stat__rotulo">Total</span>
+    </div>
+</div>
+
+{% if venda.status == "aberta" %}
+<div class="cartao" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Adicionar item</h2>
+    <form method="post" action="{% url 'vendas:adicionar_item' pk=venda.pk %}" class="formulario">
+        {% csrf_token %}
+        <div class="campo">
+            <label for="{{ item_form.produto.id_for_label }}">{{ item_form.produto.label }}</label>
+            {{ item_form.produto }}
+        </div>
+        <div class="campo">
+            <label for="{{ item_form.quantidade.id_for_label }}">{{ item_form.quantidade.label }}</label>
+            {{ item_form.quantidade }}
+        </div>
+        <button type="submit" class="botao">Adicionar</button>
+    </form>
+</div>
+
+<div class="cartao" style="display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap;">
+    <form method="post" action="{% url 'vendas:finalizar' pk=venda.pk %}" class="formulario" style="margin-bottom: 0;">
+        {% csrf_token %}
+        <div class="campo">
+            <label for="{{ finalizar_form.forma_pagamento.id_for_label }}">{{ finalizar_form.forma_pagamento.label }}</label>
+            {{ finalizar_form.forma_pagamento }}
+        </div>
+        <button type="submit" class="botao">Finalizar venda</button>
+    </form>
+    <form method="post" action="{% url 'vendas:cancelar' pk=venda.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="botao botao--perigo">Cancelar venda</button>
+    </form>
+</div>
+{% else %}
+<div class="cartao">
+    <p><strong>Forma de pagamento:</strong> {{ venda.get_forma_pagamento_display|default:"—" }}</p>
+    <p><strong>Finalizada em:</strong> {{ venda.finalizada_em|date:"d/m/Y H:i"|default:"—" }}</p>
+</div>
+{% endif %}
+{% endblock %}

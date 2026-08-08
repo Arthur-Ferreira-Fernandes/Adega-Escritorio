@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block titulo %}Nova venda · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<h1 class="titulo-pagina">Nova venda</h1>
+<p class="subtitulo-pagina">Deixe em branco para uma venda avulsa, ou preencha para identificar uma comanda.</p>
+
+<div class="cartao">
+    <form method="post" class="formulario">
+        {% csrf_token %}
+        <div class="campo">
+            <label for="{{ form.cliente.id_for_label }}">{{ form.cliente.label }}</label>
+            {{ form.cliente }}
+        </div>
+        <div class="campo">
+            <label for="{{ form.identificador.id_for_label }}">{{ form.identificador.label }}</label>
+            {{ form.identificador }}
+        </div>
+        <button type="submit" class="botao">Iniciar venda</button>
+    </form>
+</div>
+{% endblock %}
