@@ -62,8 +62,13 @@
             <form method="post" action="{% url 'vendas:adicionar_item' pk=venda.pk %}" class="formulario">
                 {% csrf_token %}
                 <div class="campo">
-                    <label for="{{ item_form.produto.id_for_label }}">{{ item_form.produto.label }}</label>
-                    {{ item_form.produto }}
+                    <label for="{{ item_form.produto_busca.id_for_label }}">{{ item_form.produto_busca.label }}</label>
+                    {{ item_form.produto_busca }}
+                    <datalist id="produtos-datalist">
+                        {% for produto in produtos_ativos %}
+                        <option value="{{ produto.nome }} — R$ {{ produto.preco_venda }} (estoque: {{ produto.quantidade_estoque }}) | {{ produto.sku }}"></option>
+                        {% endfor %}
+                    </datalist>
                 </div>
                 <div class="campo">
                     <label for="{{ item_form.quantidade.id_for_label }}">{{ item_form.quantidade.label }}</label>

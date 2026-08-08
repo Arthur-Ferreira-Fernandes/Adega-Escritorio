@@ -6,6 +6,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 
+from apps.estoque.models import Produto
+
 from .forms import EscanearCodigoForm, FinalizarVendaForm, ItemVendaForm, NovaVendaForm
 from .models import ItemVenda, Venda
 
@@ -56,6 +58,7 @@ def venda_detalhe(request, pk):
         "item_form": ItemVendaForm(),
         "finalizar_form": FinalizarVendaForm(),
         "escanear_form": EscanearCodigoForm(),
+        "produtos_ativos": Produto.objects.filter(ativo=True),
     }
     return render(request, "vendas/detalhe.html", contexto)
 
@@ -87,13 +90,14 @@ def venda_adicionar_item(request, pk):
     if form.is_valid():
         try:
             venda.adicionar_item(
-                produto=form.cleaned_data["produto"],
+                produto=form.cleaned_data["produto_busca"],
                 quantidade=form.cleaned_data["quantidade"],
             )
         except ValidationError as erro:
             messages.error(request, "; ".join(erro.messages))
     else:
-        messages.error(request, "Não foi possível adicionar o item: verifique os dados informados.")
+        erros = [msg for mensagens in form.errors.values() for msg in mensagens]
+        messages.error(request, "; ".join(erros) or "Não foi possível adicionar o item.")
     return redirect("vendas:detalhe", pk=venda.pk)
 
 

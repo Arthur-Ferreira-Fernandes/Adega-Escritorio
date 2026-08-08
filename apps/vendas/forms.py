@@ -15,19 +15,32 @@ class NovaVendaForm(forms.Form):
     )
 
 
-class ProdutoChoiceField(forms.ModelChoiceField):
-    def label_from_instance(self, produto):
-        return (
-            f"{produto.nome} — R$ {produto.preco_venda} "
-            f"(estoque: {produto.quantidade_estoque})"
-        )
-
-
 class ItemVendaForm(forms.Form):
-    produto = ProdutoChoiceField(
-        queryset=Produto.objects.filter(ativo=True), label="Produto"
+    produto_busca = forms.CharField(
+        label="Produto",
+        widget=forms.TextInput(
+            attrs={
+                "list": "produtos-datalist",
+                "autocomplete": "off",
+                "placeholder": "Digite o nome do produto…",
+            }
+        ),
     )
     quantidade = forms.IntegerField(min_value=1, initial=1, label="Quantidade")
+
+    def clean_produto_busca(self):
+        texto = self.cleaned_data["produto_busca"].strip()
+        _, separador, sku = texto.rpartition(" | ")
+        if not separador:
+            raise forms.ValidationError(
+                "Selecione um produto da lista de sugestões digitando parte do nome."
+            )
+        produto = Produto.objects.filter(sku=sku.strip(), ativo=True).first()
+        if produto is None:
+            raise forms.ValidationError(
+                "Produto não encontrado ou inativo. Selecione um item da lista de sugestões."
+            )
+        return produto
 
 
 class FinalizarVendaForm(forms.Form):
