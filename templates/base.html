@@ -4,18 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block titulo %}Adega Escritório{% endblock %}</title>
+    <title>{% block titulo %}Adega &amp; Tabacaria Escritório{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'img/favicon-32.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
 </head>
 <body>
     <header class="cabecalho">
-        <div class="cabecalho__marca">Adega Escritório</div>
+        <a href="{% url 'estoque:inicio' %}" class="cabecalho__marca">
+            <img src="{% static 'img/logo.jpg' %}" alt="Adega &amp; Tabacaria Escritório" class="cabecalho__logo">
+            <span class="cabecalho__texto">
+                <strong>Adega &amp; Tabacaria</strong>
+                <small>Escritório</small>
+            </span>
+        </a>
         <nav class="cabecalho__nav">
-            <a href="{% url 'estoque:inicio' %}">Estoque</a>
-            <a href="{% url 'vendas:inicio' %}">Vendas</a>
-            <a href="{% url 'clientes:inicio' %}">Clientes</a>
-            <a href="{% url 'financeiro:inicio' %}">Financeiro</a>
-            <a href="/admin/">Admin</a>
+            <a href="{% url 'estoque:inicio' %}" class="{% if request.resolver_match.app_name == 'estoque' %}ativo{% endif %}">Estoque</a>
+            <a href="{% url 'vendas:inicio' %}" class="{% if request.resolver_match.app_name == 'vendas' %}ativo{% endif %}">Vendas</a>
+            <a href="{% url 'clientes:inicio' %}" class="{% if request.resolver_match.app_name == 'clientes' %}ativo{% endif %}">Clientes</a>
+            <a href="{% url 'financeiro:inicio' %}" class="{% if request.resolver_match.app_name == 'financeiro' %}ativo{% endif %}">Financeiro</a>
+            <a href="/admin/" class="cabecalho__admin">Admin</a>
         </nav>
     </header>
     <main class="conteudo">

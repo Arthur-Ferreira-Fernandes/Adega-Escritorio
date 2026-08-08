@@ -1,11 +1,19 @@
 {% extends "base.html" %}
 
-{% block titulo %}Estoque · Adega Escritório{% endblock %}
+{% block titulo %}Estoque · Adega &amp; Tabacaria Escritório{% endblock %}
 
 {% block conteudo %}
-<div class="cartao">
-    <h1>Estoque</h1>
-    <p>Categorias cadastradas: {{ total_categorias }}</p>
-    <p>Produtos cadastrados: {{ total_produtos }}</p>
+<h1 class="titulo-pagina">Estoque</h1>
+<p class="subtitulo-pagina">Vinhos, charutos e demais produtos da casa.</p>
+
+<div class="grade-stats">
+    <div class="stat">
+        <span class="stat__valor">{{ total_categorias }}</span>
+        <span class="stat__rotulo">Categorias cadastradas</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{{ total_produtos }}</span>
+        <span class="stat__rotulo">Produtos cadastrados</span>
+    </div>
 </div>
 {% endblock %}

@@ -1,11 +1,19 @@
 {% extends "base.html" %}
 
-{% block titulo %}Clientes · Adega Escritório{% endblock %}
+{% block titulo %}Clientes · Adega &amp; Tabacaria Escritório{% endblock %}
 
 {% block conteudo %}
-<div class="cartao">
-    <h1>Clientes</h1>
-    <p>Clientes cadastrados: {{ total_clientes }}</p>
-    <p>Fornecedores cadastrados: {{ total_fornecedores }}</p>
+<h1 class="titulo-pagina">Clientes</h1>
+<p class="subtitulo-pagina">Clientes e fornecedores da casa.</p>
+
+<div class="grade-stats">
+    <div class="stat">
+        <span class="stat__valor">{{ total_clientes }}</span>
+        <span class="stat__rotulo">Clientes cadastrados</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{{ total_fornecedores }}</span>
+        <span class="stat__rotulo">Fornecedores cadastrados</span>
+    </div>
 </div>
 {% endblock %}

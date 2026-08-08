@@ -1,47 +1,176 @@
+:root {
+    --cor-fundo: #0c0a08;
+    --cor-superficie: #17130d;
+    --cor-superficie-alt: #201a12;
+    --cor-borda: #3a2f1c;
+    --cor-dourado: #c9a227;
+    --cor-dourado-claro: #e6c76a;
+    --cor-texto: #f2ead9;
+    --cor-texto-suave: #b3a68a;
+    --cor-vinho: #7a1128;
+    --fonte-marca: Georgia, "Times New Roman", serif;
+    --fonte-base: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
 * {
     box-sizing: border-box;
 }
 
 body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #f5f3f0;
-    color: #2b2320;
+    font-family: var(--fonte-base);
+    background: var(--cor-fundo);
+    color: var(--cor-texto);
 }
+
+a {
+    color: inherit;
+}
+
+/* Cabeçalho */
 
 .cabecalho {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 2rem;
-    background: #4a1f2d;
-    color: #f5f3f0;
+    gap: 1.5rem;
+    padding: 0.75rem 2rem;
+    background: linear-gradient(180deg, #141210, #0c0a08);
+    border-bottom: 1px solid var(--cor-borda);
+    flex-wrap: wrap;
 }
 
 .cabecalho__marca {
-    font-weight: bold;
-    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+}
+
+.cabecalho__logo {
+    height: 44px;
+    width: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--cor-borda);
+}
+
+.cabecalho__texto {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.cabecalho__texto strong {
+    font-family: var(--fonte-marca);
+    font-size: 1.15rem;
+    color: var(--cor-dourado-claro);
+    letter-spacing: 0.02em;
+}
+
+.cabecalho__texto small {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--cor-texto-suave);
+}
+
+.cabecalho__nav {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    flex-wrap: wrap;
 }
 
 .cabecalho__nav a {
-    color: #f5f3f0;
     text-decoration: none;
-    margin-left: 1.5rem;
+    color: var(--cor-texto-suave);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-bottom: 0.35rem;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .cabecalho__nav a:hover {
-    text-decoration: underline;
+    color: var(--cor-dourado-claro);
 }
 
+.cabecalho__nav a.ativo {
+    color: var(--cor-dourado);
+    border-bottom-color: var(--cor-dourado);
+}
+
+.cabecalho__admin {
+    color: var(--cor-texto) !important;
+    background: var(--cor-superficie-alt);
+    border: 1px solid var(--cor-borda);
+    border-radius: 4px;
+    padding: 0.4rem 0.9rem !important;
+}
+
+.cabecalho__admin:hover {
+    border-color: var(--cor-dourado);
+}
+
+/* Conteúdo */
+
 .conteudo {
-    padding: 2rem;
-    max-width: 960px;
+    padding: 2.5rem 2rem;
+    max-width: 1080px;
     margin: 0 auto;
 }
 
+.titulo-pagina {
+    font-family: var(--fonte-marca);
+    color: var(--cor-dourado-claro);
+    margin: 0 0 0.25rem;
+    font-size: 1.75rem;
+}
+
+.subtitulo-pagina {
+    color: var(--cor-texto-suave);
+    margin: 0 0 2rem;
+    font-size: 0.95rem;
+}
+
 .cartao {
-    background: #fff;
-    border-radius: 8px;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: 10px;
     padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+/* Grade de estatísticas */
+
+.grade-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.stat {
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.stat__valor {
+    display: block;
+    font-family: var(--fonte-marca);
+    font-size: 2.25rem;
+    color: var(--cor-dourado);
+    line-height: 1;
+    margin-bottom: 0.4rem;
+}
+
+.stat__rotulo {
+    color: var(--cor-texto-suave);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
 }
