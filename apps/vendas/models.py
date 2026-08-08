@@ -52,19 +52,36 @@ class Venda(models.Model):
             raise ValidationError("Só é possível adicionar itens a uma venda aberta.")
         if quantidade < 1:
             raise ValidationError("A quantidade deve ser maior que zero.")
-        if produto.quantidade_estoque < quantidade:
+
+        item_existente = self.itens.filter(produto=produto).first()
+        quantidade_total = quantidade + (item_existente.quantidade if item_existente else 0)
+        if produto.quantidade_estoque < quantidade_total:
             raise ValidationError(
                 f"Estoque insuficiente para {produto.nome} "
                 f"(disponível: {produto.quantidade_estoque})."
             )
-        item = ItemVenda.objects.create(
-            venda=self,
-            produto=produto,
-            quantidade=quantidade,
-            preco_unitario=produto.preco_venda,
-        )
+
+        if item_existente:
+            item_existente.quantidade = quantidade_total
+            item_existente.save()
+            item = item_existente
+        else:
+            item = ItemVenda.objects.create(
+                venda=self,
+                produto=produto,
+                quantidade=quantidade,
+                preco_unitario=produto.preco_venda,
+            )
         self.recalcular_total()
         return item
+
+    def adicionar_por_codigo_barras(self, codigo_barras):
+        if self.status != self.Status.ABERTA:
+            raise ValidationError("Só é possível adicionar itens a uma venda aberta.")
+        produto = Produto.objects.filter(codigo_barras=codigo_barras, ativo=True).first()
+        if produto is None:
+            raise ValidationError("Nenhum produto ativo encontrado para este código de barras.")
+        return self.adicionar_item(produto, quantidade=1)
 
     def remover_item(self, item):
         if self.status != self.Status.ABERTA:

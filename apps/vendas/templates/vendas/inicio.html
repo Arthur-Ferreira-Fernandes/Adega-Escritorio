@@ -14,7 +14,11 @@
 </div>
 
 <div class="acoes-topo">
-    <a href="{% url 'vendas:nova' %}" class="botao">Nova venda</a>
+    <form method="post" action="{% url 'vendas:rapida' %}" style="margin: 0;">
+        {% csrf_token %}
+        <button type="submit" class="botao">Venda rápida</button>
+    </form>
+    <a href="{% url 'vendas:nova' %}" class="botao botao--secundario">Abrir comanda</a>
 </div>
 
 <h2 class="titulo-pagina" style="font-size: 1.15rem;">Comandas abertas</h2>

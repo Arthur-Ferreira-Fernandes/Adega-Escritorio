@@ -34,3 +34,19 @@ class FinalizarVendaForm(forms.Form):
     forma_pagamento = forms.ChoiceField(
         choices=Venda.FormaPagamento.choices, label="Forma de pagamento"
     )
+
+
+class EscanearCodigoForm(forms.Form):
+    codigo_barras = forms.CharField(
+        label="Código de barras",
+        widget=forms.TextInput(
+            attrs={
+                "autofocus": True,
+                "autocomplete": "off",
+                "placeholder": "Escaneie o código de barras…",
+            }
+        ),
+    )
+
+    def clean_codigo_barras(self):
+        return self.cleaned_data["codigo_barras"].strip()

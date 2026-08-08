@@ -15,10 +15,11 @@ class ProdutoAdmin(admin.ModelAdmin):
     list_display = (
         "nome",
         "sku",
+        "codigo_barras",
         "categoria",
         "preco_venda",
         "quantidade_estoque",
         "ativo",
     )
     list_filter = ("categoria", "ativo", "unidade")
-    search_fields = ("nome", "sku")
+    search_fields = ("nome", "sku", "codigo_barras")

@@ -334,6 +334,7 @@ a {
 .acoes-topo {
     display: flex;
     justify-content: flex-end;
+    gap: 0.75rem;
     margin-bottom: 1.5rem;
 }
 
@@ -360,4 +361,73 @@ a {
 .emblema--cancelada {
     color: var(--cor-dourado-claro);
     border-color: var(--cor-vinho);
+}
+
+/* Entradas da tela de nova venda (venda rápida / abrir comanda) */
+
+.grade-entradas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.cartao--destaque {
+    border-color: var(--cor-dourado);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(201, 162, 39, 0.25);
+}
+
+/* Layout do PDV (tela de detalhe da venda) */
+
+.pdv-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 860px) {
+    .pdv-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.pdv-resumo {
+    position: sticky;
+    top: 1.5rem;
+}
+
+/* Campo de leitura do código de barras */
+
+.campo-scanner {
+    margin-bottom: 1.5rem;
+}
+
+.campo-scanner form {
+    margin-bottom: 0;
+}
+
+.campo-scanner__rotulo {
+    display: block;
+    color: var(--cor-texto-suave);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.campo-scanner input {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 1.35rem;
+    padding: 0.85rem 1rem;
+    letter-spacing: 0.04em;
+    text-align: center;
+}
+
+.campo-scanner__dica {
+    color: var(--cor-texto-suave);
+    font-size: 0.85rem;
+    margin: 0.75rem 0 0;
+    text-align: center;
 }

@@ -4,20 +4,33 @@
 
 {% block conteudo %}
 <h1 class="titulo-pagina">Nova venda</h1>
-<p class="subtitulo-pagina">Deixe em branco para uma venda avulsa, ou preencha para identificar uma comanda.</p>
+<p class="subtitulo-pagina">Escolha venda rápida para um atendimento avulso, ou abra uma comanda identificada.</p>
 
-<div class="cartao">
-    <form method="post" class="formulario">
-        {% csrf_token %}
-        <div class="campo">
-            <label for="{{ form.cliente.id_for_label }}">{{ form.cliente.label }}</label>
-            {{ form.cliente }}
-        </div>
-        <div class="campo">
-            <label for="{{ form.identificador.id_for_label }}">{{ form.identificador.label }}</label>
-            {{ form.identificador }}
-        </div>
-        <button type="submit" class="botao">Iniciar venda</button>
-    </form>
+<div class="grade-entradas">
+    <div class="cartao cartao--destaque">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Venda rápida</h2>
+        <p class="subtitulo-pagina" style="margin-bottom: 1rem;">Sem cliente, sem identificador — comece a adicionar itens agora.</p>
+        <form method="post" action="{% url 'vendas:rapida' %}">
+            {% csrf_token %}
+            <button type="submit" class="botao">Iniciar venda rápida</button>
+        </form>
+    </div>
+
+    <div class="cartao">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Abrir comanda</h2>
+        <p class="subtitulo-pagina" style="margin-bottom: 1rem;">Identifique a mesa/comanda e, se quiser, vincule um cliente.</p>
+        <form method="post" class="formulario">
+            {% csrf_token %}
+            <div class="campo">
+                <label for="{{ form.cliente.id_for_label }}">{{ form.cliente.label }}</label>
+                {{ form.cliente }}
+            </div>
+            <div class="campo">
+                <label for="{{ form.identificador.id_for_label }}">{{ form.identificador.label }}</label>
+                {{ form.identificador }}
+            </div>
+            <button type="submit" class="botao botao--secundario">Abrir comanda</button>
+        </form>
+    </div>
 </div>
 {% endblock %}

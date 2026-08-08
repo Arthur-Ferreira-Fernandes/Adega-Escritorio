@@ -23,6 +23,9 @@ class Produto(models.Model):
 
     nome = models.CharField(max_length=150)
     sku = models.CharField("SKU", max_length=50, unique=True)
+    codigo_barras = models.CharField(
+        "Código de barras", max_length=64, unique=True, null=True, blank=True
+    )
     categoria = models.ForeignKey(
         Categoria, on_delete=models.PROTECT, related_name="produtos"
     )
@@ -41,3 +44,13 @@ class Produto(models.Model):
 
     def __str__(self):
         return self.nome
+
+    def clean(self):
+        super().clean()
+        if not self.codigo_barras:
+            self.codigo_barras = None
+
+    def save(self, *args, **kwargs):
+        if not self.codigo_barras:
+            self.codigo_barras = None
+        super().save(*args, **kwargs)

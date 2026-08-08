@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 
-from .forms import FinalizarVendaForm, ItemVendaForm, NovaVendaForm
+from .forms import EscanearCodigoForm, FinalizarVendaForm, ItemVendaForm, NovaVendaForm
 from .models import ItemVenda, Venda
 
 
@@ -39,6 +39,13 @@ def nova_venda(request):
 
 
 @login_required
+@require_POST
+def venda_rapida(request):
+    venda = Venda.objects.create(criado_por=request.user)
+    return redirect("vendas:detalhe", pk=venda.pk)
+
+
+@login_required
 def venda_detalhe(request, pk):
     venda = get_object_or_404(
         Venda.objects.select_related("cliente"), pk=pk
@@ -48,8 +55,28 @@ def venda_detalhe(request, pk):
         "itens": venda.itens.select_related("produto"),
         "item_form": ItemVendaForm(),
         "finalizar_form": FinalizarVendaForm(),
+        "escanear_form": EscanearCodigoForm(),
     }
     return render(request, "vendas/detalhe.html", contexto)
+
+
+@login_required
+@require_POST
+def venda_escanear(request, pk):
+    venda = get_object_or_404(Venda, pk=pk)
+    form = EscanearCodigoForm(request.POST)
+    if form.is_valid():
+        try:
+            item = venda.adicionar_por_codigo_barras(form.cleaned_data["codigo_barras"])
+            messages.success(
+                request,
+                f"Adicionado: {item.produto.nome} (quantidade na venda: {item.quantidade}).",
+            )
+        except ValidationError as erro:
+            messages.error(request, "; ".join(erro.messages))
+    else:
+        messages.error(request, "Informe um código de barras válido.")
+    return redirect("vendas:detalhe", pk=venda.pk)
 
 
 @login_required
