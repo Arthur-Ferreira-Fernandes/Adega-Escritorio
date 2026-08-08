@@ -1,0 +1,111 @@
+<h1 class="titulo-pagina">{{ venda }}</h1>
+<p class="subtitulo-pagina">
+    {% if venda.cliente %}Cliente: {{ venda.cliente }} · {% endif %}
+    <span class="emblema emblema--{{ venda.status }}">{{ venda.get_status_display }}</span>
+</p>
+
+{% if venda.status == "aberta" %}
+<div class="cartao cartao--destaque campo-scanner">
+    <span class="campo-scanner__rotulo">Escanear código de barras</span>
+    <form method="post" action="{% url 'vendas:escanear' pk=venda.pk %}"
+          hx-post="{% url 'vendas:escanear' pk=venda.pk %}"
+          hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
+        {% csrf_token %}
+        {{ escanear_form.codigo_barras }}
+    </form>
+    <p class="campo-scanner__dica">Aponte o leitor para o produto — o item é adicionado automaticamente ao pressionar Enter.</p>
+</div>
+{% endif %}
+
+<div class="pdv-layout">
+    <div class="pdv-coluna-principal">
+        <table class="tabela">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Quantidade</th>
+                    <th>Preço unitário</th>
+                    <th>Subtotal</th>
+                    {% if venda.status == "aberta" %}<th></th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in itens %}
+                <tr>
+                    <td>{{ item.produto.nome }}</td>
+                    <td>{{ item.quantidade }}</td>
+                    <td>R$ {{ item.preco_unitario }}</td>
+                    <td>R$ {{ item.subtotal }}</td>
+                    {% if venda.status == "aberta" %}
+                    <td>
+                        <form method="post" action="{% url 'vendas:remover_item' pk=venda.pk item_id=item.pk %}"
+                              hx-post="{% url 'vendas:remover_item' pk=venda.pk item_id=item.pk %}"
+                              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
+                            {% csrf_token %}
+                            <button type="submit" class="botao botao--perigo">Remover</button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">Nenhum item adicionado ainda.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if venda.status == "aberta" %}
+        <div class="cartao">
+            <h2 class="titulo-pagina" style="font-size: 1.1rem;">Adicionar por nome</h2>
+            <form method="post" action="{% url 'vendas:adicionar_item' pk=venda.pk %}" class="formulario"
+                  hx-post="{% url 'vendas:adicionar_item' pk=venda.pk %}"
+                  hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
+                {% csrf_token %}
+                <div class="campo">
+                    <label for="{{ item_form.produto_busca.id_for_label }}">{{ item_form.produto_busca.label }}</label>
+                    {{ item_form.produto_busca }}
+                    <datalist id="produtos-datalist">
+                        {% for produto in produtos_ativos %}
+                        <option value="{{ produto.nome }} — R$ {{ produto.preco_venda }} (estoque: {{ produto.quantidade_estoque }}) | {{ produto.sku }}"></option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+                <div class="campo">
+                    <label for="{{ item_form.quantidade.id_for_label }}">{{ item_form.quantidade.label }}</label>
+                    {{ item_form.quantidade }}
+                </div>
+                <button type="submit" class="botao botao--secundario">Adicionar</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="cartao pdv-resumo">
+        <div class="stat" style="margin-bottom: 1.5rem;">
+            <span class="stat__valor">R$ {{ venda.total }}</span>
+            <span class="stat__rotulo">Total</span>
+        </div>
+        {% if venda.status == "aberta" %}
+        <form method="post" action="{% url 'vendas:finalizar' pk=venda.pk %}" class="formulario" style="flex-direction: column; align-items: stretch;"
+              hx-post="{% url 'vendas:finalizar' pk=venda.pk %}"
+              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
+            {% csrf_token %}
+            <div class="campo">
+                <label for="{{ finalizar_form.forma_pagamento.id_for_label }}">{{ finalizar_form.forma_pagamento.label }}</label>
+                {{ finalizar_form.forma_pagamento }}
+            </div>
+            <button type="submit" class="botao">Finalizar venda</button>
+        </form>
+        <form method="post" action="{% url 'vendas:cancelar' pk=venda.pk %}"
+              hx-post="{% url 'vendas:cancelar' pk=venda.pk %}"
+              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
+            {% csrf_token %}
+            <button type="submit" class="botao botao--perigo" style="width: 100%;">Cancelar venda</button>
+        </form>
+        {% else %}
+        <p><strong>Forma de pagamento:</strong> {{ venda.get_forma_pagamento_display|default:"—" }}</p>
+        <p><strong>Finalizada em:</strong> {{ venda.finalizada_em|date:"d/m/Y H:i"|default:"—" }}</p>
+        {% endif %}
+    </div>
+</div>

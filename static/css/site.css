@@ -431,3 +431,9 @@ a {
     margin: 0.75rem 0 0;
     text-align: center;
 }
+
+/* HTMX: feedback visual enquanto uma ação está em andamento */
+
+#venda-conteudo.htmx-request {
+    opacity: 0.6;
+}

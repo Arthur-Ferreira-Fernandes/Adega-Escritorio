@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" href="{% static 'img/favicon-32.png' %}">
     <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
     <link rel="stylesheet" href="{% static 'css/site.css' %}">
+    <script src="{% static 'js/htmx.min.js' %}" defer></script>
 </head>
 <body>
     <header class="cabecalho">
@@ -27,13 +28,7 @@
         </nav>
     </header>
     <main class="conteudo">
-        {% if messages %}
-        <ul class="mensagens">
-            {% for message in messages %}
-            <li class="mensagem mensagem--{{ message.tags }}">{{ message }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
+        {% include "partials/_mensagens.html" %}
         {% block conteudo %}{% endblock %}
     </main>
 </body>

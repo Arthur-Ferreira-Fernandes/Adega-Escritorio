@@ -47,12 +47,8 @@ def venda_rapida(request):
     return redirect("vendas:detalhe", pk=venda.pk)
 
 
-@login_required
-def venda_detalhe(request, pk):
-    venda = get_object_or_404(
-        Venda.objects.select_related("cliente"), pk=pk
-    )
-    contexto = {
+def _contexto_venda(venda):
+    return {
         "venda": venda,
         "itens": venda.itens.select_related("produto"),
         "item_form": ItemVendaForm(),
@@ -60,7 +56,20 @@ def venda_detalhe(request, pk):
         "escanear_form": EscanearCodigoForm(),
         "produtos_ativos": Produto.objects.filter(ativo=True),
     }
-    return render(request, "vendas/detalhe.html", contexto)
+
+
+def _responder_venda(request, venda):
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "vendas/_conteudo_htmx.html", _contexto_venda(venda))
+    return redirect("vendas:detalhe", pk=venda.pk)
+
+
+@login_required
+def venda_detalhe(request, pk):
+    venda = get_object_or_404(
+        Venda.objects.select_related("cliente"), pk=pk
+    )
+    return render(request, "vendas/detalhe.html", _contexto_venda(venda))
 
 
 @login_required
@@ -79,7 +88,7 @@ def venda_escanear(request, pk):
             messages.error(request, "; ".join(erro.messages))
     else:
         messages.error(request, "Informe um código de barras válido.")
-    return redirect("vendas:detalhe", pk=venda.pk)
+    return _responder_venda(request, venda)
 
 
 @login_required
@@ -98,7 +107,7 @@ def venda_adicionar_item(request, pk):
     else:
         erros = [msg for mensagens in form.errors.values() for msg in mensagens]
         messages.error(request, "; ".join(erros) or "Não foi possível adicionar o item.")
-    return redirect("vendas:detalhe", pk=venda.pk)
+    return _responder_venda(request, venda)
 
 
 @login_required
@@ -110,7 +119,7 @@ def venda_remover_item(request, pk, item_id):
         venda.remover_item(item)
     except ValidationError as erro:
         messages.error(request, "; ".join(erro.messages))
-    return redirect("vendas:detalhe", pk=venda.pk)
+    return _responder_venda(request, venda)
 
 
 @login_required
@@ -126,7 +135,7 @@ def venda_finalizar(request, pk):
             messages.error(request, "; ".join(erro.messages))
     else:
         messages.error(request, "Selecione a forma de pagamento para finalizar.")
-    return redirect("vendas:detalhe", pk=venda.pk)
+    return _responder_venda(request, venda)
 
 
 @login_required
@@ -138,4 +147,4 @@ def venda_cancelar(request, pk):
         messages.success(request, "Venda cancelada.")
     except ValidationError as erro:
         messages.error(request, "; ".join(erro.messages))
-    return redirect("vendas:detalhe", pk=venda.pk)
+    return _responder_venda(request, venda)
