@@ -434,6 +434,24 @@ a {
 
 /* HTMX: feedback visual enquanto uma ação está em andamento */
 
-#venda-conteudo.htmx-request {
+#venda-conteudo.htmx-request,
+#estoque-conteudo.htmx-request {
     opacity: 0.6;
+}
+
+/* Formulários de cadastro (produto, etc) */
+
+.erro-campo {
+    color: var(--cor-dourado-claro);
+    background: rgba(122, 17, 40, 0.15);
+    border-left: 2px solid var(--cor-vinho);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    margin: 0.25rem 0 0;
+}
+
+.campo input[type="checkbox"] {
+    width: auto;
+    min-width: 0;
+    padding: 0;
 }
