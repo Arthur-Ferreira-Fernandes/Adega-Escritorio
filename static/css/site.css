@@ -1,0 +1,47 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f5f3f0;
+    color: #2b2320;
+}
+
+.cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    background: #4a1f2d;
+    color: #f5f3f0;
+}
+
+.cabecalho__marca {
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.cabecalho__nav a {
+    color: #f5f3f0;
+    text-decoration: none;
+    margin-left: 1.5rem;
+}
+
+.cabecalho__nav a:hover {
+    text-decoration: underline;
+}
+
+.conteudo {
+    padding: 2rem;
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+.cartao {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}

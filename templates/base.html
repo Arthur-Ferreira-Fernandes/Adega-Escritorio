@@ -1,0 +1,25 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}Adega Escritório{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body>
+    <header class="cabecalho">
+        <div class="cabecalho__marca">Adega Escritório</div>
+        <nav class="cabecalho__nav">
+            <a href="{% url 'estoque:inicio' %}">Estoque</a>
+            <a href="{% url 'vendas:inicio' %}">Vendas</a>
+            <a href="{% url 'clientes:inicio' %}">Clientes</a>
+            <a href="{% url 'financeiro:inicio' %}">Financeiro</a>
+            <a href="/admin/">Admin</a>
+        </nav>
+    </header>
+    <main class="conteudo">
+        {% block conteudo %}{% endblock %}
+    </main>
+</body>
+</html>

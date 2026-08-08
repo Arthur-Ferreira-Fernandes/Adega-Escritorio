@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block titulo %}Financeiro · Adega Escritório{% endblock %}
+
+{% block conteudo %}
+<div class="cartao">
+    <h1>Financeiro</h1>
+    <p>Contas a pagar: {{ total_contas_pagar }}</p>
+    <p>Contas a receber: {{ total_contas_receber }}</p>
+</div>
+{% endblock %}
