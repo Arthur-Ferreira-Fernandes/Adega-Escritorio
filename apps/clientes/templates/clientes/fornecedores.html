@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block titulo %}Fornecedores · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<h1 class="titulo-pagina">Fornecedores</h1>
+<p class="subtitulo-pagina">Cadastro de fornecedores.</p>
+
+<div id="clientes-conteudo">
+    {% include "clientes/_fornecedores_conteudo.html" %}
+</div>
+{% endblock %}

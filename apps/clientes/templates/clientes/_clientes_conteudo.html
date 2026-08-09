@@ -1,0 +1,74 @@
+<div class="acoes-topo">
+    <a href="{% url 'clientes:clientes_novo' %}"
+       hx-get="{% url 'clientes:clientes_novo' %}"
+       hx-target="#clientes-conteudo" hx-swap="innerHTML" hx-indicator="#clientes-conteudo"
+       class="botao">Novo cliente</a>
+</div>
+
+{% if form_ativo %}
+<div class="cartao cartao--destaque" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">
+        {% if editando %}Editar cliente{% else %}Novo cliente{% endif %}
+    </h2>
+    <form method="post"
+          action="{% if editando %}{% url 'clientes:clientes_editar' pk=editando.pk %}{% else %}{% url 'clientes:clientes_novo' %}{% endif %}"
+          hx-post="{% if editando %}{% url 'clientes:clientes_editar' pk=editando.pk %}{% else %}{% url 'clientes:clientes_novo' %}{% endif %}"
+          hx-target="#clientes-conteudo" hx-swap="innerHTML" hx-indicator="#clientes-conteudo"
+          class="formulario" style="flex-direction: column; align-items: stretch; max-width: 480px;">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="campo">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <div style="display: flex; gap: 0.75rem;">
+            <button type="submit" class="botao">Salvar</button>
+            <a href="{% url 'clientes:clientes' %}"
+               hx-get="{% url 'clientes:clientes' %}"
+               hx-target="#clientes-conteudo" hx-swap="innerHTML" hx-indicator="#clientes-conteudo"
+               class="botao botao--secundario">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Documento</th>
+            <th>Telefone</th>
+            <th>Email</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cliente in clientes %}
+        <tr>
+            <td>{{ cliente.nome }}</td>
+            <td>{{ cliente.documento }}</td>
+            <td>{{ cliente.telefone|default:"—" }}</td>
+            <td>{{ cliente.email|default:"—" }}</td>
+            <td style="display: flex; gap: 0.75rem; align-items: center;">
+                <a href="{% url 'clientes:clientes_editar' pk=cliente.pk %}"
+                   hx-get="{% url 'clientes:clientes_editar' pk=cliente.pk %}"
+                   hx-target="#clientes-conteudo" hx-swap="innerHTML" hx-indicator="#clientes-conteudo">Editar</a>
+                <form method="post" action="{% url 'clientes:clientes_excluir' pk=cliente.pk %}"
+                      hx-post="{% url 'clientes:clientes_excluir' pk=cliente.pk %}"
+                      hx-target="#clientes-conteudo" hx-swap="innerHTML" hx-indicator="#clientes-conteudo"
+                      hx-confirm="Tem certeza que deseja excluir {{ cliente.nome }}?"
+                      style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="botao botao--perigo">Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">Nenhum cliente cadastrado ainda.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
