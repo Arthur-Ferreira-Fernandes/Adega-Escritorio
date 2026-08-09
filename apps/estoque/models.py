@@ -44,6 +44,11 @@ class Produto(models.Model):
     preco_custo = models.DecimalField(max_digits=10, decimal_places=2)
     preco_venda = models.DecimalField(max_digits=10, decimal_places=2)
     quantidade_estoque = models.PositiveIntegerField(default=0)
+    estoque_minimo = models.PositiveIntegerField(
+        "Estoque mínimo",
+        default=5,
+        help_text="Abaixo desse valor, o produto aparece no relatório de estoque baixo.",
+    )
     unidade = models.CharField(max_length=2, choices=Unidade.choices, default=Unidade.UNIDADE)
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)

@@ -29,6 +29,7 @@ class ProdutoForm(forms.ModelForm):
             "preco_custo",
             "preco_venda",
             "quantidade_estoque",
+            "estoque_minimo",
             "unidade",
             "ativo",
         ]

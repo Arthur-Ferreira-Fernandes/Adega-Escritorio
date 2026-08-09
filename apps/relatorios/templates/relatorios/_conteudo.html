@@ -63,13 +63,14 @@
 
 <div class="cartao" style="margin-bottom: 1.5rem;">
     <h2 class="titulo-pagina" style="font-size: 1.1rem;">Estoque baixo</h2>
-    <p class="subtitulo-pagina" style="margin-bottom: 1rem;">Produtos ativos com {{ estoque_baixo|length }} ou menos unidades disponíveis (limite: 5).</p>
+    <p class="subtitulo-pagina" style="margin-bottom: 1rem;">Produtos ativos abaixo do próprio estoque mínimo cadastrado.</p>
     <table class="tabela">
         <thead>
             <tr>
                 <th>Produto</th>
                 <th>Categoria</th>
                 <th>Estoque atual</th>
+                <th>Mínimo</th>
             </tr>
         </thead>
         <tbody>
@@ -78,10 +79,11 @@
                 <td>{{ produto.nome }}</td>
                 <td>{{ produto.categoria }}</td>
                 <td>{{ produto.quantidade_estoque }}</td>
+                <td>{{ produto.estoque_minimo }}</td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="3">Nenhum produto com estoque baixo.</td>
+                <td colspan="4">Nenhum produto com estoque baixo.</td>
             </tr>
             {% endfor %}
         </tbody>

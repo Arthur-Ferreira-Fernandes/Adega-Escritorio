@@ -1,14 +1,12 @@
 from decimal import Decimal
 
-from django.db.models import Sum
+from django.db.models import F, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from apps.estoque.models import Produto
 from apps.financeiro.models import ContaPagar, ContaReceber
 from apps.vendas.models import ItemVenda, Venda
-
-LIMITE_ESTOQUE_BAIXO = 5
 
 
 def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
@@ -44,7 +42,7 @@ def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
     )
 
     estoque_baixo_qs = Produto.objects.filter(
-        ativo=True, quantidade_estoque__lte=LIMITE_ESTOQUE_BAIXO
+        ativo=True, quantidade_estoque__lte=F("estoque_minimo")
     ).select_related("categoria")
     if categoria:
         estoque_baixo_qs = estoque_baixo_qs.filter(categoria=categoria)

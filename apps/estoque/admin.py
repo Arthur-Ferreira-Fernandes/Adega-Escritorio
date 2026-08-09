@@ -19,6 +19,7 @@ class ProdutoAdmin(admin.ModelAdmin):
         "categoria",
         "preco_venda",
         "quantidade_estoque",
+        "estoque_minimo",
         "ativo",
     )
     list_filter = ("categoria", "ativo", "unidade")

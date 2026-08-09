@@ -42,6 +42,7 @@
             <th>Categoria</th>
             <th>Preço</th>
             <th>Estoque</th>
+            <th>Mínimo</th>
             <th>Ativo</th>
             <th></th>
         </tr>
@@ -54,6 +55,7 @@
             <td>{{ produto.categoria }}</td>
             <td>R$ {{ produto.preco_venda }}</td>
             <td>{{ produto.quantidade_estoque }}</td>
+            <td>{{ produto.estoque_minimo }}</td>
             <td>{% if produto.ativo %}Sim{% else %}Não{% endif %}</td>
             <td style="display: flex; gap: 0.75rem; align-items: center;">
                 <a href="{% url 'estoque:produtos_editar' pk=produto.pk %}"
@@ -71,7 +73,7 @@
         </tr>
         {% empty %}
         <tr>
-            <td colspan="7">Nenhum produto cadastrado ainda.</td>
+            <td colspan="8">Nenhum produto cadastrado ainda.</td>
         </tr>
         {% endfor %}
     </tbody>
