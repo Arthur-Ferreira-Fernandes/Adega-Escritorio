@@ -144,6 +144,7 @@
                 <input type="text" name="valor" id="id_valor_novo" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" data-max-digitos="10">
                 <span id="aviso-valor-pagamento" class="texto-perigo" style="display: none;"></span>
             </div>
+            <button type="button" class="botao botao--secundario" id="botao-usar-valor-total">Usar valor total (R$ {{ venda.falta_receber }})</button>
             <button type="submit" class="botao botao--secundario" id="botao-confirmar-pagamento">Confirmar</button>
         </form>
         {% if venda.falta_receber <= 0 %}

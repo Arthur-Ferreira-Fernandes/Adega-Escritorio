@@ -36,3 +36,12 @@ document.body.addEventListener("change", (evento) => {
     const form = evento.target.closest("form[data-falta]");
     if (form) verificarLimitePagamento(form);
 });
+
+document.body.addEventListener("click", (evento) => {
+    if (evento.target.id !== "botao-usar-valor-total") return;
+    const form = evento.target.closest("form[data-falta]");
+    const campoValor = form && form.querySelector('input[name="valor"]');
+    if (!campoValor) return;
+    campoValor.value = form.dataset.falta;
+    campoValor.dispatchEvent(new Event("input", { bubbles: true }));
+});
