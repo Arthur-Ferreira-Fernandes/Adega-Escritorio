@@ -1,10 +1,3 @@
-<div class="acoes-topo">
-    <a href="{% url 'estoque:produtos_novo' %}"
-       hx-get="{% url 'estoque:produtos_novo' %}"
-       hx-target="#estoque-conteudo" hx-swap="innerHTML" hx-indicator="#estoque-conteudo"
-       class="botao">Novo produto</a>
-</div>
-
 {% if form_ativo %}
 <div class="cartao cartao--destaque" style="margin-bottom: 1.5rem;">
     <h2 class="titulo-pagina" style="font-size: 1.1rem;">

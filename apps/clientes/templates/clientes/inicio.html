@@ -3,8 +3,16 @@
 {% block titulo %}Clientes · Adega &amp; Tabacaria Escritório{% endblock %}
 
 {% block conteudo %}
-<h1 class="titulo-pagina">Clientes</h1>
-<p class="subtitulo-pagina">Clientes e fornecedores da casa.</p>
+<div class="cabecalho-pagina" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="titulo-pagina">Clientes</h1>
+        <p class="subtitulo-pagina">Clientes e fornecedores da casa.</p>
+    </div>
+    <div class="acoes-topo">
+        <a href="{% url 'clientes:clientes' %}" class="botao">Ver clientes</a>
+        <a href="{% url 'clientes:fornecedores' %}" class="botao botao--secundario">Ver fornecedores</a>
+    </div>
+</div>
 
 <div class="grade-stats">
     <div class="stat">
@@ -15,10 +23,5 @@
         <span class="stat__valor">{{ total_fornecedores }}</span>
         <span class="stat__rotulo">Fornecedores cadastrados</span>
     </div>
-</div>
-
-<div class="acoes-topo">
-    <a href="{% url 'clientes:clientes' %}" class="botao">Ver clientes</a>
-    <a href="{% url 'clientes:fornecedores' %}" class="botao botao--secundario">Ver fornecedores</a>
 </div>
 {% endblock %}

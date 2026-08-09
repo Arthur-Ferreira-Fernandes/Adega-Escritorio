@@ -3,8 +3,16 @@
 {% block titulo %}Financeiro · Adega &amp; Tabacaria Escritório{% endblock %}
 
 {% block conteudo %}
-<h1 class="titulo-pagina">Financeiro</h1>
-<p class="subtitulo-pagina">Contas a pagar e a receber.</p>
+<div class="cabecalho-pagina" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="titulo-pagina">Financeiro</h1>
+        <p class="subtitulo-pagina">Contas a pagar e a receber.</p>
+    </div>
+    <div class="acoes-topo">
+        <a href="{% url 'financeiro:contas_pagar' %}" class="botao">Ver contas a pagar</a>
+        <a href="{% url 'financeiro:contas_receber' %}" class="botao botao--secundario">Ver contas a receber</a>
+    </div>
+</div>
 
 <div class="grade-stats">
     <div class="stat">
@@ -15,10 +23,5 @@
         <span class="stat__valor">{{ total_contas_receber }}</span>
         <span class="stat__rotulo">Contas a receber</span>
     </div>
-</div>
-
-<div class="acoes-topo">
-    <a href="{% url 'financeiro:contas_pagar' %}" class="botao">Ver contas a pagar</a>
-    <a href="{% url 'financeiro:contas_receber' %}" class="botao botao--secundario">Ver contas a receber</a>
 </div>
 {% endblock %}

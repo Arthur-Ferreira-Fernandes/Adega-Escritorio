@@ -3,8 +3,16 @@
 {% block titulo %}Estoque · Adega &amp; Tabacaria Escritório{% endblock %}
 
 {% block conteudo %}
-<h1 class="titulo-pagina">Estoque</h1>
-<p class="subtitulo-pagina">Vinhos, charutos e demais produtos da casa.</p>
+<div class="cabecalho-pagina" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="titulo-pagina">Estoque</h1>
+        <p class="subtitulo-pagina">Vinhos, charutos e demais produtos da casa.</p>
+    </div>
+    <div class="acoes-topo">
+        <a href="{% url 'estoque:produtos' %}" class="botao">Ver produtos</a>
+        <a href="{% url 'estoque:categorias' %}" class="botao botao--secundario">Ver categorias</a>
+    </div>
+</div>
 
 <div class="grade-stats">
     <div class="stat">
@@ -15,10 +23,5 @@
         <span class="stat__valor">{{ total_produtos }}</span>
         <span class="stat__rotulo">Produtos cadastrados</span>
     </div>
-</div>
-
-<div class="acoes-topo">
-    <a href="{% url 'estoque:produtos' %}" class="botao">Ver produtos</a>
-    <a href="{% url 'estoque:categorias' %}" class="botao botao--secundario">Ver categorias</a>
 </div>
 {% endblock %}

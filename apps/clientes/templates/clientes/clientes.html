@@ -3,8 +3,18 @@
 {% block titulo %}Clientes · Adega &amp; Tabacaria Escritório{% endblock %}
 
 {% block conteudo %}
-<h1 class="titulo-pagina">Clientes</h1>
-<p class="subtitulo-pagina">Cadastro de clientes.</p>
+<div class="cabecalho-pagina" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="titulo-pagina">Clientes</h1>
+        <p class="subtitulo-pagina">Cadastro de clientes.</p>
+    </div>
+    <div class="acoes-topo">
+        <a href="{% url 'clientes:clientes_novo' %}"
+           hx-get="{% url 'clientes:clientes_novo' %}"
+           hx-target="#clientes-conteudo" hx-swap="innerHTML" hx-indicator="#clientes-conteudo"
+           class="botao">Novo cliente</a>
+    </div>
+</div>
 
 <div id="clientes-conteudo">
     {% include "clientes/_clientes_conteudo.html" %}

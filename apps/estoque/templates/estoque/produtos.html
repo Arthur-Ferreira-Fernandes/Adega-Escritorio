@@ -3,8 +3,18 @@
 {% block titulo %}Produtos · Adega &amp; Tabacaria Escritório{% endblock %}
 
 {% block conteudo %}
-<h1 class="titulo-pagina">Produtos</h1>
-<p class="subtitulo-pagina">Cadastro de produtos do estoque.</p>
+<div class="cabecalho-pagina" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="titulo-pagina">Produtos</h1>
+        <p class="subtitulo-pagina">Cadastro de produtos do estoque.</p>
+    </div>
+    <div class="acoes-topo">
+        <a href="{% url 'estoque:produtos_novo' %}"
+           hx-get="{% url 'estoque:produtos_novo' %}"
+           hx-target="#estoque-conteudo" hx-swap="innerHTML" hx-indicator="#estoque-conteudo"
+           class="botao">Novo produto</a>
+    </div>
+</div>
 
 <div id="estoque-conteudo">
     {% include "estoque/_produtos_conteudo.html" %}

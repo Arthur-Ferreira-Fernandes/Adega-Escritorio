@@ -3,22 +3,25 @@
 {% block titulo %}Vendas · Adega &amp; Tabacaria Escritório{% endblock %}
 
 {% block conteudo %}
-<h1 class="titulo-pagina">Vendas</h1>
-<p class="subtitulo-pagina">Vendas unitárias e comandas abertas.</p>
+<div class="cabecalho-pagina" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="titulo-pagina">Vendas</h1>
+        <p class="subtitulo-pagina">Vendas unitárias e comandas abertas.</p>
+    </div>
+    <div class="acoes-topo">
+        <form method="post" action="{% url 'vendas:rapida' %}" style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit" class="botao">Venda rápida</button>
+        </form>
+        <a href="{% url 'vendas:nova' %}" class="botao botao--secundario">Abrir comanda</a>
+    </div>
+</div>
 
 <div class="grade-stats">
     <div class="stat">
         <span class="stat__valor">{{ total_vendas }}</span>
         <span class="stat__rotulo">Vendas registradas</span>
     </div>
-</div>
-
-<div class="acoes-topo">
-    <form method="post" action="{% url 'vendas:rapida' %}" style="margin: 0;">
-        {% csrf_token %}
-        <button type="submit" class="botao">Venda rápida</button>
-    </form>
-    <a href="{% url 'vendas:nova' %}" class="botao botao--secundario">Abrir comanda</a>
 </div>
 
 <h2 class="titulo-pagina" style="font-size: 1.15rem;">Comandas abertas</h2>

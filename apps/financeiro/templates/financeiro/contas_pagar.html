@@ -3,8 +3,18 @@
 {% block titulo %}Contas a pagar · Adega &amp; Tabacaria Escritório{% endblock %}
 
 {% block conteudo %}
-<h1 class="titulo-pagina">Contas a pagar</h1>
-<p class="subtitulo-pagina">Pagamentos a fornecedores.</p>
+<div class="cabecalho-pagina" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="titulo-pagina">Contas a pagar</h1>
+        <p class="subtitulo-pagina">Pagamentos a fornecedores.</p>
+    </div>
+    <div class="acoes-topo">
+        <a href="{% url 'financeiro:contas_pagar_nova' %}"
+           hx-get="{% url 'financeiro:contas_pagar_nova' %}"
+           hx-target="#financeiro-conteudo" hx-swap="innerHTML" hx-indicator="#financeiro-conteudo"
+           class="botao">Nova conta</a>
+    </div>
+</div>
 
 <div id="financeiro-conteudo">
     {% include "financeiro/_contas_pagar_conteudo.html" %}

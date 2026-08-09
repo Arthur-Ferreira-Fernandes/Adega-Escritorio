@@ -3,8 +3,18 @@
 {% block titulo %}Contas a receber · Adega &amp; Tabacaria Escritório{% endblock %}
 
 {% block conteudo %}
-<h1 class="titulo-pagina">Contas a receber</h1>
-<p class="subtitulo-pagina">Recebimentos de clientes.</p>
+<div class="cabecalho-pagina" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="titulo-pagina">Contas a receber</h1>
+        <p class="subtitulo-pagina">Recebimentos de clientes.</p>
+    </div>
+    <div class="acoes-topo">
+        <a href="{% url 'financeiro:contas_receber_nova' %}"
+           hx-get="{% url 'financeiro:contas_receber_nova' %}"
+           hx-target="#financeiro-conteudo" hx-swap="innerHTML" hx-indicator="#financeiro-conteudo"
+           class="botao">Nova conta</a>
+    </div>
+</div>
 
 <div id="financeiro-conteudo">
     {% include "financeiro/_contas_receber_conteudo.html" %}

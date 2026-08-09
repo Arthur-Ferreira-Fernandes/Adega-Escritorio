@@ -1,10 +1,3 @@
-<div class="acoes-topo">
-    <a href="{% url 'financeiro:contas_receber_nova' %}"
-       hx-get="{% url 'financeiro:contas_receber_nova' %}"
-       hx-target="#financeiro-conteudo" hx-swap="innerHTML" hx-indicator="#financeiro-conteudo"
-       class="botao">Nova conta</a>
-</div>
-
 {% if form_ativo %}
 <div class="cartao cartao--destaque" style="margin-bottom: 1.5rem;">
     <h2 class="titulo-pagina" style="font-size: 1.1rem;">
