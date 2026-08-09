@@ -149,14 +149,16 @@
         {% if venda.falta_receber <= 0 %}
         <form method="post" action="{% url 'vendas:finalizar' pk=venda.pk %}"
               hx-post="{% url 'vendas:finalizar' pk=venda.pk %}"
-              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
+              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
+              hx-confirm="Tem certeza que deseja finalizar esta venda?">
             {% csrf_token %}
             <button type="submit" class="botao" style="width: 100%; margin-top: 0.5rem;">Finalizar venda</button>
         </form>
         {% endif %}
         <form method="post" action="{% url 'vendas:cancelar' pk=venda.pk %}"
               hx-post="{% url 'vendas:cancelar' pk=venda.pk %}"
-              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
+              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
+              hx-confirm="Tem certeza que deseja cancelar esta venda? Essa ação não pode ser desfeita.">
             {% csrf_token %}
             <button type="submit" class="botao botao--perigo" style="width: 100%; margin-top: 0.5rem;">Cancelar venda</button>
         </form>
