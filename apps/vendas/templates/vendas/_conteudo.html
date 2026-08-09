@@ -67,7 +67,7 @@
                     {{ item_form.produto_busca }}
                     <datalist id="produtos-datalist">
                         {% for produto in produtos_ativos %}
-                        <option value="{{ produto.nome }} — R$ {{ produto.preco_venda }} (estoque: {{ produto.quantidade_estoque }}) | {{ produto.sku }}"></option>
+                        <option value="{{ produto.nome }} — R$ {{ produto.preco_venda }} (estoque: {{ produto.quantidade_estoque }}) | {{ produto.sku }}" data-estoque="{{ produto.quantidade_estoque }}"></option>
                         {% endfor %}
                     </datalist>
                 </div>
