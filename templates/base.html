@@ -15,7 +15,7 @@
 </head>
 <body>
     <header class="cabecalho">
-        <a href="{% url 'estoque:inicio' %}" class="cabecalho__marca">
+        <a href="{% url 'inicio' %}" class="cabecalho__marca">
             <img src="{% static 'img/logo.jpg' %}" alt="Adega &amp; Tabacaria Escritório" class="cabecalho__logo">
             <span class="cabecalho__texto">
                 <strong>Adega &amp; Tabacaria</strong>
@@ -23,12 +23,7 @@
             </span>
         </a>
         <nav class="cabecalho__nav">
-            <a href="{% url 'estoque:inicio' %}" class="{% if request.resolver_match.app_name == 'estoque' %}ativo{% endif %}">Estoque</a>
-            <a href="{% url 'vendas:inicio' %}" class="{% if request.resolver_match.app_name == 'vendas' %}ativo{% endif %}">Vendas</a>
-            <a href="{% url 'clientes:inicio' %}" class="{% if request.resolver_match.app_name == 'clientes' %}ativo{% endif %}">Clientes</a>
-            <a href="{% url 'financeiro:inicio' %}" class="{% if request.resolver_match.app_name == 'financeiro' %}ativo{% endif %}">Financeiro</a>
-            <a href="{% url 'relatorios:dashboard' %}" class="{% if request.resolver_match.app_name == 'relatorios' %}ativo{% endif %}">Relatórios</a>
-            <a href="/admin/" class="cabecalho__admin">Admin</a>
+            <a href="{% url 'inicio' %}" class="{% if request.resolver_match.url_name == 'inicio' and not request.resolver_match.app_name %}ativo{% endif %}">Início</a>
         </nav>
     </header>
     <main class="conteudo">

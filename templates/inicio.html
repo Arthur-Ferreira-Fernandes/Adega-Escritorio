@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block titulo %}Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<h1 class="titulo-pagina">Bem-vindo</h1>
+<p class="subtitulo-pagina">Escolha um módulo pra continuar.</p>
+
+<div class="grade-entradas">
+    <a href="{% url 'estoque:inicio' %}" class="cartao cartao--destaque cartao-modulo">
+        <h2>Estoque</h2>
+        <p>Produtos e categorias.</p>
+    </a>
+    <a href="{% url 'vendas:inicio' %}" class="cartao cartao--destaque cartao-modulo">
+        <h2>Vendas</h2>
+        <p>PDV, comandas e histórico de vendas.</p>
+    </a>
+    <a href="{% url 'clientes:inicio' %}" class="cartao cartao--destaque cartao-modulo">
+        <h2>Clientes</h2>
+        <p>Clientes e fornecedores.</p>
+    </a>
+    <a href="{% url 'financeiro:inicio' %}" class="cartao cartao--destaque cartao-modulo">
+        <h2>Financeiro</h2>
+        <p>Contas a pagar e a receber.</p>
+    </a>
+    <a href="{% url 'relatorios:dashboard' %}" class="cartao cartao--destaque cartao-modulo">
+        <h2>Relatórios</h2>
+        <p>Faturamento, produtos mais vendidos e insights.</p>
+    </a>
+    <a href="/admin/" class="cartao cartao-modulo">
+        <h2>Administração</h2>
+        <p>Categorias, usuários e configurações avançadas.</p>
+    </a>
+</div>
+{% endblock %}

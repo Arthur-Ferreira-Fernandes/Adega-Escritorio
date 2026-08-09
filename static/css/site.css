@@ -479,3 +479,29 @@ a {
 .campo-monetario {
     text-align: right;
 }
+
+/* Página inicial: cards de módulo */
+
+.cartao-modulo {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease;
+}
+
+.cartao-modulo:hover {
+    border-color: var(--cor-dourado);
+}
+
+.cartao-modulo h2 {
+    margin: 0 0 0.5rem;
+    font-family: var(--fonte-marca);
+    color: var(--cor-dourado-claro);
+    font-size: 1.25rem;
+}
+
+.cartao-modulo p {
+    margin: 0;
+    color: var(--cor-texto-suave);
+    font-size: 0.9rem;
+}
