@@ -456,3 +456,7 @@ a {
     min-width: 0;
     padding: 0;
 }
+
+.campo-monetario {
+    text-align: right;
+}
