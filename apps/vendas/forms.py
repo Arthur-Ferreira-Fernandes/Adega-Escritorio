@@ -63,3 +63,26 @@ class EscanearCodigoForm(forms.Form):
 
     def clean_codigo_barras(self):
         return self.cleaned_data["codigo_barras"].strip()
+
+
+class FiltroHistoricoVendaForm(forms.Form):
+    data_inicio = forms.DateField(
+        required=False, label="De", widget=forms.DateInput(attrs={"type": "date"})
+    )
+    data_fim = forms.DateField(
+        required=False, label="Até", widget=forms.DateInput(attrs={"type": "date"})
+    )
+    status = forms.ChoiceField(
+        choices=[("", "Todos")] + list(Venda.Status.choices), required=False, label="Status"
+    )
+    forma_pagamento = forms.ChoiceField(
+        choices=[("", "Todas")] + list(Venda.FormaPagamento.choices),
+        required=False,
+        label="Forma de pagamento",
+    )
+    cliente = forms.ModelChoiceField(
+        queryset=Cliente.objects.all(),
+        required=False,
+        empty_label="Todos os clientes",
+        label="Cliente",
+    )

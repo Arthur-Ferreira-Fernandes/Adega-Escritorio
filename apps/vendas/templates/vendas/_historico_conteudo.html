@@ -1,0 +1,66 @@
+<form method="get" action="{% url 'vendas:historico' %}"
+      hx-get="{% url 'vendas:historico' %}"
+      hx-target="#vendas-historico-conteudo" hx-swap="innerHTML" hx-indicator="#vendas-historico-conteudo"
+      hx-push-url="true"
+      class="formulario">
+    {% for field in form %}
+    <div class="campo">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+    </div>
+    {% endfor %}
+    <button type="submit" class="botao">Filtrar</button>
+</form>
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>Venda</th>
+            <th>Cliente</th>
+            <th>Status</th>
+            <th>Forma de pagamento</th>
+            <th>Total</th>
+            <th>Criado em</th>
+            <th>Finalizada em</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for venda in pagina %}
+        <tr>
+            <td>{{ venda }}</td>
+            <td>{{ venda.cliente|default:"—" }}</td>
+            <td><span class="emblema emblema--{{ venda.status }}">{{ venda.get_status_display }}</span></td>
+            <td>{{ venda.get_forma_pagamento_display|default:"—" }}</td>
+            <td>R$ {{ venda.total }}</td>
+            <td>{{ venda.criado_em|date:"d/m/Y H:i" }}</td>
+            <td>{{ venda.finalizada_em|date:"d/m/Y H:i"|default:"—" }}</td>
+            <td><a href="{% url 'vendas:detalhe' pk=venda.pk %}">Ver detalhes</a></td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="8">Nenhuma venda encontrada para os filtros selecionados.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if pagina.has_other_pages %}
+<div style="display: flex; gap: 0.5rem; align-items: center; justify-content: center; margin-top: 1rem;">
+    {% if pagina.has_previous %}
+    <a href="?{{ querystring }}&pagina={{ pagina.previous_page_number }}"
+       hx-get="?{{ querystring }}&pagina={{ pagina.previous_page_number }}"
+       hx-target="#vendas-historico-conteudo" hx-swap="innerHTML" hx-indicator="#vendas-historico-conteudo"
+       hx-push-url="true"
+       class="botao botao--secundario">Anterior</a>
+    {% endif %}
+    <span class="subtitulo-pagina" style="margin: 0;">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    {% if pagina.has_next %}
+    <a href="?{{ querystring }}&pagina={{ pagina.next_page_number }}"
+       hx-get="?{{ querystring }}&pagina={{ pagina.next_page_number }}"
+       hx-target="#vendas-historico-conteudo" hx-swap="innerHTML" hx-indicator="#vendas-historico-conteudo"
+       hx-push-url="true"
+       class="botao botao--secundario">Próxima</a>
+    {% endif %}
+</div>
+{% endif %}

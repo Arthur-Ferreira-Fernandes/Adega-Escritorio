@@ -2,13 +2,20 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 
 from apps.estoque.models import Produto
 
-from .forms import EscanearCodigoForm, FinalizarVendaForm, ItemVendaForm, NovaVendaForm
+from .forms import (
+    EscanearCodigoForm,
+    FiltroHistoricoVendaForm,
+    FinalizarVendaForm,
+    ItemVendaForm,
+    NovaVendaForm,
+)
 from .models import ItemVenda, Venda
 
 
@@ -148,3 +155,34 @@ def venda_cancelar(request, pk):
     except ValidationError as erro:
         messages.error(request, "; ".join(erro.messages))
     return _responder_venda(request, venda)
+
+
+@login_required
+def historico(request):
+    form = FiltroHistoricoVendaForm(request.GET or None)
+    vendas = Venda.objects.select_related("cliente")
+    if form.is_valid():
+        if form.cleaned_data.get("data_inicio"):
+            vendas = vendas.filter(criado_em__date__gte=form.cleaned_data["data_inicio"])
+        if form.cleaned_data.get("data_fim"):
+            vendas = vendas.filter(criado_em__date__lte=form.cleaned_data["data_fim"])
+        if form.cleaned_data.get("status"):
+            vendas = vendas.filter(status=form.cleaned_data["status"])
+        if form.cleaned_data.get("forma_pagamento"):
+            vendas = vendas.filter(forma_pagamento=form.cleaned_data["forma_pagamento"])
+        if form.cleaned_data.get("cliente"):
+            vendas = vendas.filter(cliente=form.cleaned_data["cliente"])
+
+    paginator = Paginator(vendas, 20)
+    pagina = paginator.get_page(request.GET.get("pagina"))
+
+    querystring = request.GET.copy()
+    querystring.pop("pagina", None)
+
+    contexto = {"form": form, "pagina": pagina, "querystring": querystring.urlencode()}
+    template = (
+        "vendas/_historico_conteudo.html"
+        if request.headers.get("HX-Request") == "true"
+        else "vendas/historico.html"
+    )
+    return render(request, template, contexto)
