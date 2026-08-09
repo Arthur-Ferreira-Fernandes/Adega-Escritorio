@@ -1,0 +1,94 @@
+function coresGrafico() {
+    return {
+        serie: "#c9a227",
+        serieArea: "rgba(201, 162, 39, 0.12)",
+        grade: "#3a2f1c",
+        textoPrimario: "#f2ead9",
+        textoSecundario: "#b3a68a",
+        superficie: "#17130d",
+    };
+}
+
+function inicializarGraficos(escopo) {
+    (escopo || document).querySelectorAll(".grafico").forEach((canvas) => {
+        if (canvas.dataset.graficoInicializado) return;
+        canvas.dataset.graficoInicializado = "true";
+
+        const fonte = document.getElementById(canvas.dataset.fonte);
+        if (!fonte) return;
+        const dados = JSON.parse(fonte.textContent);
+        const cores = coresGrafico();
+
+        const opcoesBase = {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: cores.superficie,
+                    titleColor: cores.textoPrimario,
+                    bodyColor: cores.textoPrimario,
+                    borderColor: cores.grade,
+                    borderWidth: 1,
+                },
+            },
+            scales: {
+                x: {
+                    grid: { color: cores.grade },
+                    ticks: { color: cores.textoSecundario },
+                },
+                y: {
+                    grid: { color: cores.grade },
+                    ticks: { color: cores.textoSecundario },
+                    beginAtZero: true,
+                },
+            },
+        };
+
+        if (canvas.dataset.tipo === "line") {
+            new Chart(canvas, {
+                type: "line",
+                data: {
+                    labels: dados.map((d) => d.rotulo),
+                    datasets: [
+                        {
+                            data: dados.map((d) => d.valor),
+                            borderColor: cores.serie,
+                            backgroundColor: cores.serieArea,
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointBackgroundColor: cores.serie,
+                            fill: true,
+                            tension: 0.2,
+                        },
+                    ],
+                },
+                options: {
+                    ...opcoesBase,
+                    plugins: {
+                        ...opcoesBase.plugins,
+                        tooltip: { ...opcoesBase.plugins.tooltip, mode: "index", intersect: false },
+                    },
+                },
+            });
+        } else {
+            new Chart(canvas, {
+                type: "bar",
+                data: {
+                    labels: dados.map((d) => d.rotulo),
+                    datasets: [
+                        {
+                            data: dados.map((d) => d.valor),
+                            backgroundColor: cores.serie,
+                            borderRadius: 4,
+                            maxBarThickness: 24,
+                        },
+                    ],
+                },
+                options: opcoesBase,
+            });
+        }
+    });
+}
+
+document.addEventListener("DOMContentLoaded", () => inicializarGraficos());
+document.body.addEventListener("htmx:afterSwap", (evento) => inicializarGraficos(evento.target));

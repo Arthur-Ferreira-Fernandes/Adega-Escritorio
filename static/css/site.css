@@ -437,7 +437,8 @@ a {
 #venda-conteudo.htmx-request,
 #estoque-conteudo.htmx-request,
 #financeiro-conteudo.htmx-request,
-#clientes-conteudo.htmx-request {
+#clientes-conteudo.htmx-request,
+#relatorios-conteudo.htmx-request {
     opacity: 0.6;
 }
 

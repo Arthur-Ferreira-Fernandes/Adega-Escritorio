@@ -1,0 +1,112 @@
+<form method="get" action="{% url 'relatorios:dashboard' %}"
+      hx-get="{% url 'relatorios:dashboard' %}"
+      hx-target="#relatorios-conteudo" hx-swap="innerHTML" hx-indicator="#relatorios-conteudo"
+      hx-push-url="true"
+      class="formulario">
+    {% for field in form %}
+    <div class="campo">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+    </div>
+    {% endfor %}
+    <button type="submit" class="botao">Filtrar</button>
+</form>
+
+<div class="grade-stats" style="margin-bottom: 1.5rem;">
+    <div class="stat">
+        <span class="stat__valor">R$ {{ faturamento_total }}</span>
+        <span class="stat__rotulo">Faturamento no período</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{{ numero_vendas }}</span>
+        <span class="stat__rotulo">Vendas no período</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">R$ {{ ticket_medio }}</span>
+        <span class="stat__rotulo">Ticket médio</span>
+    </div>
+</div>
+
+<div class="cartao" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Faturamento por dia</h2>
+    <script id="dados-faturamento" type="application/json">{{ faturamento_por_dia_json|safe }}</script>
+    <canvas class="grafico" data-tipo="line" data-fonte="dados-faturamento" height="90"></canvas>
+</div>
+
+<div class="cartao" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Produtos mais vendidos</h2>
+    <script id="dados-produtos" type="application/json">{{ produtos_mais_vendidos_json|safe }}</script>
+    <canvas class="grafico" data-tipo="bar" data-fonte="dados-produtos" height="90"></canvas>
+    <table class="tabela" style="margin-top: 1.5rem;">
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th>Quantidade vendida</th>
+                <th>Valor vendido</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for produto in produtos_mais_vendidos %}
+            <tr>
+                <td>{{ produto.produto__nome }}</td>
+                <td>{{ produto.quantidade }}</td>
+                <td>R$ {{ produto.valor }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">Nenhuma venda no período/filtro selecionado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="cartao" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Estoque baixo</h2>
+    <p class="subtitulo-pagina" style="margin-bottom: 1rem;">Produtos ativos com {{ estoque_baixo|length }} ou menos unidades disponíveis (limite: 5).</p>
+    <table class="tabela">
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th>Categoria</th>
+                <th>Estoque atual</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for produto in estoque_baixo %}
+            <tr>
+                <td>{{ produto.nome }}</td>
+                <td>{{ produto.categoria }}</td>
+                <td>{{ produto.quantidade_estoque }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">Nenhum produto com estoque baixo.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="cartao">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Resumo financeiro</h2>
+    <p class="subtitulo-pagina" style="margin-bottom: 1rem;">Situação atual, não filtrada pelo período acima.</p>
+    <div class="grade-stats">
+        <div class="stat">
+            <span class="stat__valor">R$ {{ a_pagar_total }}</span>
+            <span class="stat__rotulo">A pagar (pendente)</span>
+        </div>
+        <div class="stat">
+            <span class="stat__valor" style="{% if a_pagar_vencido > 0 %}color: var(--cor-vinho);{% endif %}">R$ {{ a_pagar_vencido }}</span>
+            <span class="stat__rotulo">A pagar (vencido)</span>
+        </div>
+        <div class="stat">
+            <span class="stat__valor">R$ {{ a_receber_total }}</span>
+            <span class="stat__rotulo">A receber (pendente)</span>
+        </div>
+        <div class="stat">
+            <span class="stat__valor" style="{% if a_receber_vencido > 0 %}color: var(--cor-vinho);{% endif %}">R$ {{ a_receber_vencido }}</span>
+            <span class="stat__rotulo">A receber (vencido)</span>
+        </div>
+    </div>
+</div>
