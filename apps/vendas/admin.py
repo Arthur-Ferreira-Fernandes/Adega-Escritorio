@@ -1,11 +1,16 @@
 from django.contrib import admin
 
-from .models import ItemVenda, Venda
+from .models import ItemVenda, PagamentoVenda, Venda
 
 
 class ItemVendaInline(admin.TabularInline):
     model = ItemVenda
     extra = 1
+
+
+class PagamentoVendaInline(admin.TabularInline):
+    model = PagamentoVenda
+    extra = 0
 
 
 @admin.register(Venda)
@@ -16,11 +21,10 @@ class VendaAdmin(admin.ModelAdmin):
         "cliente",
         "criado_por",
         "status",
-        "forma_pagamento",
         "total",
         "criado_em",
         "finalizada_em",
     )
-    list_filter = ("status", "forma_pagamento")
+    list_filter = ("status",)
     readonly_fields = ("total", "finalizada_em")
-    inlines = [ItemVendaInline]
+    inlines = [ItemVendaInline, PagamentoVendaInline]

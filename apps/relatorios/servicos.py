@@ -18,7 +18,7 @@ def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
     if categoria:
         itens = itens.filter(produto__categoria=categoria)
     if forma_pagamento:
-        itens = itens.filter(venda__forma_pagamento=forma_pagamento)
+        itens = itens.filter(venda__pagamentos__forma_pagamento=forma_pagamento)
 
     faturamento_total = itens.aggregate(total=Sum("subtotal"))["total"] or Decimal("0")
     numero_vendas = itens.values("venda").distinct().count()

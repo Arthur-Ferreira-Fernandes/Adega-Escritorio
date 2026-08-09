@@ -7,7 +7,7 @@ from django.db.models import Q, Sum
 from django.utils import timezone
 from django.utils.formats import number_format
 
-from apps.vendas.models import Venda
+from apps.vendas.models import PagamentoVenda, Venda
 
 
 class Caixa(models.Model):
@@ -134,12 +134,12 @@ class Caixa(models.Model):
     def total_vendas_dinheiro(self):
         fim = self.fechado_em or timezone.now()
         return (
-            Venda.objects.filter(
-                status=Venda.Status.CONCLUIDA,
+            PagamentoVenda.objects.filter(
                 forma_pagamento=Venda.FormaPagamento.DINHEIRO,
-                finalizada_em__gte=self.aberto_em,
-                finalizada_em__lte=fim,
-            ).aggregate(t=Sum("total"))["t"]
+                venda__status=Venda.Status.CONCLUIDA,
+                venda__finalizada_em__gte=self.aberto_em,
+                venda__finalizada_em__lte=fim,
+            ).aggregate(t=Sum("valor"))["t"]
             or Decimal("0")
         )
 

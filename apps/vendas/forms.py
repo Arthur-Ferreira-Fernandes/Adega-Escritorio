@@ -43,12 +43,6 @@ class ItemVendaForm(forms.Form):
         return produto
 
 
-class FinalizarVendaForm(forms.Form):
-    forma_pagamento = forms.ChoiceField(
-        choices=Venda.FormaPagamento.choices, label="Forma de pagamento"
-    )
-
-
 class EscanearCodigoForm(forms.Form):
     codigo_barras = forms.CharField(
         label="Código de barras",

@@ -1,7 +1,10 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
+from django.utils.formats import number_format
 
 from apps.clientes.models import Cliente
 from apps.estoque.models import Produto
@@ -28,9 +31,6 @@ class Venda(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="vendas"
     )
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.ABERTA)
-    forma_pagamento = models.CharField(
-        max_length=10, choices=FormaPagamento.choices, blank=True
-    )
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     criado_em = models.DateTimeField(auto_now_add=True)
     finalizada_em = models.DateTimeField(null=True, blank=True)
@@ -89,12 +89,49 @@ class Venda(models.Model):
         item.delete()
         self.recalcular_total()
 
-    def finalizar(self, forma_pagamento):
+    def finalizar(self, pagamentos):
         if self.status != self.Status.ABERTA:
             raise ValidationError("Somente vendas abertas podem ser finalizadas.")
         itens = list(self.itens.select_related("produto"))
         if not itens:
             raise ValidationError("Não é possível finalizar uma venda sem itens.")
+
+        formas_validas = set(self.FormaPagamento.values)
+        formas_usadas = set()
+        pagamentos_validos = []
+        for pagamento in pagamentos:
+            valor = pagamento.get("valor")
+            if not valor:
+                continue
+            if valor <= 0:
+                raise ValidationError("Os valores informados devem ser maiores que zero.")
+            forma = pagamento.get("forma_pagamento")
+            if forma not in formas_validas:
+                raise ValidationError("Forma de pagamento inválida.")
+            if forma in formas_usadas:
+                raise ValidationError("Cada forma de pagamento pode ser usada apenas uma vez.")
+            formas_usadas.add(forma)
+            valor_recebido = (
+                pagamento.get("valor_recebido") if forma == self.FormaPagamento.DINHEIRO else None
+            )
+            if valor_recebido is not None and valor_recebido < valor:
+                raise ValidationError(
+                    "O valor recebido em dinheiro não pode ser menor que o valor pago em dinheiro."
+                )
+            pagamentos_validos.append(
+                {"forma_pagamento": forma, "valor": valor, "valor_recebido": valor_recebido}
+            )
+
+        if not pagamentos_validos:
+            raise ValidationError("Informe ao menos uma forma de pagamento com valor maior que zero.")
+
+        soma = sum(p["valor"] for p in pagamentos_validos)
+        if soma != self.total:
+            raise ValidationError(
+                f"A soma dos valores informados (R$ {number_format(soma, decimal_pos=2)}) "
+                f"deve ser igual ao total da venda (R$ {number_format(self.total, decimal_pos=2)})."
+            )
+
         with transaction.atomic():
             produto_ids = {item.produto_id for item in itens}
             produtos = {
@@ -118,15 +155,41 @@ class Venda(models.Model):
                 produto.quantidade_estoque -= necessario
                 produto.save(update_fields=["quantidade_estoque"])
             self.status = self.Status.CONCLUIDA
-            self.forma_pagamento = forma_pagamento
             self.finalizada_em = timezone.now()
-            self.save(update_fields=["status", "forma_pagamento", "finalizada_em"])
+            self.save(update_fields=["status", "finalizada_em"])
+            PagamentoVenda.objects.bulk_create(
+                PagamentoVenda(venda=self, **p) for p in pagamentos_validos
+            )
 
     def cancelar(self):
         if self.status != self.Status.ABERTA:
             raise ValidationError("Somente vendas abertas podem ser canceladas.")
         self.status = self.Status.CANCELADA
         self.save(update_fields=["status"])
+
+
+class PagamentoVenda(models.Model):
+    venda = models.ForeignKey(Venda, on_delete=models.CASCADE, related_name="pagamentos")
+    forma_pagamento = models.CharField(max_length=10, choices=Venda.FormaPagamento.choices)
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    valor_recebido = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Pagamento da venda"
+        verbose_name_plural = "Pagamentos da venda"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["venda", "forma_pagamento"], name="pagamento_unico_por_forma_e_venda"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_forma_pagamento_display()}: R$ {self.valor}"
+
+    @property
+    def troco(self):
+        return (self.valor_recebido - self.valor) if self.valor_recebido is not None else Decimal("0")
 
 
 class ItemVenda(models.Model):

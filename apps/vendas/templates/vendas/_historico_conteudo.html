@@ -31,7 +31,7 @@
             <td>{{ venda }}</td>
             <td>{{ venda.cliente|default:"—" }}</td>
             <td><span class="emblema emblema--{{ venda.status }}">{{ venda.get_status_display }}</span></td>
-            <td>{{ venda.get_forma_pagamento_display|default:"—" }}</td>
+            <td>{% for pagamento in venda.pagamentos.all %}{{ pagamento.get_forma_pagamento_display }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
             <td>R$ {{ venda.total }}</td>
             <td>{{ venda.criado_em|date:"d/m/Y H:i" }}</td>
             <td>{{ venda.finalizada_em|date:"d/m/Y H:i"|default:"—" }}</td>

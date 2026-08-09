@@ -89,12 +89,37 @@
         {% if venda.status == "aberta" %}
         <form method="post" action="{% url 'vendas:finalizar' pk=venda.pk %}" class="formulario" style="flex-direction: column; align-items: stretch;"
               hx-post="{% url 'vendas:finalizar' pk=venda.pk %}"
-              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
+              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
+              data-total="{{ total_bruto }}">
             {% csrf_token %}
-            <div class="campo">
-                <label for="{{ finalizar_form.forma_pagamento.id_for_label }}">{{ finalizar_form.forma_pagamento.label }}</label>
-                {{ finalizar_form.forma_pagamento }}
+            <div id="linhas-pagamento">
+                <div class="linha-pagamento">
+                    <select name="forma_pagamento">
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="cartao">Cartão</option>
+                        <option value="pix">Pix</option>
+                    </select>
+                    <input type="text" name="valor" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" data-max-digitos="10">
+                    <input type="text" name="valor_recebido" class="campo-monetario campo-recebido" inputmode="numeric" autocomplete="off" placeholder="Recebido" data-max-digitos="10" style="display: none;">
+                    <span class="troco-linha"></span>
+                    <button type="button" class="botao botao--secundario botao-remover-linha">Remover</button>
+                </div>
             </div>
+            <template id="modelo-linha-pagamento">
+                <div class="linha-pagamento">
+                    <select name="forma_pagamento">
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="cartao">Cartão</option>
+                        <option value="pix">Pix</option>
+                    </select>
+                    <input type="text" name="valor" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" data-max-digitos="10">
+                    <input type="text" name="valor_recebido" class="campo-monetario campo-recebido" inputmode="numeric" autocomplete="off" placeholder="Recebido" data-max-digitos="10" style="display: none;">
+                    <span class="troco-linha"></span>
+                    <button type="button" class="botao botao--secundario botao-remover-linha">Remover</button>
+                </div>
+            </template>
+            <button type="button" class="botao botao--secundario" id="botao-adicionar-pagamento">Adicionar forma de pagamento</button>
+            <p class="subtitulo-pagina" id="resumo-pagamento"></p>
             <button type="submit" class="botao">Finalizar venda</button>
         </form>
         <form method="post" action="{% url 'vendas:cancelar' pk=venda.pk %}"
@@ -104,7 +129,17 @@
             <button type="submit" class="botao botao--perigo" style="width: 100%;">Cancelar venda</button>
         </form>
         {% else %}
-        <p><strong>Forma de pagamento:</strong> {{ venda.get_forma_pagamento_display|default:"—" }}</p>
+        <p><strong>Pagamento:</strong></p>
+        <ul>
+            {% for pagamento in venda.pagamentos.all %}
+            <li>
+                {{ pagamento.get_forma_pagamento_display }}: R$ {{ pagamento.valor }}
+                {% if pagamento.troco %}(recebido R$ {{ pagamento.valor_recebido }}, troco R$ {{ pagamento.troco }}){% endif %}
+            </li>
+            {% empty %}
+            <li>—</li>
+            {% endfor %}
+        </ul>
         <p><strong>Finalizada em:</strong> {{ venda.finalizada_em|date:"d/m/Y H:i"|default:"—" }}</p>
         {% endif %}
     </div>

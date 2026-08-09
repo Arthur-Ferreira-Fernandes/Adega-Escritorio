@@ -1,3 +1,5 @@
+from decimal import Decimal, InvalidOperation
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -12,7 +14,6 @@ from apps.estoque.models import Produto
 from .forms import (
     EscanearCodigoForm,
     FiltroHistoricoVendaForm,
-    FinalizarVendaForm,
     ItemVendaForm,
     NovaVendaForm,
 )
@@ -59,9 +60,9 @@ def _contexto_venda(venda):
         "venda": venda,
         "itens": venda.itens.select_related("produto"),
         "item_form": ItemVendaForm(),
-        "finalizar_form": FinalizarVendaForm(),
         "escanear_form": EscanearCodigoForm(),
         "produtos_ativos": Produto.objects.filter(ativo=True),
+        "total_bruto": str(venda.total),
     }
 
 
@@ -133,15 +134,33 @@ def venda_remover_item(request, pk, item_id):
 @require_POST
 def venda_finalizar(request, pk):
     venda = get_object_or_404(Venda, pk=pk)
-    form = FinalizarVendaForm(request.POST)
-    if form.is_valid():
+    pagamentos = []
+    formato_invalido = False
+    for forma, valor_txt, recebido_txt in zip(
+        request.POST.getlist("forma_pagamento"),
+        request.POST.getlist("valor"),
+        request.POST.getlist("valor_recebido"),
+    ):
+        if not valor_txt.strip():
+            continue
         try:
-            venda.finalizar(form.cleaned_data["forma_pagamento"])
+            valor = Decimal(valor_txt)
+            valor_recebido = Decimal(recebido_txt) if recebido_txt.strip() else None
+        except InvalidOperation:
+            formato_invalido = True
+            continue
+        pagamentos.append(
+            {"forma_pagamento": forma, "valor": valor, "valor_recebido": valor_recebido}
+        )
+
+    if formato_invalido:
+        messages.error(request, "Informe valores válidos para finalizar a venda.")
+    else:
+        try:
+            venda.finalizar(pagamentos)
             messages.success(request, "Venda finalizada com sucesso.")
         except ValidationError as erro:
             messages.error(request, "; ".join(erro.messages))
-    else:
-        messages.error(request, "Selecione a forma de pagamento para finalizar.")
     return _responder_venda(request, venda)
 
 
@@ -160,7 +179,7 @@ def venda_cancelar(request, pk):
 @login_required
 def historico(request):
     form = FiltroHistoricoVendaForm(request.GET or None)
-    vendas = Venda.objects.select_related("cliente")
+    vendas = Venda.objects.select_related("cliente").prefetch_related("pagamentos")
     if form.is_valid():
         if form.cleaned_data.get("data_inicio"):
             vendas = vendas.filter(criado_em__date__gte=form.cleaned_data["data_inicio"])
@@ -169,7 +188,7 @@ def historico(request):
         if form.cleaned_data.get("status"):
             vendas = vendas.filter(status=form.cleaned_data["status"])
         if form.cleaned_data.get("forma_pagamento"):
-            vendas = vendas.filter(forma_pagamento=form.cleaned_data["forma_pagamento"])
+            vendas = vendas.filter(pagamentos__forma_pagamento=form.cleaned_data["forma_pagamento"])
         if form.cleaned_data.get("cliente"):
             vendas = vendas.filter(cliente=form.cleaned_data["cliente"])
 

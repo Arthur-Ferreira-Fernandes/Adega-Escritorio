@@ -41,6 +41,7 @@ document.addEventListener("submit", (evento) => {
     const form = evento.target;
     if (!(form instanceof HTMLFormElement)) return;
     form.querySelectorAll(".campo-monetario").forEach((campo) => {
+        if (!campo.value.trim()) return;
         const maxDigitos = parseInt(campo.dataset.maxDigitos || "10", 10);
         campo.value = (paraCentavos(campo.value, maxDigitos) / 100).toFixed(2);
     });
