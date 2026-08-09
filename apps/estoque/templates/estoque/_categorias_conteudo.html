@@ -1,0 +1,72 @@
+<div class="acoes-topo">
+    <a href="{% url 'estoque:categorias_nova' %}"
+       hx-get="{% url 'estoque:categorias_nova' %}"
+       hx-target="#estoque-conteudo" hx-swap="innerHTML" hx-indicator="#estoque-conteudo"
+       class="botao">Nova categoria</a>
+</div>
+
+{% if form_ativo %}
+<div class="cartao cartao--destaque" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">
+        {% if editando %}Editar categoria{% else %}Nova categoria{% endif %}
+    </h2>
+    <form method="post"
+          action="{% if editando %}{% url 'estoque:categorias_editar' pk=editando.pk %}{% else %}{% url 'estoque:categorias_nova' %}{% endif %}"
+          hx-post="{% if editando %}{% url 'estoque:categorias_editar' pk=editando.pk %}{% else %}{% url 'estoque:categorias_nova' %}{% endif %}"
+          hx-target="#estoque-conteudo" hx-swap="innerHTML" hx-indicator="#estoque-conteudo"
+          class="formulario" style="flex-direction: column; align-items: stretch; max-width: 480px;">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="campo">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <div style="display: flex; gap: 0.75rem;">
+            <button type="submit" class="botao">Salvar</button>
+            <a href="{% url 'estoque:categorias' %}"
+               hx-get="{% url 'estoque:categorias' %}"
+               hx-target="#estoque-conteudo" hx-swap="innerHTML" hx-indicator="#estoque-conteudo"
+               class="botao botao--secundario">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Slug</th>
+            <th>Produtos</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for categoria in categorias %}
+        <tr>
+            <td>{{ categoria.nome }}</td>
+            <td>{{ categoria.slug }}</td>
+            <td>{{ categoria.produtos.count }}</td>
+            <td style="display: flex; gap: 0.75rem; align-items: center;">
+                <a href="{% url 'estoque:categorias_editar' pk=categoria.pk %}"
+                   hx-get="{% url 'estoque:categorias_editar' pk=categoria.pk %}"
+                   hx-target="#estoque-conteudo" hx-swap="innerHTML" hx-indicator="#estoque-conteudo">Editar</a>
+                <form method="post" action="{% url 'estoque:categorias_excluir' pk=categoria.pk %}"
+                      hx-post="{% url 'estoque:categorias_excluir' pk=categoria.pk %}"
+                      hx-target="#estoque-conteudo" hx-swap="innerHTML" hx-indicator="#estoque-conteudo"
+                      hx-confirm="Tem certeza que deseja excluir {{ categoria.nome }}?"
+                      style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="botao botao--perigo">Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">Nenhuma categoria cadastrada ainda.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

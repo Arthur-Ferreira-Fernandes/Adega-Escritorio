@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block titulo %}Categorias · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<h1 class="titulo-pagina">Categorias</h1>
+<p class="subtitulo-pagina">Categorias de produtos do estoque.</p>
+
+<div id="estoque-conteudo">
+    {% include "estoque/_categorias_conteudo.html" %}
+</div>
+{% endblock %}
