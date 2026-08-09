@@ -63,6 +63,7 @@ def _contexto_venda(venda):
         "item_form": ItemVendaForm(),
         "escanear_form": EscanearCodigoForm(),
         "produtos_ativos": Produto.objects.filter(ativo=True),
+        "falta_receber_bruto": str(venda.falta_receber),
     }
 
 

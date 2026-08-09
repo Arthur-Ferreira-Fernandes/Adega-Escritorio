@@ -128,7 +128,8 @@
         </div>
         <form method="post" action="{% url 'vendas:adicionar_pagamento' pk=venda.pk %}" class="formulario"
               hx-post="{% url 'vendas:adicionar_pagamento' pk=venda.pk %}"
-              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
+              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
+              data-falta="{{ falta_receber_bruto }}">
             {% csrf_token %}
             <div class="campo">
                 <label for="id_forma_pagamento_novo">Forma de pagamento</label>
@@ -141,8 +142,9 @@
             <div class="campo">
                 <label for="id_valor_novo">Valor recebido</label>
                 <input type="text" name="valor" id="id_valor_novo" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" data-max-digitos="10">
+                <span id="aviso-valor-pagamento" class="texto-perigo" style="display: none;"></span>
             </div>
-            <button type="submit" class="botao botao--secundario">Confirmar</button>
+            <button type="submit" class="botao botao--secundario" id="botao-confirmar-pagamento">Confirmar</button>
         </form>
         {% if venda.falta_receber <= 0 %}
         <form method="post" action="{% url 'vendas:finalizar' pk=venda.pk %}"

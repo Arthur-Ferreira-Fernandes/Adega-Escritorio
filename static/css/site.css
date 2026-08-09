@@ -175,6 +175,10 @@ a {
     letter-spacing: 0.08em;
 }
 
+.texto-perigo {
+    color: var(--cor-vinho) !important;
+}
+
 .stat--troco {
     border-color: var(--cor-dourado);
     background: rgba(201, 162, 39, 0.12);
@@ -276,6 +280,11 @@ a {
 
 .botao:hover {
     background: var(--cor-dourado-claro);
+}
+
+.botao:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .botao--secundario {
