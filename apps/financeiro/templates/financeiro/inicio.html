@@ -16,4 +16,9 @@
         <span class="stat__rotulo">Contas a receber</span>
     </div>
 </div>
+
+<div class="acoes-topo">
+    <a href="{% url 'financeiro:contas_pagar' %}" class="botao">Ver contas a pagar</a>
+    <a href="{% url 'financeiro:contas_receber' %}" class="botao botao--secundario">Ver contas a receber</a>
+</div>
 {% endblock %}

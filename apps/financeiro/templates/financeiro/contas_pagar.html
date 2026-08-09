@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block titulo %}Contas a pagar · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<h1 class="titulo-pagina">Contas a pagar</h1>
+<p class="subtitulo-pagina">Pagamentos a fornecedores.</p>
+
+<div id="financeiro-conteudo">
+    {% include "financeiro/_contas_pagar_conteudo.html" %}
+</div>
+{% endblock %}

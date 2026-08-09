@@ -1,0 +1,93 @@
+<div class="acoes-topo">
+    <a href="{% url 'financeiro:contas_receber_nova' %}"
+       hx-get="{% url 'financeiro:contas_receber_nova' %}"
+       hx-target="#financeiro-conteudo" hx-swap="innerHTML" hx-indicator="#financeiro-conteudo"
+       class="botao">Nova conta</a>
+</div>
+
+{% if form_ativo %}
+<div class="cartao cartao--destaque" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">
+        {% if editando %}Editar conta a receber{% else %}Nova conta a receber{% endif %}
+    </h2>
+    <form method="post"
+          action="{% if editando %}{% url 'financeiro:contas_receber_editar' pk=editando.pk %}{% else %}{% url 'financeiro:contas_receber_nova' %}{% endif %}"
+          hx-post="{% if editando %}{% url 'financeiro:contas_receber_editar' pk=editando.pk %}{% else %}{% url 'financeiro:contas_receber_nova' %}{% endif %}"
+          hx-target="#financeiro-conteudo" hx-swap="innerHTML" hx-indicator="#financeiro-conteudo"
+          class="formulario" style="flex-direction: column; align-items: stretch; max-width: 480px;">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="campo">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <div style="display: flex; gap: 0.75rem;">
+            <button type="submit" class="botao">Salvar</button>
+            <a href="{% url 'financeiro:contas_receber' %}"
+               hx-get="{% url 'financeiro:contas_receber' %}"
+               hx-target="#financeiro-conteudo" hx-swap="innerHTML" hx-indicator="#financeiro-conteudo"
+               class="botao botao--secundario">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>Descrição</th>
+            <th>Cliente</th>
+            <th>Venda</th>
+            <th>Valor</th>
+            <th>Vencimento</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for conta in contas %}
+        <tr>
+            <td>{{ conta.descricao }}</td>
+            <td>{{ conta.cliente }}</td>
+            <td>{{ conta.venda|default:"—" }}</td>
+            <td>R$ {{ conta.valor }}</td>
+            <td>{{ conta.vencimento|date:"d/m/Y" }}</td>
+            <td>
+                {% if conta.recebido %}
+                <span class="emblema emblema--concluida">Recebido em {{ conta.recebido_em|date:"d/m/Y" }}</span>
+                {% else %}
+                <span class="emblema emblema--aberta">Pendente</span>
+                {% endif %}
+            </td>
+            <td style="display: flex; gap: 0.75rem; align-items: center;">
+                {% if not conta.recebido %}
+                <form method="post" action="{% url 'financeiro:contas_receber_marcar_recebida' pk=conta.pk %}"
+                      hx-post="{% url 'financeiro:contas_receber_marcar_recebida' pk=conta.pk %}"
+                      hx-target="#financeiro-conteudo" hx-swap="innerHTML" hx-indicator="#financeiro-conteudo"
+                      style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="botao botao--secundario">Marcar como recebida</button>
+                </form>
+                {% endif %}
+                <a href="{% url 'financeiro:contas_receber_editar' pk=conta.pk %}"
+                   hx-get="{% url 'financeiro:contas_receber_editar' pk=conta.pk %}"
+                   hx-target="#financeiro-conteudo" hx-swap="innerHTML" hx-indicator="#financeiro-conteudo">Editar</a>
+                <form method="post" action="{% url 'financeiro:contas_receber_excluir' pk=conta.pk %}"
+                      hx-post="{% url 'financeiro:contas_receber_excluir' pk=conta.pk %}"
+                      hx-target="#financeiro-conteudo" hx-swap="innerHTML" hx-indicator="#financeiro-conteudo"
+                      hx-confirm="Tem certeza que deseja excluir esta conta?"
+                      style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="botao botao--perigo">Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7">Nenhuma conta a receber cadastrada ainda.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

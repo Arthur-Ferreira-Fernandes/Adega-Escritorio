@@ -435,7 +435,8 @@ a {
 /* HTMX: feedback visual enquanto uma ação está em andamento */
 
 #venda-conteudo.htmx-request,
-#estoque-conteudo.htmx-request {
+#estoque-conteudo.htmx-request,
+#financeiro-conteudo.htmx-request {
     opacity: 0.6;
 }
 
