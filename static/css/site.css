@@ -175,6 +175,11 @@ a {
     letter-spacing: 0.08em;
 }
 
+.stat--troco {
+    border-color: var(--cor-dourado);
+    background: rgba(201, 162, 39, 0.12);
+}
+
 /* Mensagens (django.contrib.messages) */
 
 .mensagens {

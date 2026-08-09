@@ -95,6 +95,10 @@ class Venda(models.Model):
         recebido = self.pagamentos.aggregate(t=Sum("valor"))["t"] or Decimal("0")
         return self.total - recebido
 
+    @property
+    def troco_total(self):
+        return sum((pagamento.troco for pagamento in self.pagamentos.all()), Decimal("0"))
+
     def adicionar_pagamento(self, forma_pagamento, valor_informado):
         if self.status != self.Status.ABERTA:
             raise ValidationError("Só é possível registrar pagamentos em uma venda aberta.")
@@ -110,7 +114,10 @@ class Venda(models.Model):
         eh_dinheiro = forma_pagamento == self.FormaPagamento.DINHEIRO
         if not eh_dinheiro and valor_informado > falta:
             raise ValidationError(
-                "O valor informado não pode ser maior que o restante a receber nessa forma de pagamento."
+                f"O valor informado (R$ {number_format(valor_informado, decimal_pos=2)}) é maior "
+                f"que o restante a receber (R$ {number_format(falta, decimal_pos=2)}). "
+                f"{dict(self.FormaPagamento.choices)[forma_pagamento]} não permite troco — "
+                "informe um valor até o restante ou use Dinheiro."
             )
 
         valor_aplicado = min(valor_informado, falta)

@@ -88,20 +88,39 @@
         </div>
         {% if venda.status == "aberta" %}
         {% if venda.pagamentos.all %}
-        <ul style="margin-bottom: 1rem;">
-            {% for pagamento in venda.pagamentos.all %}
-            <li>
-                {{ pagamento.get_forma_pagamento_display }}: R$ {{ pagamento.valor }}
-                {% if pagamento.troco %}(troco dado: R$ {{ pagamento.troco }}){% endif %}
-                <form method="post" action="{% url 'vendas:remover_pagamento' pk=venda.pk pagamento_id=pagamento.pk %}"
-                      hx-post="{% url 'vendas:remover_pagamento' pk=venda.pk pagamento_id=pagamento.pk %}"
-                      hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="botao botao--perigo">Remover</button>
-                </form>
-            </li>
-            {% endfor %}
-        </ul>
+        <table class="tabela" style="margin-bottom: 1rem;">
+            <thead>
+                <tr>
+                    <th>Forma</th>
+                    <th>Valor aplicado</th>
+                    <th>Troco</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pagamento in venda.pagamentos.all %}
+                <tr>
+                    <td>{{ pagamento.get_forma_pagamento_display }}</td>
+                    <td>R$ {{ pagamento.valor }}</td>
+                    <td>{% if pagamento.troco %}R$ {{ pagamento.troco }}{% else %}—{% endif %}</td>
+                    <td>
+                        <form method="post" action="{% url 'vendas:remover_pagamento' pk=venda.pk pagamento_id=pagamento.pk %}"
+                              hx-post="{% url 'vendas:remover_pagamento' pk=venda.pk pagamento_id=pagamento.pk %}"
+                              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
+                            {% csrf_token %}
+                            <button type="submit" class="botao botao--perigo">Remover</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% if venda.troco_total %}
+        <div class="stat stat--troco" style="margin-bottom: 1rem;">
+            <span class="stat__valor">R$ {{ venda.troco_total }}</span>
+            <span class="stat__rotulo">Troco a devolver</span>
+        </div>
         {% endif %}
         <div class="stat" style="margin-bottom: 1rem;">
             <span class="stat__valor">R$ {{ venda.falta_receber }}</span>
@@ -141,16 +160,34 @@
         </form>
         {% else %}
         <p><strong>Pagamento:</strong></p>
-        <ul>
-            {% for pagamento in venda.pagamentos.all %}
-            <li>
-                {{ pagamento.get_forma_pagamento_display }}: R$ {{ pagamento.valor }}
-                {% if pagamento.troco %}(recebido R$ {{ pagamento.valor_recebido }}, troco R$ {{ pagamento.troco }}){% endif %}
-            </li>
-            {% empty %}
-            <li>—</li>
-            {% endfor %}
-        </ul>
+        {% if venda.pagamentos.all %}
+        <table class="tabela" style="margin-bottom: 1rem;">
+            <thead>
+                <tr>
+                    <th>Forma</th>
+                    <th>Valor aplicado</th>
+                    <th>Troco</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pagamento in venda.pagamentos.all %}
+                <tr>
+                    <td>{{ pagamento.get_forma_pagamento_display }}</td>
+                    <td>R$ {{ pagamento.valor }}</td>
+                    <td>{% if pagamento.troco %}R$ {{ pagamento.troco }}{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if venda.troco_total %}
+        <div class="stat stat--troco" style="margin-bottom: 1rem;">
+            <span class="stat__valor">R$ {{ venda.troco_total }}</span>
+            <span class="stat__rotulo">Troco total</span>
+        </div>
+        {% endif %}
+        {% else %}
+        <p>—</p>
+        {% endif %}
         <p><strong>Finalizada em:</strong> {{ venda.finalizada_em|date:"d/m/Y H:i"|default:"—" }}</p>
         {% endif %}
     </div>
