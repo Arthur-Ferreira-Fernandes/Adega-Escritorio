@@ -16,3 +16,8 @@ class MovimentoCaixaForm(forms.Form):
 
 class FecharCaixaForm(forms.Form):
     valor_contado = DecimalMonetarioField(label="Valor contado", max_digits=10, decimal_places=2)
+
+
+class AutorizacaoAdminForm(forms.Form):
+    username = forms.CharField(label="Usuário administrador")
+    password = forms.CharField(label="Senha", widget=forms.PasswordInput)

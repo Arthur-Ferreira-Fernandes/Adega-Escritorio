@@ -10,6 +10,7 @@ from django.utils.formats import number_format
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 
+from apps.caixa.models import Caixa
 from apps.estoque.models import Produto
 
 from .forms import (
@@ -21,6 +22,18 @@ from .forms import (
 from .models import ItemVenda, PagamentoVenda, Venda
 
 
+def _bloqueio_caixa():
+    caixa = Caixa.aberto_atual()
+    if caixa is None:
+        return "É necessário abrir o caixa antes de iniciar uma venda."
+    if not caixa.dentro_do_limite:
+        return (
+            "O caixa está aberto há mais de 12 horas. Peça a um administrador para "
+            "autorizar mais tempo na tela do Caixa."
+        )
+    return None
+
+
 class InicioView(LoginRequiredMixin, TemplateView):
     template_name = "vendas/inicio.html"
 
@@ -30,11 +43,16 @@ class InicioView(LoginRequiredMixin, TemplateView):
         contexto["comandas_abertas"] = Venda.objects.filter(
             status=Venda.Status.ABERTA
         ).select_related("cliente")
+        contexto["pode_vender"] = _bloqueio_caixa() is None
         return contexto
 
 
 @login_required
 def nova_venda(request):
+    bloqueio = _bloqueio_caixa()
+    if bloqueio:
+        messages.error(request, bloqueio)
+        return redirect("caixa:painel")
     if request.method == "POST":
         form = NovaVendaForm(request.POST)
         if form.is_valid():
@@ -52,6 +70,10 @@ def nova_venda(request):
 @login_required
 @require_POST
 def venda_rapida(request):
+    bloqueio = _bloqueio_caixa()
+    if bloqueio:
+        messages.error(request, bloqueio)
+        return redirect("caixa:painel")
     venda = Venda.objects.create(criado_por=request.user)
     return redirect("vendas:detalhe", pk=venda.pk)
 

@@ -9,11 +9,15 @@
         <p class="subtitulo-pagina">Vendas unitárias e comandas abertas.</p>
     </div>
     <div class="acoes-topo">
+        {% if pode_vender %}
         <form method="post" action="{% url 'vendas:rapida' %}" style="margin: 0;">
             {% csrf_token %}
             <button type="submit" class="botao">Venda rápida</button>
         </form>
         <a href="{% url 'vendas:nova' %}" class="botao botao--secundario">Abrir comanda</a>
+        {% else %}
+        <a href="{% url 'caixa:painel' %}" class="botao botao--secundario">Abra o caixa para vender</a>
+        {% endif %}
         <a href="{% url 'vendas:historico' %}" class="botao botao--secundario">Ver histórico</a>
     </div>
 </div>

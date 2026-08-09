@@ -1,10 +1,11 @@
 from django.contrib import messages
+from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import render
 from django.views.decorators.http import require_POST
 
-from .forms import AbrirCaixaForm, FecharCaixaForm, MovimentoCaixaForm
+from .forms import AbrirCaixaForm, AutorizacaoAdminForm, FecharCaixaForm, MovimentoCaixaForm
 from .models import Caixa
 
 
@@ -29,6 +30,7 @@ def _contexto_painel():
         "sangria_form": MovimentoCaixaForm(),
         "reforco_form": MovimentoCaixaForm(),
         "fechar_form": FecharCaixaForm(),
+        "autorizacao_form": AutorizacaoAdminForm(),
     }
 
 
@@ -128,4 +130,30 @@ def caixa_fechar(request):
             messages.error(request, "; ".join(erro.messages))
     else:
         messages.error(request, _erros_formulario(form, "Informe o valor contado."))
+    return _renderizar_painel(request)
+
+
+@login_required
+@require_POST
+def caixa_estender_limite(request):
+    caixa = Caixa.aberto_atual()
+    if caixa is None:
+        messages.error(request, "Não há caixa aberto no momento.")
+        return _renderizar_painel(request)
+    form = AutorizacaoAdminForm(request.POST)
+    if form.is_valid():
+        usuario = authenticate(
+            request,
+            username=form.cleaned_data["username"],
+            password=form.cleaned_data["password"],
+        )
+        if usuario is not None and usuario.is_superuser:
+            caixa.estender_limite()
+            messages.success(request, "Autorizado: mais 1 hora liberada para iniciar vendas.")
+        else:
+            messages.error(
+                request, "Usuário ou senha inválidos, ou sem permissão de administrador."
+            )
+    else:
+        messages.error(request, _erros_formulario(form, "Informe usuário e senha do administrador."))
     return _renderizar_painel(request)
