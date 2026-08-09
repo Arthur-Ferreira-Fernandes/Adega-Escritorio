@@ -1,0 +1,178 @@
+from decimal import Decimal
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, models, transaction
+from django.db.models import Q, Sum
+from django.utils import timezone
+from django.utils.formats import number_format
+
+from apps.vendas.models import Venda
+
+
+class Caixa(models.Model):
+    class Status(models.TextChoices):
+        ABERTO = "aberto", "Aberto"
+        FECHADO = "fechado", "Fechado"
+
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.ABERTO)
+    valor_abertura = models.DecimalField(max_digits=10, decimal_places=2)
+    valor_contado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    aberto_em = models.DateTimeField(auto_now_add=True)
+    fechado_em = models.DateTimeField(null=True, blank=True)
+    aberto_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="caixas_abertos"
+    )
+    fechado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="caixas_fechados",
+    )
+
+    class Meta:
+        verbose_name = "Caixa"
+        verbose_name_plural = "Caixas"
+        ordering = ["-aberto_em"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["status"],
+                condition=Q(status="aberto"),
+                name="caixa_apenas_um_aberto",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Caixa #{self.pk} ({self.get_status_display()})"
+
+    @classmethod
+    def aberto_atual(cls):
+        return cls.objects.filter(status=cls.Status.ABERTO).first()
+
+    @classmethod
+    def abrir(cls, usuario, valor_abertura):
+        if valor_abertura < 0:
+            raise ValidationError("O valor de abertura não pode ser negativo.")
+        if cls.aberto_atual() is not None:
+            raise ValidationError("Já existe um caixa aberto. Feche-o antes de abrir um novo.")
+        try:
+            with transaction.atomic():
+                return cls.objects.create(valor_abertura=valor_abertura, aberto_por=usuario)
+        except IntegrityError:
+            raise ValidationError("Já existe um caixa aberto. Feche-o antes de abrir um novo.")
+
+    def registrar_sangria(self, usuario, valor, descricao):
+        if self.status != self.Status.ABERTO:
+            raise ValidationError("Não é possível registrar sangria: não há caixa aberto.")
+        if valor <= 0:
+            raise ValidationError("O valor da sangria deve ser maior que zero.")
+        with transaction.atomic():
+            caixa = Caixa.objects.select_for_update().get(pk=self.pk)
+            if caixa.status != Caixa.Status.ABERTO:
+                raise ValidationError("Não é possível registrar sangria: não há caixa aberto.")
+            saldo = caixa.saldo_esperado()
+            if valor > saldo:
+                raise ValidationError(
+                    f"Valor da sangria (R$ {number_format(valor, decimal_pos=2)}) maior que o "
+                    f"saldo esperado em caixa (R$ {number_format(saldo, decimal_pos=2)})."
+                )
+            return MovimentoCaixa.objects.create(
+                caixa=caixa,
+                tipo=MovimentoCaixa.Tipo.SANGRIA,
+                valor=valor,
+                descricao=descricao,
+                criado_por=usuario,
+            )
+
+    def registrar_reforco(self, usuario, valor, descricao):
+        if self.status != self.Status.ABERTO:
+            raise ValidationError("Não é possível registrar reforço: não há caixa aberto.")
+        if valor <= 0:
+            raise ValidationError("O valor do reforço deve ser maior que zero.")
+        with transaction.atomic():
+            caixa = Caixa.objects.select_for_update().get(pk=self.pk)
+            if caixa.status != Caixa.Status.ABERTO:
+                raise ValidationError("Não é possível registrar reforço: não há caixa aberto.")
+            return MovimentoCaixa.objects.create(
+                caixa=caixa,
+                tipo=MovimentoCaixa.Tipo.REFORCO,
+                valor=valor,
+                descricao=descricao,
+                criado_por=usuario,
+            )
+
+    def fechar(self, usuario, valor_contado):
+        if self.status != self.Status.ABERTO:
+            raise ValidationError("Não é possível fechar: não há caixa aberto.")
+        if valor_contado < 0:
+            raise ValidationError("O valor contado não pode ser negativo.")
+        with transaction.atomic():
+            caixa = Caixa.objects.select_for_update().get(pk=self.pk)
+            if caixa.status != Caixa.Status.ABERTO:
+                raise ValidationError("Não é possível fechar: não há caixa aberto.")
+            caixa.valor_contado = valor_contado
+            caixa.fechado_em = timezone.now()
+            caixa.fechado_por = usuario
+            caixa.status = Caixa.Status.FECHADO
+            caixa.save(update_fields=["valor_contado", "fechado_em", "fechado_por", "status"])
+        self.refresh_from_db()
+        return self
+
+    def total_sangrias(self):
+        return (
+            self.movimentos.filter(tipo=MovimentoCaixa.Tipo.SANGRIA).aggregate(t=Sum("valor"))["t"]
+            or Decimal("0")
+        )
+
+    def total_reforcos(self):
+        return (
+            self.movimentos.filter(tipo=MovimentoCaixa.Tipo.REFORCO).aggregate(t=Sum("valor"))["t"]
+            or Decimal("0")
+        )
+
+    def total_vendas_dinheiro(self):
+        fim = self.fechado_em or timezone.now()
+        return (
+            Venda.objects.filter(
+                status=Venda.Status.CONCLUIDA,
+                forma_pagamento=Venda.FormaPagamento.DINHEIRO,
+                finalizada_em__gte=self.aberto_em,
+                finalizada_em__lte=fim,
+            ).aggregate(t=Sum("total"))["t"]
+            or Decimal("0")
+        )
+
+    def saldo_esperado(self):
+        return (
+            self.valor_abertura
+            + self.total_reforcos()
+            + self.total_vendas_dinheiro()
+            - self.total_sangrias()
+        )
+
+    def diferenca(self):
+        return None if self.valor_contado is None else self.valor_contado - self.saldo_esperado()
+
+
+class MovimentoCaixa(models.Model):
+    class Tipo(models.TextChoices):
+        SANGRIA = "sangria", "Sangria"
+        REFORCO = "reforco", "Reforço"
+
+    caixa = models.ForeignKey(Caixa, on_delete=models.CASCADE, related_name="movimentos")
+    tipo = models.CharField(max_length=10, choices=Tipo.choices)
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    descricao = models.CharField(max_length=255)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="movimentos_caixa"
+    )
+
+    class Meta:
+        verbose_name = "Movimento de caixa"
+        verbose_name_plural = "Movimentos de caixa"
+        ordering = ["-criado_em"]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — R$ {self.valor}"

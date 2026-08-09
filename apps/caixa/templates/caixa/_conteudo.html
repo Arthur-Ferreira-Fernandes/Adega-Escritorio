@@ -1,0 +1,165 @@
+{% if caixa %}
+<div class="grade-stats" style="margin-bottom: 1.5rem;">
+    <div class="stat">
+        <span class="stat__valor">R$ {{ caixa.valor_abertura }}</span>
+        <span class="stat__rotulo">Valor de abertura</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">R$ {{ caixa.total_reforcos }}</span>
+        <span class="stat__rotulo">Reforços</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">R$ {{ caixa.total_sangrias }}</span>
+        <span class="stat__rotulo">Sangrias</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">R$ {{ caixa.total_vendas_dinheiro }}</span>
+        <span class="stat__rotulo">Vendas em dinheiro</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">R$ {{ caixa.saldo_esperado }}</span>
+        <span class="stat__rotulo">Saldo esperado</span>
+    </div>
+</div>
+
+<p class="subtitulo-pagina" style="margin-bottom: 1.5rem;">
+    <span class="emblema emblema--aberta">Aberto</span>
+    desde {{ caixa.aberto_em|date:"d/m/Y H:i" }} por {{ caixa.aberto_por }}
+</p>
+
+<div class="grade-entradas" style="margin-bottom: 1.5rem;">
+    <div class="cartao">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Registrar sangria</h2>
+        <form method="post" action="{% url 'caixa:sangria' %}"
+              hx-post="{% url 'caixa:sangria' %}"
+              hx-target="#caixa-conteudo" hx-swap="innerHTML" hx-indicator="#caixa-conteudo"
+              class="formulario" style="flex-direction: column; align-items: stretch;">
+            {% csrf_token %}
+            {% for field in sangria_form %}
+            <div class="campo">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="botao botao--secundario">Registrar sangria</button>
+        </form>
+    </div>
+    <div class="cartao">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Registrar reforço</h2>
+        <form method="post" action="{% url 'caixa:reforco' %}"
+              hx-post="{% url 'caixa:reforco' %}"
+              hx-target="#caixa-conteudo" hx-swap="innerHTML" hx-indicator="#caixa-conteudo"
+              class="formulario" style="flex-direction: column; align-items: stretch;">
+            {% csrf_token %}
+            {% for field in reforco_form %}
+            <div class="campo">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="botao botao--secundario">Registrar reforço</button>
+        </form>
+    </div>
+    <div class="cartao cartao--destaque">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Fechar caixa</h2>
+        <form method="post" action="{% url 'caixa:fechar' %}"
+              hx-post="{% url 'caixa:fechar' %}"
+              hx-target="#caixa-conteudo" hx-swap="innerHTML" hx-indicator="#caixa-conteudo"
+              hx-confirm="Tem certeza que deseja fechar o caixa? Confira o valor contado antes de confirmar."
+              class="formulario" style="flex-direction: column; align-items: stretch;">
+            {% csrf_token %}
+            {% for field in fechar_form %}
+            <div class="campo">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="botao botao--perigo">Fechar caixa</button>
+        </form>
+    </div>
+</div>
+
+<h2 class="titulo-pagina" style="font-size: 1.1rem; margin-bottom: 0.75rem;">Movimentações desta sessão</h2>
+<table class="tabela" style="margin-bottom: 1.5rem;">
+    <thead>
+        <tr>
+            <th>Tipo</th>
+            <th>Valor</th>
+            <th>Descrição</th>
+            <th>Data/hora</th>
+            <th>Registrado por</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for movimento in movimentos %}
+        <tr>
+            <td>{{ movimento.get_tipo_display }}</td>
+            <td>R$ {{ movimento.valor }}</td>
+            <td>{{ movimento.descricao }}</td>
+            <td>{{ movimento.criado_em|date:"d/m/Y H:i" }}</td>
+            <td>{{ movimento.criado_por }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">Nenhuma movimentação registrada nesta sessão ainda.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% else %}
+<div class="cartao cartao--destaque" style="margin-bottom: 1.5rem; max-width: 480px;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Abrir caixa</h2>
+    <form method="post" action="{% url 'caixa:abrir' %}"
+          hx-post="{% url 'caixa:abrir' %}"
+          hx-target="#caixa-conteudo" hx-swap="innerHTML" hx-indicator="#caixa-conteudo"
+          class="formulario" style="flex-direction: column; align-items: stretch;">
+        {% csrf_token %}
+        {% for field in abrir_form %}
+        <div class="campo">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="botao">Abrir caixa</button>
+    </form>
+</div>
+{% endif %}
+
+<h2 class="titulo-pagina" style="font-size: 1.1rem; margin-bottom: 0.75rem;">Histórico de caixas fechados</h2>
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>Aberto em</th>
+            <th>Fechado em</th>
+            <th>Aberto por</th>
+            <th>Fechado por</th>
+            <th>Valor abertura</th>
+            <th>Saldo esperado</th>
+            <th>Valor contado</th>
+            <th>Diferença</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in historico %}
+        <tr>
+            <td>{{ item.aberto_em|date:"d/m/Y H:i" }}</td>
+            <td>{{ item.fechado_em|date:"d/m/Y H:i" }}</td>
+            <td>{{ item.aberto_por }}</td>
+            <td>{{ item.fechado_por }}</td>
+            <td>R$ {{ item.valor_abertura }}</td>
+            <td>R$ {{ item.saldo_esperado }}</td>
+            <td>R$ {{ item.valor_contado }}</td>
+            <td style="{% if item.diferenca < 0 %}color: var(--cor-vinho);{% endif %}">R$ {{ item.diferenca }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="8">Nenhum caixa fechado ainda.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
