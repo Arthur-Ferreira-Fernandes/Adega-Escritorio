@@ -6,6 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.formats import number_format
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 
@@ -17,7 +18,7 @@ from .forms import (
     ItemVendaForm,
     NovaVendaForm,
 )
-from .models import ItemVenda, Venda
+from .models import ItemVenda, PagamentoVenda, Venda
 
 
 class InicioView(LoginRequiredMixin, TemplateView):
@@ -62,7 +63,6 @@ def _contexto_venda(venda):
         "item_form": ItemVendaForm(),
         "escanear_form": EscanearCodigoForm(),
         "produtos_ativos": Produto.objects.filter(ativo=True),
-        "total_bruto": str(venda.total),
     }
 
 
@@ -134,33 +134,47 @@ def venda_remover_item(request, pk, item_id):
 @require_POST
 def venda_finalizar(request, pk):
     venda = get_object_or_404(Venda, pk=pk)
-    pagamentos = []
-    formato_invalido = False
-    for forma, valor_txt, recebido_txt in zip(
-        request.POST.getlist("forma_pagamento"),
-        request.POST.getlist("valor"),
-        request.POST.getlist("valor_recebido"),
-    ):
-        if not valor_txt.strip():
-            continue
-        try:
-            valor = Decimal(valor_txt)
-            valor_recebido = Decimal(recebido_txt) if recebido_txt.strip() else None
-        except InvalidOperation:
-            formato_invalido = True
-            continue
-        pagamentos.append(
-            {"forma_pagamento": forma, "valor": valor, "valor_recebido": valor_recebido}
-        )
+    try:
+        venda.finalizar()
+        messages.success(request, "Venda finalizada com sucesso.")
+    except ValidationError as erro:
+        messages.error(request, "; ".join(erro.messages))
+    return _responder_venda(request, venda)
 
-    if formato_invalido:
-        messages.error(request, "Informe valores válidos para finalizar a venda.")
+
+@login_required
+@require_POST
+def venda_adicionar_pagamento(request, pk):
+    venda = get_object_or_404(Venda, pk=pk)
+    valor_txt = request.POST.get("valor", "")
+    try:
+        valor = Decimal(valor_txt) if valor_txt.strip() else None
+    except InvalidOperation:
+        valor = None
+    if valor is None:
+        messages.error(request, "Informe um valor válido.")
     else:
         try:
-            venda.finalizar(pagamentos)
-            messages.success(request, "Venda finalizada com sucesso.")
+            pagamento = venda.adicionar_pagamento(request.POST.get("forma_pagamento", ""), valor)
+            texto = f"Pagamento em {pagamento.get_forma_pagamento_display()} registrado."
+            if pagamento.troco:
+                texto += f" Troco: R$ {number_format(pagamento.troco, decimal_pos=2)}."
+            messages.success(request, texto)
         except ValidationError as erro:
             messages.error(request, "; ".join(erro.messages))
+    return _responder_venda(request, venda)
+
+
+@login_required
+@require_POST
+def venda_remover_pagamento(request, pk, pagamento_id):
+    venda = get_object_or_404(Venda, pk=pk)
+    pagamento = get_object_or_404(PagamentoVenda, pk=pagamento_id, venda=venda)
+    try:
+        venda.remover_pagamento(pagamento)
+        messages.success(request, "Pagamento removido.")
+    except ValidationError as erro:
+        messages.error(request, "; ".join(erro.messages))
     return _responder_venda(request, venda)
 
 

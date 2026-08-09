@@ -12,6 +12,12 @@ urlpatterns = [
     path("<int:pk>/", views.venda_detalhe, name="detalhe"),
     path("<int:pk>/itens/adicionar/", views.venda_adicionar_item, name="adicionar_item"),
     path("<int:pk>/itens/<int:item_id>/remover/", views.venda_remover_item, name="remover_item"),
+    path("<int:pk>/pagamentos/adicionar/", views.venda_adicionar_pagamento, name="adicionar_pagamento"),
+    path(
+        "<int:pk>/pagamentos/<int:pagamento_id>/remover/",
+        views.venda_remover_pagamento,
+        name="remover_pagamento",
+    ),
     path("<int:pk>/escanear/", views.venda_escanear, name="escanear"),
     path("<int:pk>/finalizar/", views.venda_finalizar, name="finalizar"),
     path("<int:pk>/cancelar/", views.venda_cancelar, name="cancelar"),

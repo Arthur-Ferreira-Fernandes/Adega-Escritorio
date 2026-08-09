@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models import Sum
 from django.utils import timezone
 from django.utils.formats import number_format
 
@@ -89,47 +90,54 @@ class Venda(models.Model):
         item.delete()
         self.recalcular_total()
 
-    def finalizar(self, pagamentos):
+    @property
+    def falta_receber(self):
+        recebido = self.pagamentos.aggregate(t=Sum("valor"))["t"] or Decimal("0")
+        return self.total - recebido
+
+    def adicionar_pagamento(self, forma_pagamento, valor_informado):
+        if self.status != self.Status.ABERTA:
+            raise ValidationError("Só é possível registrar pagamentos em uma venda aberta.")
+        if forma_pagamento not in self.FormaPagamento.values:
+            raise ValidationError("Forma de pagamento inválida.")
+        if not valor_informado or valor_informado <= 0:
+            raise ValidationError("Informe um valor maior que zero.")
+
+        falta = self.falta_receber
+        if falta <= 0:
+            raise ValidationError("Esta venda já está com o pagamento completo.")
+
+        eh_dinheiro = forma_pagamento == self.FormaPagamento.DINHEIRO
+        if not eh_dinheiro and valor_informado > falta:
+            raise ValidationError(
+                "O valor informado não pode ser maior que o restante a receber nessa forma de pagamento."
+            )
+
+        valor_aplicado = min(valor_informado, falta)
+        pagamento, _ = self.pagamentos.get_or_create(
+            forma_pagamento=forma_pagamento, defaults={"valor": Decimal("0")}
+        )
+        pagamento.valor += valor_aplicado
+        if eh_dinheiro:
+            pagamento.valor_recebido = (pagamento.valor_recebido or Decimal("0")) + valor_informado
+        pagamento.save(update_fields=["valor", "valor_recebido"])
+        return pagamento
+
+    def remover_pagamento(self, pagamento):
+        if self.status != self.Status.ABERTA:
+            raise ValidationError("Só é possível remover pagamentos de uma venda aberta.")
+        pagamento.delete()
+
+    def finalizar(self):
         if self.status != self.Status.ABERTA:
             raise ValidationError("Somente vendas abertas podem ser finalizadas.")
         itens = list(self.itens.select_related("produto"))
         if not itens:
             raise ValidationError("Não é possível finalizar uma venda sem itens.")
-
-        formas_validas = set(self.FormaPagamento.values)
-        formas_usadas = set()
-        pagamentos_validos = []
-        for pagamento in pagamentos:
-            valor = pagamento.get("valor")
-            if not valor:
-                continue
-            if valor <= 0:
-                raise ValidationError("Os valores informados devem ser maiores que zero.")
-            forma = pagamento.get("forma_pagamento")
-            if forma not in formas_validas:
-                raise ValidationError("Forma de pagamento inválida.")
-            if forma in formas_usadas:
-                raise ValidationError("Cada forma de pagamento pode ser usada apenas uma vez.")
-            formas_usadas.add(forma)
-            valor_recebido = (
-                pagamento.get("valor_recebido") if forma == self.FormaPagamento.DINHEIRO else None
-            )
-            if valor_recebido is not None and valor_recebido < valor:
-                raise ValidationError(
-                    "O valor recebido em dinheiro não pode ser menor que o valor pago em dinheiro."
-                )
-            pagamentos_validos.append(
-                {"forma_pagamento": forma, "valor": valor, "valor_recebido": valor_recebido}
-            )
-
-        if not pagamentos_validos:
-            raise ValidationError("Informe ao menos uma forma de pagamento com valor maior que zero.")
-
-        soma = sum(p["valor"] for p in pagamentos_validos)
-        if soma != self.total:
+        if self.falta_receber > 0:
             raise ValidationError(
-                f"A soma dos valores informados (R$ {number_format(soma, decimal_pos=2)}) "
-                f"deve ser igual ao total da venda (R$ {number_format(self.total, decimal_pos=2)})."
+                f"Ainda falta receber R$ {number_format(self.falta_receber, decimal_pos=2)} "
+                "para finalizar a venda."
             )
 
         with transaction.atomic():
@@ -157,13 +165,11 @@ class Venda(models.Model):
             self.status = self.Status.CONCLUIDA
             self.finalizada_em = timezone.now()
             self.save(update_fields=["status", "finalizada_em"])
-            PagamentoVenda.objects.bulk_create(
-                PagamentoVenda(venda=self, **p) for p in pagamentos_validos
-            )
 
     def cancelar(self):
         if self.status != self.Status.ABERTA:
             raise ValidationError("Somente vendas abertas podem ser canceladas.")
+        self.pagamentos.all().delete()
         self.status = self.Status.CANCELADA
         self.save(update_fields=["status"])
 

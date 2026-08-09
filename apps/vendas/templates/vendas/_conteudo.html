@@ -82,51 +82,62 @@
     </div>
 
     <div class="cartao pdv-resumo">
-        <div class="stat" style="margin-bottom: 1.5rem;">
+        <div class="stat" style="margin-bottom: 1rem;">
             <span class="stat__valor">R$ {{ venda.total }}</span>
             <span class="stat__rotulo">Total</span>
         </div>
         {% if venda.status == "aberta" %}
-        <form method="post" action="{% url 'vendas:finalizar' pk=venda.pk %}" class="formulario" style="flex-direction: column; align-items: stretch;"
-              hx-post="{% url 'vendas:finalizar' pk=venda.pk %}"
-              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
-              data-total="{{ total_bruto }}">
+        {% if venda.pagamentos.all %}
+        <ul style="margin-bottom: 1rem;">
+            {% for pagamento in venda.pagamentos.all %}
+            <li>
+                {{ pagamento.get_forma_pagamento_display }}: R$ {{ pagamento.valor }}
+                {% if pagamento.troco %}(troco dado: R$ {{ pagamento.troco }}){% endif %}
+                <form method="post" action="{% url 'vendas:remover_pagamento' pk=venda.pk pagamento_id=pagamento.pk %}"
+                      hx-post="{% url 'vendas:remover_pagamento' pk=venda.pk pagamento_id=pagamento.pk %}"
+                      hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="botao botao--perigo">Remover</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        <div class="stat" style="margin-bottom: 1rem;">
+            <span class="stat__valor">R$ {{ venda.falta_receber }}</span>
+            <span class="stat__rotulo">Falta receber</span>
+        </div>
+        <form method="post" action="{% url 'vendas:adicionar_pagamento' pk=venda.pk %}" class="formulario"
+              hx-post="{% url 'vendas:adicionar_pagamento' pk=venda.pk %}"
+              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
             {% csrf_token %}
-            <div id="linhas-pagamento">
-                <div class="linha-pagamento">
-                    <select name="forma_pagamento">
-                        <option value="dinheiro">Dinheiro</option>
-                        <option value="cartao">Cartão</option>
-                        <option value="pix">Pix</option>
-                    </select>
-                    <input type="text" name="valor" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" data-max-digitos="10">
-                    <input type="text" name="valor_recebido" class="campo-monetario campo-recebido" inputmode="numeric" autocomplete="off" placeholder="Recebido" data-max-digitos="10" style="display: none;">
-                    <span class="troco-linha"></span>
-                    <button type="button" class="botao botao--secundario botao-remover-linha">Remover</button>
-                </div>
+            <div class="campo">
+                <label for="id_forma_pagamento_novo">Forma de pagamento</label>
+                <select name="forma_pagamento" id="id_forma_pagamento_novo">
+                    <option value="dinheiro">Dinheiro</option>
+                    <option value="cartao">Cartão</option>
+                    <option value="pix">Pix</option>
+                </select>
             </div>
-            <template id="modelo-linha-pagamento">
-                <div class="linha-pagamento">
-                    <select name="forma_pagamento">
-                        <option value="dinheiro">Dinheiro</option>
-                        <option value="cartao">Cartão</option>
-                        <option value="pix">Pix</option>
-                    </select>
-                    <input type="text" name="valor" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" data-max-digitos="10">
-                    <input type="text" name="valor_recebido" class="campo-monetario campo-recebido" inputmode="numeric" autocomplete="off" placeholder="Recebido" data-max-digitos="10" style="display: none;">
-                    <span class="troco-linha"></span>
-                    <button type="button" class="botao botao--secundario botao-remover-linha">Remover</button>
-                </div>
-            </template>
-            <button type="button" class="botao botao--secundario" id="botao-adicionar-pagamento">Adicionar forma de pagamento</button>
-            <p class="subtitulo-pagina" id="resumo-pagamento"></p>
-            <button type="submit" class="botao">Finalizar venda</button>
+            <div class="campo">
+                <label for="id_valor_novo">Valor recebido</label>
+                <input type="text" name="valor" id="id_valor_novo" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" data-max-digitos="10">
+            </div>
+            <button type="submit" class="botao botao--secundario">Confirmar</button>
         </form>
+        {% if venda.falta_receber <= 0 %}
+        <form method="post" action="{% url 'vendas:finalizar' pk=venda.pk %}"
+              hx-post="{% url 'vendas:finalizar' pk=venda.pk %}"
+              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
+            {% csrf_token %}
+            <button type="submit" class="botao" style="width: 100%; margin-top: 0.5rem;">Finalizar venda</button>
+        </form>
+        {% endif %}
         <form method="post" action="{% url 'vendas:cancelar' pk=venda.pk %}"
               hx-post="{% url 'vendas:cancelar' pk=venda.pk %}"
               hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
             {% csrf_token %}
-            <button type="submit" class="botao botao--perigo" style="width: 100%;">Cancelar venda</button>
+            <button type="submit" class="botao botao--perigo" style="width: 100%; margin-top: 0.5rem;">Cancelar venda</button>
         </form>
         {% else %}
         <p><strong>Pagamento:</strong></p>

@@ -331,48 +331,6 @@ a {
     border-color: var(--cor-dourado);
 }
 
-/* Linhas dinâmicas de pagamento (finalizar venda) */
-
-.linha-pagamento {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
-    margin-bottom: 0.5rem;
-}
-
-.linha-pagamento select,
-.linha-pagamento input {
-    background: var(--cor-superficie-alt);
-    border: 1px solid var(--cor-borda);
-    border-radius: 6px;
-    padding: 0.5rem 0.75rem;
-    color: var(--cor-texto);
-    font-size: 0.9rem;
-    min-width: 110px;
-    flex: 1 1 110px;
-}
-
-.linha-pagamento select:focus,
-.linha-pagamento input:focus {
-    outline: none;
-    border-color: var(--cor-dourado);
-}
-
-.troco-linha {
-    font-size: 0.85rem;
-    color: var(--cor-texto-suave);
-    white-space: nowrap;
-}
-
-.texto-perigo {
-    color: var(--cor-vinho) !important;
-}
-
-#resumo-pagamento {
-    margin: 0.25rem 0;
-}
-
 .acoes-topo {
     display: flex;
     justify-content: flex-end;
