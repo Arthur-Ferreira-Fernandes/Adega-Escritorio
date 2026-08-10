@@ -586,7 +586,8 @@ a {
 #clientes-conteudo.htmx-request,
 #relatorios-conteudo.htmx-request,
 #caixa-conteudo.htmx-request,
-#vendas-historico-conteudo.htmx-request {
+#vendas-historico-conteudo.htmx-request,
+#estoque-entradas-conteudo.htmx-request {
     opacity: 0.6;
 }
 

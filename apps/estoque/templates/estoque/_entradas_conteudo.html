@@ -1,0 +1,63 @@
+<div class="cartao cartao--destaque" style="margin-bottom: 1.5rem; max-width: 560px;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Registrar entrada</h2>
+    <form method="post" action="{% url 'estoque:entradas_registrar' %}"
+          hx-post="{% url 'estoque:entradas_registrar' %}"
+          hx-target="#estoque-entradas-conteudo" hx-swap="innerHTML" hx-indicator="#estoque-entradas-conteudo"
+          class="formulario" style="flex-direction: column; align-items: stretch;">
+        {% csrf_token %}
+        <div class="campo">
+            <label for="{{ entrada_form.produto_busca.id_for_label }}">{{ entrada_form.produto_busca.label }}</label>
+            {{ entrada_form.produto_busca }}
+            <datalist id="produtos-estoque-datalist">
+                {% for produto in produtos_ativos %}
+                <option value="{{ produto.nome }} (estoque atual: {{ produto.quantidade_estoque }}) | {{ produto.sku }}"></option>
+                {% endfor %}
+            </datalist>
+        </div>
+        <div class="campo">
+            <label for="{{ entrada_form.quantidade.id_for_label }}">{{ entrada_form.quantidade.label }}</label>
+            {{ entrada_form.quantidade }}
+        </div>
+        <div class="campo">
+            <label for="{{ entrada_form.fornecedor.id_for_label }}">{{ entrada_form.fornecedor.label }}</label>
+            {{ entrada_form.fornecedor }}
+        </div>
+        <div class="campo">
+            <label for="{{ entrada_form.custo_unitario.id_for_label }}">{{ entrada_form.custo_unitario.label }}</label>
+            {{ entrada_form.custo_unitario }}
+        </div>
+        <button type="submit" class="botao">Registrar entrada</button>
+    </form>
+</div>
+
+<h2 class="titulo-pagina" style="font-size: 1.1rem;">Últimas entradas</h2>
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>Produto</th>
+            <th>Fornecedor</th>
+            <th>Quantidade</th>
+            <th>Custo unitário</th>
+            <th>Total</th>
+            <th>Registrado por</th>
+            <th>Data/hora</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entrada in entradas %}
+        <tr>
+            <td>{{ entrada.produto }}</td>
+            <td>{{ entrada.fornecedor }}</td>
+            <td>{{ entrada.quantidade }}</td>
+            <td>R$ {{ entrada.custo_unitario }}</td>
+            <td>R$ {{ entrada.valor_total }}</td>
+            <td>{{ entrada.criado_por }}</td>
+            <td>{{ entrada.criado_em|date:"d/m/Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7">Nenhuma entrada registrada ainda.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

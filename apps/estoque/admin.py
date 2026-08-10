@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Categoria, Produto
+from .models import Categoria, EntradaEstoque, Produto
 
 
 @admin.register(Categoria)
@@ -24,3 +24,17 @@ class ProdutoAdmin(admin.ModelAdmin):
     )
     list_filter = ("categoria", "ativo", "unidade")
     search_fields = ("nome", "sku", "codigo_barras")
+
+
+@admin.register(EntradaEstoque)
+class EntradaEstoqueAdmin(admin.ModelAdmin):
+    list_display = (
+        "produto",
+        "fornecedor",
+        "quantidade",
+        "custo_unitario",
+        "criado_por",
+        "criado_em",
+    )
+    list_filter = ("fornecedor",)
+    search_fields = ("produto__nome", "produto__sku")

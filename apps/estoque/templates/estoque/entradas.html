@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block titulo %}Entradas de estoque · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="titulo-pagina">Entradas de estoque</h1>
+        <p class="subtitulo-pagina">Registre a chegada de mercadoria de um fornecedor.</p>
+    </div>
+</div>
+
+<div id="estoque-entradas-conteudo">
+    {% include "estoque/_entradas_conteudo.html" %}
+</div>
+{% endblock %}

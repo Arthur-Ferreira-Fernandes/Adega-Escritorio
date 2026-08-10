@@ -18,4 +18,6 @@ urlpatterns = [
         views.categorias_excluir,
         name="categorias_excluir",
     ),
+    path("entradas/", views.entradas_lista, name="entradas"),
+    path("entradas/registrar/", views.entradas_registrar, name="entradas_registrar"),
 ]

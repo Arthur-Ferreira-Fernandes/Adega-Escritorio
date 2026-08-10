@@ -1,12 +1,13 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 
-from .forms import CategoriaForm, ProdutoForm
-from .models import Categoria, Produto
+from .forms import CategoriaForm, EntradaEstoqueForm, ProdutoForm
+from .models import Categoria, EntradaEstoque, Produto
 
 
 class InicioView(TemplateView):
@@ -172,3 +173,48 @@ def categorias_excluir(request, pk):
             "Mova ou exclua os produtos primeiro.",
         )
     return _renderizar_categorias(request, _contexto_categorias())
+
+
+def _contexto_entradas(form=None):
+    return {
+        "entrada_form": form or EntradaEstoqueForm(),
+        "entradas": EntradaEstoque.objects.select_related(
+            "produto", "fornecedor", "criado_por"
+        )[:50],
+        "produtos_ativos": Produto.objects.filter(ativo=True),
+    }
+
+
+def _renderizar_entradas(request, contexto):
+    return _renderizar(
+        request,
+        contexto,
+        template_htmx="estoque/_entradas_conteudo_htmx.html",
+        template_completo="estoque/entradas.html",
+    )
+
+
+@login_required
+def entradas_lista(request):
+    return _renderizar_entradas(request, _contexto_entradas())
+
+
+@login_required
+@require_POST
+def entradas_registrar(request):
+    form = EntradaEstoqueForm(request.POST)
+    if form.is_valid():
+        try:
+            form.cleaned_data["produto_busca"].registrar_entrada(
+                quantidade=form.cleaned_data["quantidade"],
+                fornecedor=form.cleaned_data["fornecedor"],
+                custo_unitario=form.cleaned_data["custo_unitario"],
+                usuario=request.user,
+            )
+            messages.success(request, "Entrada de estoque registrada com sucesso.")
+        except ValidationError as erro:
+            messages.error(request, "; ".join(erro.messages))
+    else:
+        erros = [msg for mensagens in form.errors.values() for msg in mensagens]
+        messages.error(request, "; ".join(erros) or "Não foi possível registrar a entrada.")
+    return _renderizar_entradas(request, _contexto_entradas())
