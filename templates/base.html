@@ -27,6 +27,9 @@
         <nav class="cabecalho__nav">
             <a href="{% url 'inicio' %}" class="{% if request.resolver_match.url_name == 'inicio' and not request.resolver_match.app_name %}ativo{% endif %}">Início</a>
         </nav>
+        {% if user.is_authenticated %}
+        {% include "notificacoes/_sino.html" %}
+        {% endif %}
     </header>
     <main class="conteudo">
         {% include "partials/_mensagens.html" %}

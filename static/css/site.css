@@ -114,6 +114,121 @@ a {
     border-color: var(--cor-dourado);
 }
 
+/* Sino de notificações */
+
+.sino-notificacoes {
+    position: relative;
+}
+
+.sino-botao {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    list-style: none;
+    color: var(--cor-texto-suave);
+    font-size: 1.3rem;
+    user-select: none;
+}
+
+.sino-botao::-webkit-details-marker {
+    display: none;
+}
+
+.sino-botao:hover {
+    color: var(--cor-dourado-claro);
+}
+
+.sino-contador {
+    background: var(--cor-vinho);
+    color: var(--cor-texto);
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 0.1rem 0.45rem;
+    line-height: 1.3;
+}
+
+.sino-painel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.75rem);
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: 10px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+    z-index: 20;
+}
+
+.sino-cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--cor-borda);
+    font-size: 0.85rem;
+    color: var(--cor-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.sino-marcar-lidas {
+    background: none;
+    border: none;
+    color: var(--cor-dourado);
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: normal;
+    padding: 0;
+}
+
+.sino-marcar-lidas:hover {
+    color: var(--cor-dourado-claro);
+}
+
+.sino-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.sino-item {
+    display: block;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--cor-borda);
+    font-size: 0.85rem;
+    color: var(--cor-texto);
+    text-decoration: none;
+}
+
+.sino-item:last-child {
+    border-bottom: none;
+}
+
+.sino-item--nao-lida {
+    background: rgba(201, 162, 39, 0.06);
+}
+
+.sino-mensagem {
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.sino-hora {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--cor-texto-suave);
+}
+
+.sino-vazio {
+    color: var(--cor-texto-suave);
+    text-align: center;
+}
+
 /* Conteúdo */
 
 .conteudo {

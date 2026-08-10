@@ -1,0 +1,29 @@
+<summary class="sino-botao">
+    🔔
+    {% if total_nao_lidas %}<span class="sino-contador">{{ total_nao_lidas }}</span>{% endif %}
+</summary>
+<div class="sino-painel">
+    <div class="sino-cabecalho">
+        <span>Notificações</span>
+        {% if total_nao_lidas %}
+        <form method="post" action="{% url 'notificacoes:marcar_lidas' %}"
+              hx-post="{% url 'notificacoes:marcar_lidas' %}"
+              hx-target="#sino-notificacoes" hx-swap="innerHTML" style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit" class="sino-marcar-lidas">Marcar todas como lidas</button>
+        </form>
+        {% endif %}
+    </div>
+    <ul class="sino-lista">
+        {% for notificacao in notificacoes %}
+        <li class="sino-item sino-item--{{ notificacao.nivel }}{% if not notificacao.lida %} sino-item--nao-lida{% endif %}">
+            {% if notificacao.link %}<a href="{{ notificacao.link }}">{% endif %}
+            <span class="sino-mensagem{% if notificacao.nivel == 'perigo' %} texto-perigo{% endif %}">{{ notificacao.mensagem }}</span>
+            <time class="sino-hora">{{ notificacao.criado_em|date:"d/m H:i" }}</time>
+            {% if notificacao.link %}</a>{% endif %}
+        </li>
+        {% empty %}
+        <li class="sino-item sino-vazio">Nenhuma notificação no momento.</li>
+        {% endfor %}
+    </ul>
+</div>

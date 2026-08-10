@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "apps.caixa",
     "apps.financeiro",
     "apps.relatorios",
+    "apps.notificacoes",
 ]
 
 MIDDLEWARE = [
@@ -49,6 +50,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.notificacoes.context_processors.notificacoes",
             ],
         },
     },

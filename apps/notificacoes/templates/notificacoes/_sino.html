@@ -1,0 +1,5 @@
+<details class="sino-notificacoes" id="sino-notificacoes"
+         hx-get="{% url 'notificacoes:sino' %}" hx-trigger="every 60s"
+         hx-target="#sino-notificacoes" hx-swap="innerHTML">
+    {% include "notificacoes/_sino_conteudo.html" %}
+</details>
