@@ -242,3 +242,17 @@ def historico(request):
         else "vendas/historico.html"
     )
     return render(request, template, contexto)
+
+
+@login_required
+def venda_comprovante(request, pk):
+    venda = get_object_or_404(Venda.objects.select_related("cliente", "criado_por"), pk=pk)
+    if venda.status != Venda.Status.CONCLUIDA:
+        messages.error(request, "Só é possível emitir comprovante de vendas finalizadas.")
+        return redirect("vendas:detalhe", pk=venda.pk)
+    contexto = {
+        "venda": venda,
+        "itens": venda.itens.select_related("produto"),
+        "pagamentos": venda.pagamentos.all(),
+    }
+    return render(request, "vendas/comprovante.html", contexto)

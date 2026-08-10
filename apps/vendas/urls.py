@@ -21,4 +21,5 @@ urlpatterns = [
     path("<int:pk>/escanear/", views.venda_escanear, name="escanear"),
     path("<int:pk>/finalizar/", views.venda_finalizar, name="finalizar"),
     path("<int:pk>/cancelar/", views.venda_cancelar, name="cancelar"),
+    path("<int:pk>/comprovante/", views.venda_comprovante, name="comprovante"),
 ]

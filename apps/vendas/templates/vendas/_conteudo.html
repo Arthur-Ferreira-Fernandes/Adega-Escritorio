@@ -194,6 +194,10 @@
         <p>—</p>
         {% endif %}
         <p><strong>Finalizada em:</strong> {{ venda.finalizada_em|date:"d/m/Y H:i"|default:"—" }}</p>
+        {% if venda.status == "concluida" %}
+        <a href="{% url 'vendas:comprovante' pk=venda.pk %}" target="_blank"
+           class="botao botao--secundario" style="width: 100%; margin-top: 0.75rem; text-align: center;">Imprimir comprovante</a>
+        {% endif %}
         {% endif %}
     </div>
 </div>

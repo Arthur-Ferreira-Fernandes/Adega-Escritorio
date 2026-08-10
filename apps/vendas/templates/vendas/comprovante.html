@@ -1,0 +1,231 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprovante · {{ venda }}</title>
+    <link rel="icon" type="image/png" href="{% static 'img/favicon-32.png' %}">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            background: #fff;
+            color: #111;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            margin: 0;
+            padding: 2rem 1.5rem;
+        }
+
+        .comprovante {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .cabecalho {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 2px solid #111;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .cabecalho img {
+            height: 56px;
+            width: 56px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .cabecalho h1 {
+            font-size: 1.3rem;
+            margin: 0;
+        }
+
+        .cabecalho p {
+            margin: 0.15rem 0 0;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .titulo-doc {
+            text-align: center;
+            margin: 1.5rem 0 0.25rem;
+            font-size: 1.05rem;
+            font-weight: bold;
+        }
+
+        .aviso-fiscal {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #555;
+            margin: 0 0 1.5rem;
+        }
+
+        .dados-venda {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.4rem 1.5rem;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .dados-venda strong {
+            color: #555;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.5rem 0.4rem;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            color: #555;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .total {
+            text-align: right;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+        }
+
+        .rodape {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .rodape small {
+            display: block;
+            margin-top: 0.4rem;
+            color: #777;
+            font-size: 0.78rem;
+        }
+
+        .nao-imprimir {
+            text-align: center;
+            margin-top: 2rem;
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+
+        .nao-imprimir button,
+        .nao-imprimir a {
+            font-family: inherit;
+            font-size: 0.9rem;
+            padding: 0.6rem 1.25rem;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .nao-imprimir button {
+            background: #111;
+            color: #fff;
+            border: none;
+        }
+
+        .nao-imprimir a {
+            background: #fff;
+            color: #111;
+            border: 1px solid #ccc;
+        }
+
+        @media print {
+            .nao-imprimir { display: none; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="comprovante">
+        <div class="cabecalho">
+            <img src="{% static 'img/logo.jpg' %}" alt="Adega &amp; Tabacaria Escritório">
+            <div>
+                <h1>Adega &amp; Tabacaria Escritório</h1>
+                <p>Comprovante não fiscal de compra</p>
+            </div>
+        </div>
+
+        <p class="titulo-doc">Comprovante de venda</p>
+        <p class="aviso-fiscal">Este comprovante não possui valor fiscal.</p>
+
+        <div class="dados-venda">
+            <div><strong>Venda:</strong> {{ venda }}</div>
+            <div><strong>Data/hora:</strong> {{ venda.finalizada_em|date:"d/m/Y H:i" }}</div>
+            {% if venda.cliente %}
+            <div><strong>Cliente:</strong> {{ venda.cliente }}</div>
+            {% endif %}
+            <div><strong>Atendente:</strong> {{ venda.criado_por }}</div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Quantidade</th>
+                    <th>Preço unitário</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in itens %}
+                <tr>
+                    <td>{{ item.produto.nome }}</td>
+                    <td>{{ item.quantidade }}</td>
+                    <td>R$ {{ item.preco_unitario }}</td>
+                    <td>R$ {{ item.subtotal }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="total">Total: R$ {{ venda.total }}</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Forma de pagamento</th>
+                    <th>Valor</th>
+                    <th>Troco</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pagamento in pagamentos %}
+                <tr>
+                    <td>{{ pagamento.get_forma_pagamento_display }}</td>
+                    <td>R$ {{ pagamento.valor }}</td>
+                    <td>{% if pagamento.troco %}R$ {{ pagamento.troco }}{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="rodape">
+            Obrigado pela preferência!
+            <small>Este comprovante não substitui a nota fiscal.</small>
+        </div>
+
+        <div class="nao-imprimir">
+            <button type="button" onclick="window.print()">Imprimir</button>
+            <a href="{% url 'vendas:detalhe' pk=venda.pk %}">Voltar</a>
+        </div>
+    </div>
+</body>
+</html>
