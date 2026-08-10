@@ -36,6 +36,18 @@ services:
       redis:
         condition: service_healthy
 
+  backup:
+    build:
+      context: .
+      dockerfile: docker/backup/Dockerfile
+    env_file: .env
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
   nginx:
     image: nginx:1.27-alpine
     ports:

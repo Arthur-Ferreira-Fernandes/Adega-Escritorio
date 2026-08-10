@@ -11,6 +11,9 @@ db.sqlite3-journal
 staticfiles/
 media/
 
+# Backup do banco (dados reais — nunca versionar)
+backups/
+
 # Ambiente
 .env
 .venv/
