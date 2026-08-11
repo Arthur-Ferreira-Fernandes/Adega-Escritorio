@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import messages
 from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
@@ -7,6 +9,8 @@ from django.views.decorators.http import require_POST
 
 from .forms import AbrirCaixaForm, AutorizacaoAdminForm, FecharCaixaForm, MovimentoCaixaForm
 from .models import Caixa
+
+logger = logging.getLogger("apps.caixa")
 
 
 def _renderizar(request, contexto, *, template_htmx, template_completo):
@@ -59,7 +63,11 @@ def caixa_abrir(request):
     form = AbrirCaixaForm(request.POST)
     if form.is_valid():
         try:
-            Caixa.abrir(request.user, form.cleaned_data["valor_abertura"])
+            caixa = Caixa.abrir(request.user, form.cleaned_data["valor_abertura"])
+            logger.info(
+                "Caixa aberto",
+                extra={"usuario": request.user.username, "valor_abertura": str(caixa.valor_abertura)},
+            )
             messages.success(request, "Caixa aberto com sucesso.")
         except ValidationError as erro:
             messages.error(request, "; ".join(erro.messages))
@@ -125,6 +133,14 @@ def caixa_fechar(request):
     if form.is_valid():
         try:
             caixa.fechar(request.user, form.cleaned_data["valor_contado"])
+            logger.info(
+                "Caixa fechado",
+                extra={
+                    "usuario": request.user.username,
+                    "valor_contado": str(caixa.valor_contado),
+                    "diferenca": str(caixa.diferenca()),
+                },
+            )
             messages.success(request, "Caixa fechado com sucesso.")
         except ValidationError as erro:
             messages.error(request, "; ".join(erro.messages))

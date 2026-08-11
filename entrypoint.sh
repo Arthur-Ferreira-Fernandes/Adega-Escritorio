@@ -10,6 +10,8 @@ while ! nc -z "$host" "$port"; do
 done
 echo "Banco de dados disponível."
 
+mkdir -p /app/logs
+
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 
