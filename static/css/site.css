@@ -98,6 +98,14 @@ a {
     cursor: pointer;
 }
 
+.cabecalho__nav button {
+    padding: 0 0 0.35rem;
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    line-height: inherit;
+}
+
 .cabecalho__nav a:hover,
 .cabecalho__nav button:hover {
     color: var(--cor-dourado-claro);
@@ -241,6 +249,17 @@ a {
     padding: 2.5rem 2rem;
     max-width: 1080px;
     margin: 0 auto;
+}
+
+.tela-login {
+    display: flex;
+    justify-content: center;
+    padding-top: 2rem;
+}
+
+.login-cartao {
+    width: 100%;
+    max-width: 400px;
 }
 
 .titulo-pagina {
