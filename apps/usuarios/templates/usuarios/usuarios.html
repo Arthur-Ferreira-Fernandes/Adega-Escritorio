@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block titulo %}Usuários · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="titulo-pagina">Usuários</h1>
+        <p class="subtitulo-pagina">Contas de acesso ao sistema.</p>
+    </div>
+    <div class="acoes-topo">
+        <a href="{% url 'usuarios:novo' %}"
+           hx-get="{% url 'usuarios:novo' %}"
+           hx-target="#usuarios-conteudo" hx-swap="innerHTML" hx-indicator="#usuarios-conteudo"
+           class="botao">Novo usuário</a>
+    </div>
+</div>
+
+<div id="usuarios-conteudo">
+    {% include "usuarios/_usuarios_conteudo.html" %}
+</div>
+{% endblock %}

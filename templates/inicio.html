@@ -31,6 +31,12 @@
         <h2>Relatórios</h2>
         <p>Faturamento, produtos mais vendidos e insights.</p>
     </a>
+    {% if user.is_superuser %}
+    <a href="{% url 'usuarios:lista' %}" class="cartao cartao--destaque cartao-modulo">
+        <h2>Usuários</h2>
+        <p>Criar contas, resetar senha e ativar/desativar funcionários.</p>
+    </a>
+    {% endif %}
     <a href="/admin/" class="cartao cartao-modulo">
         <h2>Administração</h2>
         <p>Categorias, usuários e configurações avançadas.</p>

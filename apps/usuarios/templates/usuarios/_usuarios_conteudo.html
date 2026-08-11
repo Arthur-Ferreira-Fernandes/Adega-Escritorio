@@ -1,0 +1,94 @@
+{% if form_ativo %}
+<div class="cartao cartao--destaque" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Novo usuário</h2>
+    <form method="post" action="{% url 'usuarios:novo' %}"
+          hx-post="{% url 'usuarios:novo' %}"
+          hx-target="#usuarios-conteudo" hx-swap="innerHTML" hx-indicator="#usuarios-conteudo"
+          class="formulario" style="flex-direction: column; align-items: stretch; max-width: 480px;">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="campo">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <div style="display: flex; gap: 0.75rem;">
+            <button type="submit" class="botao">Salvar</button>
+            <a href="{% url 'usuarios:lista' %}"
+               hx-get="{% url 'usuarios:lista' %}"
+               hx-target="#usuarios-conteudo" hx-swap="innerHTML" hx-indicator="#usuarios-conteudo"
+               class="botao botao--secundario">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+{% if reset_ativo %}
+<div class="cartao cartao--destaque" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Redefinir senha de {{ resetando.username }}</h2>
+    <form method="post" action="{% url 'usuarios:resetar_senha' pk=resetando.pk %}"
+          hx-post="{% url 'usuarios:resetar_senha' pk=resetando.pk %}"
+          hx-target="#usuarios-conteudo" hx-swap="innerHTML" hx-indicator="#usuarios-conteudo"
+          class="formulario" style="flex-direction: column; align-items: stretch; max-width: 480px;">
+        {% csrf_token %}
+        {% for field in reset_form %}
+        <div class="campo">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <div style="display: flex; gap: 0.75rem;">
+            <button type="submit" class="botao">Salvar</button>
+            <a href="{% url 'usuarios:lista' %}"
+               hx-get="{% url 'usuarios:lista' %}"
+               hx-target="#usuarios-conteudo" hx-swap="innerHTML" hx-indicator="#usuarios-conteudo"
+               class="botao botao--secundario">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>Usuário</th>
+            <th>Nome</th>
+            <th>Administrador</th>
+            <th>Ativo</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for usuario in usuarios %}
+        <tr>
+            <td>{{ usuario.username }}</td>
+            <td>{{ usuario.first_name|default:"—" }}</td>
+            <td>{% if usuario.is_superuser %}Sim{% else %}Não{% endif %}</td>
+            <td>{% if usuario.is_active %}Sim{% else %}Não{% endif %}</td>
+            <td style="display: flex; gap: 0.75rem; align-items: center;">
+                <a href="{% url 'usuarios:resetar_senha' pk=usuario.pk %}"
+                   hx-get="{% url 'usuarios:resetar_senha' pk=usuario.pk %}"
+                   hx-target="#usuarios-conteudo" hx-swap="innerHTML" hx-indicator="#usuarios-conteudo">Resetar senha</a>
+                {% if usuario != request.user %}
+                <form method="post" action="{% url 'usuarios:alternar_ativo' pk=usuario.pk %}"
+                      hx-post="{% url 'usuarios:alternar_ativo' pk=usuario.pk %}"
+                      hx-target="#usuarios-conteudo" hx-swap="innerHTML" hx-indicator="#usuarios-conteudo"
+                      hx-confirm="{% if usuario.is_active %}Tem certeza que deseja desativar {{ usuario.username }}?{% else %}Tem certeza que deseja ativar {{ usuario.username }}?{% endif %}"
+                      style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="botao {% if usuario.is_active %}botao--perigo{% else %}botao--secundario{% endif %}">
+                        {% if usuario.is_active %}Desativar{% else %}Ativar{% endif %}
+                    </button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">Nenhum usuário cadastrado ainda.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

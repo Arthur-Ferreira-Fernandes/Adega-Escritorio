@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     "apps.financeiro",
     "apps.relatorios",
     "apps.notificacoes",
+    "apps.usuarios",
 ]
 
 MIDDLEWARE = [

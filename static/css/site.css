@@ -82,18 +82,24 @@ a {
     flex-wrap: wrap;
 }
 
-.cabecalho__nav a {
+.cabecalho__nav a,
+.cabecalho__nav button {
     text-decoration: none;
     color: var(--cor-texto-suave);
     font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     padding-bottom: 0.35rem;
+    border: none;
     border-bottom: 2px solid transparent;
     transition: color 0.15s ease, border-color 0.15s ease;
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
 }
 
-.cabecalho__nav a:hover {
+.cabecalho__nav a:hover,
+.cabecalho__nav button:hover {
     color: var(--cor-dourado-claro);
 }
 

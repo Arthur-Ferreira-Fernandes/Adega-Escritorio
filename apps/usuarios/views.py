@@ -1,0 +1,118 @@
+from django.contrib import messages
+from django.contrib.auth import get_user_model, update_session_auth_hash
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.forms import PasswordChangeForm
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from .forms import NovoUsuarioForm, ResetarSenhaForm
+
+User = get_user_model()
+
+
+def _somente_admin(user):
+    return user.is_superuser
+
+
+def _renderizar(request, contexto, *, template_htmx, template_completo):
+    template = (
+        template_htmx
+        if request.headers.get("HX-Request") == "true"
+        else template_completo
+    )
+    return render(request, template, contexto)
+
+
+def _contexto_usuarios(
+    form_ativo=False, form=None, reset_ativo=False, reset_form=None, resetando=None
+):
+    return {
+        "usuarios": User.objects.all().order_by("username"),
+        "form_ativo": form_ativo,
+        "form": form or NovoUsuarioForm(),
+        "reset_ativo": reset_ativo,
+        "reset_form": reset_form or ResetarSenhaForm(),
+        "resetando": resetando,
+    }
+
+
+def _renderizar_usuarios(request, contexto):
+    return _renderizar(
+        request,
+        contexto,
+        template_htmx="usuarios/_usuarios_conteudo_htmx.html",
+        template_completo="usuarios/usuarios.html",
+    )
+
+
+@login_required
+@user_passes_test(_somente_admin)
+def usuarios_lista(request):
+    return _renderizar_usuarios(request, _contexto_usuarios())
+
+
+@login_required
+@user_passes_test(_somente_admin)
+def usuarios_novo(request):
+    if request.method == "POST":
+        form = NovoUsuarioForm(request.POST)
+        if form.is_valid():
+            User.objects.create_user(
+                username=form.cleaned_data["username"],
+                first_name=form.cleaned_data["first_name"],
+                password=form.cleaned_data["password1"],
+                is_staff=True,
+                is_superuser=form.cleaned_data["is_superuser"],
+            )
+            messages.success(request, "Usuário criado com sucesso.")
+            return _renderizar_usuarios(request, _contexto_usuarios())
+    else:
+        form = NovoUsuarioForm()
+    return _renderizar_usuarios(request, _contexto_usuarios(form_ativo=True, form=form))
+
+
+@login_required
+@user_passes_test(_somente_admin)
+def usuarios_resetar_senha(request, pk):
+    usuario = get_object_or_404(User, pk=pk)
+    if request.method == "POST":
+        form = ResetarSenhaForm(request.POST)
+        if form.is_valid():
+            usuario.set_password(form.cleaned_data["password1"])
+            usuario.save(update_fields=["password"])
+            messages.success(request, f"Senha de {usuario.username} redefinida com sucesso.")
+            return _renderizar_usuarios(request, _contexto_usuarios())
+    else:
+        form = ResetarSenhaForm()
+    return _renderizar_usuarios(
+        request, _contexto_usuarios(reset_ativo=True, reset_form=form, resetando=usuario)
+    )
+
+
+@login_required
+@user_passes_test(_somente_admin)
+@require_POST
+def usuarios_alternar_ativo(request, pk):
+    usuario = get_object_or_404(User, pk=pk)
+    if usuario == request.user:
+        messages.error(request, "Você não pode desativar sua própria conta.")
+    else:
+        usuario.is_active = not usuario.is_active
+        usuario.save(update_fields=["is_active"])
+        acao = "ativado" if usuario.is_active else "desativado"
+        messages.success(request, f"Usuário {usuario.username} {acao}.")
+    return _renderizar_usuarios(request, _contexto_usuarios())
+
+
+@login_required
+def minha_conta(request):
+    if request.method == "POST":
+        form = PasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            usuario = form.save()
+            update_session_auth_hash(request, usuario)
+            messages.success(request, "Senha alterada com sucesso.")
+            return redirect("usuarios:minha_conta")
+    else:
+        form = PasswordChangeForm(user=request.user)
+    return render(request, "usuarios/minha_conta.html", {"form": form})
