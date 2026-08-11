@@ -4,6 +4,9 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import PasswordChangeForm
 from django.shortcuts import redirect, render
 
+from apps.auditoria import servicos as auditoria
+from apps.auditoria.models import RegistroAuditoria
+
 from .forms import ConfiguracaoForm, MeuUsuarioForm
 from .models import Configuracao
 
@@ -26,8 +29,13 @@ def administracao(request):
         if "salvar_usuario" in request.POST:
             usuario_form = MeuUsuarioForm(request.POST, usuario_atual=request.user)
             if usuario_form.is_valid():
+                usuario_antigo = request.user.username
                 request.user.username = usuario_form.cleaned_data["username"]
                 request.user.save(update_fields=["username"])
+                auditoria.registrar(
+                    request.user, RegistroAuditoria.Acao.EDICAO, request.user,
+                    detalhes=f"Usuário: {usuario_antigo} → {request.user.username}",
+                )
                 messages.success(request, "Usuário atualizado com sucesso.")
                 return redirect("configuracoes:administracao")
         elif "salvar_senha" in request.POST:
@@ -35,12 +43,21 @@ def administracao(request):
             if senha_form.is_valid():
                 usuario = senha_form.save()
                 update_session_auth_hash(request, usuario)
+                auditoria.registrar(
+                    request.user, RegistroAuditoria.Acao.EDICAO, request.user,
+                    detalhes="Alterou a própria senha",
+                )
                 messages.success(request, "Senha alterada com sucesso.")
                 return redirect("configuracoes:administracao")
         elif "salvar_configuracoes" in request.POST:
             config_form = ConfiguracaoForm(request.POST, instance=configuracao)
+            valores_antigos = auditoria.capturar_valores(configuracao, config_form.fields)
             if config_form.is_valid():
                 config_form.save()
+                auditoria.registrar(
+                    request.user, RegistroAuditoria.Acao.EDICAO, configuracao,
+                    detalhes=auditoria.resumir_alteracoes(config_form, valores_antigos),
+                )
                 messages.success(request, "Configurações atualizadas com sucesso.")
                 return redirect("configuracoes:administracao")
 

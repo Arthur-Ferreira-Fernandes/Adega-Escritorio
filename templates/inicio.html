@@ -43,5 +43,11 @@
         <p>Seu usuário/senha e configurações do caixa.</p>
     </a>
     {% endif %}
+    {% if user.is_superuser %}
+    <a href="{% url 'auditoria:lista' %}" class="cartao cartao-modulo">
+        <h2>Auditoria</h2>
+        <p>Registro de alterações sensíveis feitas no sistema.</p>
+    </a>
+    {% endif %}
 </div>
 {% endblock %}

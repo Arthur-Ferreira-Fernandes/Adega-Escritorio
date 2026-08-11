@@ -5,6 +5,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 
+from apps.auditoria import servicos as auditoria
+from apps.auditoria.models import RegistroAuditoria
+
 from .forms import ClienteForm, FornecedorForm
 from .models import Cliente, Fornecedor
 
@@ -58,7 +61,8 @@ def clientes_novo(request):
     if request.method == "POST":
         form = ClienteForm(request.POST)
         if form.is_valid():
-            form.save()
+            cliente = form.save()
+            auditoria.registrar(request.user, RegistroAuditoria.Acao.CRIACAO, cliente)
             messages.success(request, "Cliente cadastrado com sucesso.")
             if request.headers.get("HX-Request") == "true":
                 return _renderizar_clientes(request, _contexto_clientes())
@@ -73,8 +77,13 @@ def clientes_editar(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
     if request.method == "POST":
         form = ClienteForm(request.POST, instance=cliente)
+        valores_antigos = auditoria.capturar_valores(cliente, form.fields)
         if form.is_valid():
             form.save()
+            auditoria.registrar(
+                request.user, RegistroAuditoria.Acao.EDICAO, cliente,
+                detalhes=auditoria.resumir_alteracoes(form, valores_antigos),
+            )
             messages.success(request, "Cliente atualizado com sucesso.")
             if request.headers.get("HX-Request") == "true":
                 return _renderizar_clientes(request, _contexto_clientes())
@@ -90,8 +99,13 @@ def clientes_editar(request, pk):
 @require_POST
 def clientes_excluir(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
+    repr_objeto, id_objeto = str(cliente), cliente.pk
     try:
         cliente.delete()
+        auditoria.registrar(
+            request.user, RegistroAuditoria.Acao.EXCLUSAO, cliente,
+            objeto_id=id_objeto, detalhes=repr_objeto,
+        )
         messages.success(request, "Cliente excluído.")
     except ProtectedError:
         messages.error(
@@ -131,7 +145,8 @@ def fornecedores_novo(request):
     if request.method == "POST":
         form = FornecedorForm(request.POST)
         if form.is_valid():
-            form.save()
+            fornecedor = form.save()
+            auditoria.registrar(request.user, RegistroAuditoria.Acao.CRIACAO, fornecedor)
             messages.success(request, "Fornecedor cadastrado com sucesso.")
             if request.headers.get("HX-Request") == "true":
                 return _renderizar_fornecedores(request, _contexto_fornecedores())
@@ -148,8 +163,13 @@ def fornecedores_editar(request, pk):
     fornecedor = get_object_or_404(Fornecedor, pk=pk)
     if request.method == "POST":
         form = FornecedorForm(request.POST, instance=fornecedor)
+        valores_antigos = auditoria.capturar_valores(fornecedor, form.fields)
         if form.is_valid():
             form.save()
+            auditoria.registrar(
+                request.user, RegistroAuditoria.Acao.EDICAO, fornecedor,
+                detalhes=auditoria.resumir_alteracoes(form, valores_antigos),
+            )
             messages.success(request, "Fornecedor atualizado com sucesso.")
             if request.headers.get("HX-Request") == "true":
                 return _renderizar_fornecedores(request, _contexto_fornecedores())
@@ -166,8 +186,13 @@ def fornecedores_editar(request, pk):
 @require_POST
 def fornecedores_excluir(request, pk):
     fornecedor = get_object_or_404(Fornecedor, pk=pk)
+    repr_objeto, id_objeto = str(fornecedor), fornecedor.pk
     try:
         fornecedor.delete()
+        auditoria.registrar(
+            request.user, RegistroAuditoria.Acao.EXCLUSAO, fornecedor,
+            objeto_id=id_objeto, detalhes=repr_objeto,
+        )
         messages.success(request, "Fornecedor excluído.")
     except ProtectedError:
         messages.error(

@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "apps.notificacoes",
     "apps.usuarios",
     "apps.configuracoes",
+    "apps.auditoria",
 ]
 
 MIDDLEWARE = [

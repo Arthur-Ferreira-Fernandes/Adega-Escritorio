@@ -1,0 +1,62 @@
+<form method="get" action="{% url 'auditoria:lista' %}"
+      hx-get="{% url 'auditoria:lista' %}"
+      hx-target="#auditoria-conteudo" hx-swap="innerHTML" hx-indicator="#auditoria-conteudo"
+      hx-push-url="true"
+      class="formulario">
+    {% for field in form %}
+    <div class="campo">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+    </div>
+    {% endfor %}
+    <button type="submit" class="botao">Filtrar</button>
+</form>
+
+<table class="tabela">
+    <thead>
+        <tr>
+            <th>Data/hora</th>
+            <th>Usuário</th>
+            <th>Ação</th>
+            <th>Modelo</th>
+            <th>Objeto</th>
+            <th>Detalhes</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for registro in pagina %}
+        <tr>
+            <td>{{ registro.criado_em|date:"d/m/Y H:i" }}</td>
+            <td>{{ registro.usuario_repr }}</td>
+            <td>{{ registro.get_acao_display }}</td>
+            <td>{{ registro.modelo }}</td>
+            <td>{{ registro.objeto_repr }}</td>
+            <td>{{ registro.detalhes|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">Nenhum registro encontrado para os filtros selecionados.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if pagina.has_other_pages %}
+<div style="display: flex; gap: 0.5rem; align-items: center; justify-content: center; margin-top: 1rem;">
+    {% if pagina.has_previous %}
+    <a href="?{{ querystring }}&pagina={{ pagina.previous_page_number }}"
+       hx-get="?{{ querystring }}&pagina={{ pagina.previous_page_number }}"
+       hx-target="#auditoria-conteudo" hx-swap="innerHTML" hx-indicator="#auditoria-conteudo"
+       hx-push-url="true"
+       class="botao botao--secundario">Anterior</a>
+    {% endif %}
+    <span class="subtitulo-pagina" style="margin: 0;">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    {% if pagina.has_next %}
+    <a href="?{{ querystring }}&pagina={{ pagina.next_page_number }}"
+       hx-get="?{{ querystring }}&pagina={{ pagina.next_page_number }}"
+       hx-target="#auditoria-conteudo" hx-swap="innerHTML" hx-indicator="#auditoria-conteudo"
+       hx-push-url="true"
+       class="botao botao--secundario">Próxima</a>
+    {% endif %}
+</div>
+{% endif %}

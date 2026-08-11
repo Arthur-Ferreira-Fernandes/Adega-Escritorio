@@ -6,6 +6,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 
+from apps.auditoria import servicos as auditoria
+from apps.auditoria.models import RegistroAuditoria
+
 from .forms import CategoriaForm, EntradaEstoqueForm, ProdutoForm
 from .models import Categoria, EntradaEstoque, Produto
 
@@ -57,7 +60,8 @@ def produtos_novo(request):
     if request.method == "POST":
         form = ProdutoForm(request.POST)
         if form.is_valid():
-            form.save()
+            produto = form.save()
+            auditoria.registrar(request.user, RegistroAuditoria.Acao.CRIACAO, produto)
             messages.success(request, "Produto cadastrado com sucesso.")
             if request.headers.get("HX-Request") == "true":
                 return _renderizar_produtos(request, _contexto_produtos())
@@ -72,8 +76,13 @@ def produtos_editar(request, pk):
     produto = get_object_or_404(Produto, pk=pk)
     if request.method == "POST":
         form = ProdutoForm(request.POST, instance=produto)
+        valores_antigos = auditoria.capturar_valores(produto, form.fields)
         if form.is_valid():
             form.save()
+            auditoria.registrar(
+                request.user, RegistroAuditoria.Acao.EDICAO, produto,
+                detalhes=auditoria.resumir_alteracoes(form, valores_antigos),
+            )
             messages.success(request, "Produto atualizado com sucesso.")
             if request.headers.get("HX-Request") == "true":
                 return _renderizar_produtos(request, _contexto_produtos())
@@ -89,8 +98,13 @@ def produtos_editar(request, pk):
 @require_POST
 def produtos_excluir(request, pk):
     produto = get_object_or_404(Produto, pk=pk)
+    repr_objeto, id_objeto = str(produto), produto.pk
     try:
         produto.delete()
+        auditoria.registrar(
+            request.user, RegistroAuditoria.Acao.EXCLUSAO, produto,
+            objeto_id=id_objeto, detalhes=repr_objeto,
+        )
         messages.success(request, "Produto excluído.")
     except ProtectedError:
         messages.error(
@@ -129,7 +143,8 @@ def categorias_nova(request):
     if request.method == "POST":
         form = CategoriaForm(request.POST)
         if form.is_valid():
-            form.save()
+            categoria = form.save()
+            auditoria.registrar(request.user, RegistroAuditoria.Acao.CRIACAO, categoria)
             messages.success(request, "Categoria cadastrada com sucesso.")
             if request.headers.get("HX-Request") == "true":
                 return _renderizar_categorias(request, _contexto_categorias())
@@ -146,8 +161,13 @@ def categorias_editar(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
     if request.method == "POST":
         form = CategoriaForm(request.POST, instance=categoria)
+        valores_antigos = auditoria.capturar_valores(categoria, form.fields)
         if form.is_valid():
             form.save()
+            auditoria.registrar(
+                request.user, RegistroAuditoria.Acao.EDICAO, categoria,
+                detalhes=auditoria.resumir_alteracoes(form, valores_antigos),
+            )
             messages.success(request, "Categoria atualizada com sucesso.")
             if request.headers.get("HX-Request") == "true":
                 return _renderizar_categorias(request, _contexto_categorias())
@@ -163,8 +183,13 @@ def categorias_editar(request, pk):
 @require_POST
 def categorias_excluir(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
+    repr_objeto, id_objeto = str(categoria), categoria.pk
     try:
         categoria.delete()
+        auditoria.registrar(
+            request.user, RegistroAuditoria.Acao.EXCLUSAO, categoria,
+            objeto_id=id_objeto, detalhes=repr_objeto,
+        )
         messages.success(request, "Categoria excluída.")
     except ProtectedError:
         messages.error(

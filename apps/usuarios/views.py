@@ -5,6 +5,9 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.auditoria import servicos as auditoria
+from apps.auditoria.models import RegistroAuditoria
+
 from .forms import NovoUsuarioForm, ResetarSenhaForm
 
 User = get_user_model()
@@ -57,13 +60,14 @@ def usuarios_novo(request):
     if request.method == "POST":
         form = NovoUsuarioForm(request.POST)
         if form.is_valid():
-            User.objects.create_user(
+            novo_usuario = User.objects.create_user(
                 username=form.cleaned_data["username"],
                 first_name=form.cleaned_data["first_name"],
                 password=form.cleaned_data["password1"],
                 is_staff=True,
                 is_superuser=form.cleaned_data["is_superuser"],
             )
+            auditoria.registrar(request.user, RegistroAuditoria.Acao.CRIACAO, novo_usuario)
             messages.success(request, "Usuário criado com sucesso.")
             return _renderizar_usuarios(request, _contexto_usuarios())
     else:
@@ -80,6 +84,10 @@ def usuarios_resetar_senha(request, pk):
         if form.is_valid():
             usuario.set_password(form.cleaned_data["password1"])
             usuario.save(update_fields=["password"])
+            auditoria.registrar(
+                request.user, RegistroAuditoria.Acao.EDICAO, usuario,
+                detalhes=f"Senha redefinida por {request.user}",
+            )
             messages.success(request, f"Senha de {usuario.username} redefinida com sucesso.")
             return _renderizar_usuarios(request, _contexto_usuarios())
     else:
@@ -100,6 +108,10 @@ def usuarios_alternar_ativo(request, pk):
         usuario.is_active = not usuario.is_active
         usuario.save(update_fields=["is_active"])
         acao = "ativado" if usuario.is_active else "desativado"
+        auditoria.registrar(
+            request.user, RegistroAuditoria.Acao.EDICAO, usuario,
+            detalhes=f"Conta {'ativada' if usuario.is_active else 'desativada'}",
+        )
         messages.success(request, f"Usuário {usuario.username} {acao}.")
     return _renderizar_usuarios(request, _contexto_usuarios())
 
@@ -111,6 +123,10 @@ def minha_conta(request):
         if form.is_valid():
             usuario = form.save()
             update_session_auth_hash(request, usuario)
+            auditoria.registrar(
+                request.user, RegistroAuditoria.Acao.EDICAO, usuario,
+                detalhes="Alterou a própria senha",
+            )
             messages.success(request, "Senha alterada com sucesso.")
             return redirect("usuarios:minha_conta")
     else:
