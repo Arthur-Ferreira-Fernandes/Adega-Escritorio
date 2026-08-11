@@ -4,50 +4,5 @@
 
 {% block conteudo %}
 <h1 class="titulo-pagina">Bem-vindo</h1>
-<p class="subtitulo-pagina">Escolha um módulo pra continuar.</p>
-
-<div class="grade-entradas">
-    <a href="{% url 'estoque:inicio' %}" class="cartao cartao--destaque cartao-modulo">
-        <h2>Estoque</h2>
-        <p>Produtos e categorias.</p>
-    </a>
-    <a href="{% url 'vendas:inicio' %}" class="cartao cartao--destaque cartao-modulo">
-        <h2>Vendas</h2>
-        <p>PDV, comandas e histórico de vendas.</p>
-    </a>
-    <a href="{% url 'clientes:inicio' %}" class="cartao cartao--destaque cartao-modulo">
-        <h2>Clientes</h2>
-        <p>Clientes e fornecedores.</p>
-    </a>
-    <a href="{% url 'financeiro:inicio' %}" class="cartao cartao--destaque cartao-modulo">
-        <h2>Financeiro</h2>
-        <p>Contas a pagar e a receber.</p>
-    </a>
-    <a href="{% url 'caixa:painel' %}" class="cartao cartao--destaque cartao-modulo">
-        <h2>Caixa</h2>
-        <p>Abertura, sangria, reforço e fechamento do caixa.</p>
-    </a>
-    <a href="{% url 'relatorios:dashboard' %}" class="cartao cartao--destaque cartao-modulo">
-        <h2>Relatórios</h2>
-        <p>Faturamento, produtos mais vendidos e insights.</p>
-    </a>
-    {% if user.is_superuser %}
-    <a href="{% url 'usuarios:lista' %}" class="cartao cartao--destaque cartao-modulo">
-        <h2>Usuários</h2>
-        <p>Criar contas, resetar senha e ativar/desativar funcionários.</p>
-    </a>
-    {% endif %}
-    {% if user.is_superuser %}
-    <a href="{% url 'configuracoes:administracao' %}" class="cartao cartao-modulo">
-        <h2>Administração</h2>
-        <p>Seu usuário/senha e configurações do caixa.</p>
-    </a>
-    {% endif %}
-    {% if user.is_superuser %}
-    <a href="{% url 'auditoria:lista' %}" class="cartao cartao-modulo">
-        <h2>Auditoria</h2>
-        <p>Registro de alterações sensíveis feitas no sistema.</p>
-    </a>
-    {% endif %}
-</div>
+<p class="subtitulo-pagina">Use o menu lateral para navegar entre os módulos.</p>
 {% endblock %}

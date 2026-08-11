@@ -10,7 +10,7 @@
     </div>
 </div>
 
-<div class="grade-entradas" style="margin-bottom: 1.5rem;">
+<div class="grade-entradas" style="margin-bottom: 1.5rem;" id="meus-dados">
     <div class="cartao">
         <h2 class="titulo-pagina" style="font-size: 1.1rem;">Usuário</h2>
         <form method="post" class="formulario" style="flex-direction: column; align-items: stretch;">
@@ -41,7 +41,7 @@
         </form>
     </div>
 
-    <div class="cartao cartao--destaque">
+    <div class="cartao cartao--destaque" id="config-caixa">
         <h2 class="titulo-pagina" style="font-size: 1.1rem;">Configurações do caixa</h2>
         <form method="post" class="formulario" style="flex-direction: column; align-items: stretch;">
             {% csrf_token %}

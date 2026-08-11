@@ -40,9 +40,58 @@
         {% include "notificacoes/_sino.html" %}
         {% endif %}
     </header>
-    <main class="conteudo">
-        {% include "partials/_mensagens.html" %}
-        {% block conteudo %}{% endblock %}
-    </main>
+    <div class="layout-app">
+        {% if user.is_authenticated %}
+        <aside class="barra-lateral">
+            <nav>
+                <details class="barra-lateral__grupo" {% if request.resolver_match.app_name == "vendas" %}open{% endif %}>
+                    <summary>Vendas</summary>
+                    <div class="barra-lateral__submenu">
+                        <form method="post" action="{% url 'vendas:rapida' %}">
+                            {% csrf_token %}
+                            <button type="submit">Venda rápida</button>
+                        </form>
+                        <a href="{% url 'vendas:nova' %}" class="{% if request.resolver_match.view_name == 'vendas:nova' %}ativo{% endif %}">Abrir comanda</a>
+                        <a href="{% url 'vendas:inicio' %}" class="{% if request.resolver_match.view_name == 'vendas:inicio' %}ativo{% endif %}">Comandas abertas</a>
+                        <a href="{% url 'vendas:historico' %}" class="{% if request.resolver_match.view_name == 'vendas:historico' %}ativo{% endif %}">Histórico de vendas</a>
+                    </div>
+                </details>
+                <details class="barra-lateral__grupo" {% if request.resolver_match.app_name == "estoque" %}open{% endif %}>
+                    <summary>Estoque</summary>
+                    <div class="barra-lateral__submenu">
+                        <a href="{% url 'estoque:produtos' %}" class="{% if request.resolver_match.view_name == 'estoque:produtos' %}ativo{% endif %}">Ver produtos</a>
+                        <a href="{% url 'estoque:categorias' %}" class="{% if request.resolver_match.view_name == 'estoque:categorias' %}ativo{% endif %}">Ver categorias</a>
+                        <a href="{% url 'estoque:entradas' %}" class="{% if request.resolver_match.view_name == 'estoque:entradas' %}ativo{% endif %}">Registrar entrada</a>
+                    </div>
+                </details>
+                <details class="barra-lateral__grupo" {% if request.resolver_match.app_name == "caixa" %}open{% endif %}>
+                    <summary>Caixa</summary>
+                    <div class="barra-lateral__submenu">
+                        <a href="{% url 'caixa:painel' %}" class="{% if request.resolver_match.view_name == 'caixa:painel' %}ativo{% endif %}">Abrir/fechar caixa</a>
+                        <a href="{% url 'configuracoes:administracao' %}#config-caixa">Tempo de caixa aberto</a>
+                    </div>
+                </details>
+                <details class="barra-lateral__grupo"
+                    {% if request.resolver_match.app_name == "relatorios" or request.resolver_match.app_name == "auditoria" or request.resolver_match.app_name == "usuarios" or request.resolver_match.app_name == "configuracoes" or request.resolver_match.app_name == "financeiro" or request.resolver_match.app_name == "clientes" %}open{% endif %}>
+                    <summary>Administrativa</summary>
+                    <div class="barra-lateral__submenu">
+                        <a href="{% url 'relatorios:dashboard' %}" class="{% if request.resolver_match.view_name == 'relatorios:dashboard' %}ativo{% endif %}">Relatórios</a>
+                        {% if user.is_superuser %}
+                        <a href="{% url 'auditoria:lista' %}" class="{% if request.resolver_match.view_name == 'auditoria:lista' %}ativo{% endif %}">Registros de auditoria</a>
+                        <a href="{% url 'usuarios:novo' %}" class="{% if request.resolver_match.view_name == 'usuarios:novo' %}ativo{% endif %}">Criar usuário</a>
+                        <a href="{% url 'configuracoes:administracao' %}#meus-dados">Alterar dados de administrador</a>
+                        {% endif %}
+                        <a href="{% url 'financeiro:inicio' %}" class="{% if request.resolver_match.view_name == 'financeiro:inicio' %}ativo{% endif %}">Área financeira</a>
+                        <a href="{% url 'clientes:inicio' %}" class="{% if request.resolver_match.view_name == 'clientes:inicio' %}ativo{% endif %}">Área de clientes</a>
+                    </div>
+                </details>
+            </nav>
+        </aside>
+        {% endif %}
+        <main class="conteudo">
+            {% include "partials/_mensagens.html" %}
+            {% block conteudo %}{% endblock %}
+        </main>
+    </div>
 </body>
 </html>

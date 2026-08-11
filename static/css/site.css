@@ -247,9 +247,112 @@ a {
     text-align: center;
 }
 
+/* Layout com barra lateral */
+
+.layout-app {
+    display: flex;
+    align-items: flex-start;
+}
+
+.barra-lateral {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--cor-superficie);
+    border-right: 1px solid var(--cor-borda);
+    min-height: calc(100vh - 78px);
+}
+
+.barra-lateral__grupo {
+    border-bottom: 1px solid var(--cor-borda);
+}
+
+.barra-lateral__grupo summary {
+    cursor: pointer;
+    padding: 0.9rem 1.5rem;
+    font-family: var(--fonte-marca);
+    color: var(--cor-dourado-claro);
+    font-size: 1rem;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+}
+
+.barra-lateral__grupo summary::-webkit-details-marker {
+    display: none;
+}
+
+.barra-lateral__grupo summary::after {
+    content: "\25B8";
+    color: var(--cor-texto-suave);
+    font-size: 0.75rem;
+    transition: transform 0.15s ease;
+}
+
+.barra-lateral__grupo[open] summary::after {
+    transform: rotate(90deg);
+}
+
+.barra-lateral__grupo summary:hover {
+    background: var(--cor-superficie-alt);
+}
+
+.barra-lateral__submenu {
+    display: flex;
+    flex-direction: column;
+    padding: 0.25rem 0 0.75rem;
+}
+
+.barra-lateral__submenu form {
+    display: contents;
+}
+
+.barra-lateral__submenu a,
+.barra-lateral__submenu button {
+    text-align: left;
+    text-decoration: none;
+    color: var(--cor-texto-suave);
+    font-size: 0.9rem;
+    padding: 0.55rem 1.5rem 0.55rem 2rem;
+    border: none;
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
+    width: 100%;
+}
+
+.barra-lateral__submenu a:hover,
+.barra-lateral__submenu button:hover {
+    color: var(--cor-dourado-claro);
+    background: var(--cor-superficie-alt);
+}
+
+.barra-lateral__submenu a.ativo {
+    color: var(--cor-dourado);
+    font-weight: 600;
+    background: var(--cor-superficie-alt);
+    border-left: 2px solid var(--cor-dourado);
+    padding-left: calc(2rem - 2px);
+}
+
+@media (max-width: 860px) {
+    .layout-app {
+        flex-direction: column;
+    }
+
+    .barra-lateral {
+        width: 100%;
+        min-height: 0;
+        border-right: none;
+        border-bottom: 1px solid var(--cor-borda);
+    }
+}
+
 /* Conteúdo */
 
 .conteudo {
+    flex: 1;
     padding: 2.5rem 2rem;
     max-width: 1080px;
     margin: 0 auto;
