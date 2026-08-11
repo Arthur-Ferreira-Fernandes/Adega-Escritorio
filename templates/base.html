@@ -25,6 +25,7 @@
             </span>
         </a>
         <nav class="cabecalho__nav">
+            <button type="button" onclick="history.back()">&larr; Voltar</button>
             <a href="{% url 'inicio' %}" class="{% if request.resolver_match.url_name == 'inicio' and not request.resolver_match.app_name %}ativo{% endif %}">Início</a>
             {% if user.is_authenticated %}
             <a href="{% url 'usuarios:minha_conta' %}">Minha conta</a>
