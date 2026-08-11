@@ -4,19 +4,37 @@
 
 {% block conteudo %}
 <h1 class="titulo-pagina">Minha conta</h1>
-<p class="subtitulo-pagina">Trocar a senha de {{ request.user.username }}.</p>
+<p class="subtitulo-pagina">Seus dados de acesso, {{ request.user.username }}.</p>
 
-<div class="cartao cartao--destaque" style="max-width: 480px;">
-    <form method="post" class="formulario" style="flex-direction: column; align-items: stretch;">
-        {% csrf_token %}
-        {% for field in form %}
-        <div class="campo">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
-        </div>
-        {% endfor %}
-        <button type="submit" class="botao">Salvar nova senha</button>
-    </form>
+<div class="grade-entradas">
+    <div class="cartao">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Dados da conta</h2>
+        <form method="post" class="formulario" style="flex-direction: column; align-items: stretch;">
+            {% csrf_token %}
+            {% for field in dados_form %}
+            <div class="campo">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" name="salvar_dados" class="botao">Salvar dados</button>
+        </form>
+    </div>
+
+    <div class="cartao cartao--destaque">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Senha</h2>
+        <form method="post" class="formulario" style="flex-direction: column; align-items: stretch;">
+            {% csrf_token %}
+            {% for field in senha_form %}
+            <div class="campo">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" name="salvar_senha" class="botao">Salvar nova senha</button>
+        </form>
+    </div>
 </div>
 {% endblock %}

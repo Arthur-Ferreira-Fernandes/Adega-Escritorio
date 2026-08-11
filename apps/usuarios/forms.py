@@ -35,6 +35,21 @@ class NovoUsuarioForm(forms.Form):
         return _validar_senhas(self, super().clean())
 
 
+class MeusDadosForm(forms.Form):
+    first_name = forms.CharField(label="Nome", max_length=150)
+    username = forms.CharField(label="Usuário (login)", max_length=150)
+
+    def __init__(self, *args, usuario_atual, **kwargs):
+        self.usuario_atual = usuario_atual
+        super().__init__(*args, **kwargs)
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        if User.objects.exclude(pk=self.usuario_atual.pk).filter(username=username).exists():
+            raise forms.ValidationError("Já existe um usuário com esse nome de login.")
+        return username
+
+
 class ResetarSenhaForm(forms.Form):
     password1 = forms.CharField(label="Nova senha", widget=forms.PasswordInput)
     password2 = forms.CharField(label="Confirmar nova senha", widget=forms.PasswordInput)

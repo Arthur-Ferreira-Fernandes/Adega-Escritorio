@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 from apps.auditoria import servicos as auditoria
 from apps.auditoria.models import RegistroAuditoria
 
-from .forms import NovoUsuarioForm, ResetarSenhaForm
+from .forms import MeusDadosForm, NovoUsuarioForm, ResetarSenhaForm
 
 User = get_user_model()
 
@@ -118,17 +118,43 @@ def usuarios_alternar_ativo(request, pk):
 
 @login_required
 def minha_conta(request):
+    dados_form = MeusDadosForm(
+        usuario_atual=request.user,
+        initial={"first_name": request.user.first_name, "username": request.user.username},
+    )
+    senha_form = PasswordChangeForm(user=request.user)
+
     if request.method == "POST":
-        form = PasswordChangeForm(user=request.user, data=request.POST)
-        if form.is_valid():
-            usuario = form.save()
-            update_session_auth_hash(request, usuario)
-            auditoria.registrar(
-                request.user, RegistroAuditoria.Acao.EDICAO, usuario,
-                detalhes="Alterou a própria senha",
-            )
-            messages.success(request, "Senha alterada com sucesso.")
-            return redirect("usuarios:minha_conta")
-    else:
-        form = PasswordChangeForm(user=request.user)
-    return render(request, "usuarios/minha_conta.html", {"form": form})
+        if "salvar_dados" in request.POST:
+            dados_form = MeusDadosForm(request.POST, usuario_atual=request.user)
+            if dados_form.is_valid():
+                nome_antigo, login_antigo = request.user.first_name, request.user.username
+                request.user.first_name = dados_form.cleaned_data["first_name"]
+                request.user.username = dados_form.cleaned_data["username"]
+                request.user.save(update_fields=["first_name", "username"])
+                auditoria.registrar(
+                    request.user, RegistroAuditoria.Acao.EDICAO, request.user,
+                    detalhes=(
+                        f"Nome: {nome_antigo} → {request.user.first_name}; "
+                        f"Usuário: {login_antigo} → {request.user.username}"
+                    ),
+                )
+                messages.success(request, "Dados atualizados com sucesso.")
+                return redirect("usuarios:minha_conta")
+        elif "salvar_senha" in request.POST:
+            senha_form = PasswordChangeForm(user=request.user, data=request.POST)
+            if senha_form.is_valid():
+                usuario = senha_form.save()
+                update_session_auth_hash(request, usuario)
+                auditoria.registrar(
+                    request.user, RegistroAuditoria.Acao.EDICAO, usuario,
+                    detalhes="Alterou a própria senha",
+                )
+                messages.success(request, "Senha alterada com sucesso.")
+                return redirect("usuarios:minha_conta")
+
+    return render(
+        request,
+        "usuarios/minha_conta.html",
+        {"dados_form": dados_form, "senha_form": senha_form},
+    )
