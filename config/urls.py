@@ -1,14 +1,15 @@
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
-from django.views.generic import TemplateView
+
+from . import views
 
 admin.site.site_header = "Adega & Tabacaria Escritório"
 admin.site.site_title = "Adega & Tabacaria"
 admin.site.index_title = "Administração"
 
 urlpatterns = [
-    path("", TemplateView.as_view(template_name="inicio.html"), name="inicio"),
+    path("", views.inicio, name="inicio"),
     path("admin/", admin.site.urls),
     path("sair/", auth_views.LogoutView.as_view(next_page="/"), name="logout"),
     path("estoque/", include("apps.estoque.urls")),

@@ -399,6 +399,17 @@ a {
     background: rgba(201, 162, 39, 0.12);
 }
 
+.stat--link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease;
+}
+
+.stat--link:hover {
+    border-color: var(--cor-dourado);
+}
+
 /* Mensagens (django.contrib.messages) */
 
 .mensagens {

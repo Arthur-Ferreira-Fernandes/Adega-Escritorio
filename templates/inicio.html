@@ -4,5 +4,32 @@
 
 {% block conteudo %}
 <h1 class="titulo-pagina">Bem-vindo</h1>
-<p class="subtitulo-pagina">Use o menu lateral para navegar entre os módulos.</p>
+<p class="subtitulo-pagina">Indicadores rápidos do dia. Use o menu lateral para navegar entre os módulos.</p>
+
+<div class="grade-stats">
+    <a href="{% url 'caixa:painel' %}" class="stat stat--link">
+        <span class="stat__valor" style="{% if not caixa %}color: var(--cor-vinho);{% endif %}">{% if caixa %}Aberto{% else %}Fechado{% endif %}</span>
+        <span class="stat__rotulo">{% if caixa %}Caixa desde {{ caixa.aberto_em|date:"d/m H:i" }}{% else %}Caixa — clique para abrir{% endif %}</span>
+    </a>
+    <a href="{% url 'relatorios:dashboard' %}" class="stat stat--link">
+        <span class="stat__valor">R$ {{ faturamento_hoje }}</span>
+        <span class="stat__rotulo">Faturamento de hoje</span>
+    </a>
+    <a href="{% url 'vendas:inicio' %}" class="stat stat--link">
+        <span class="stat__valor">{{ comandas_abertas }}</span>
+        <span class="stat__rotulo">Comandas abertas</span>
+    </a>
+    <a href="{% url 'estoque:produtos' %}" class="stat stat--link">
+        <span class="stat__valor" style="{% if estoque_baixo > 0 %}color: var(--cor-vinho);{% endif %}">{{ estoque_baixo }}</span>
+        <span class="stat__rotulo">Produtos com estoque baixo</span>
+    </a>
+    <a href="{% url 'financeiro:contas_pagar' %}" class="stat stat--link">
+        <span class="stat__valor" style="{% if a_pagar_vencido > 0 %}color: var(--cor-vinho);{% endif %}">R$ {{ a_pagar_vencido }}</span>
+        <span class="stat__rotulo">A pagar vencido</span>
+    </a>
+    <a href="{% url 'financeiro:contas_receber' %}" class="stat stat--link">
+        <span class="stat__valor" style="{% if a_receber_vencido > 0 %}color: var(--cor-vinho);{% endif %}">R$ {{ a_receber_vencido }}</span>
+        <span class="stat__rotulo">A receber vencido</span>
+    </a>
+</div>
 {% endblock %}
