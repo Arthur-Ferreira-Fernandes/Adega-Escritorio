@@ -47,6 +47,12 @@ def dashboard(request):
                 for p in metricas["produtos_mais_vendidos"]
             ]
         ),
+        "produtos_lucro_json": _json_seguro(
+            [
+                {"rotulo": p["produto__nome"], "valor": float(p["lucro"])}
+                for p in metricas["produtos_lucro"]
+            ]
+        ),
     }
 
     template = (

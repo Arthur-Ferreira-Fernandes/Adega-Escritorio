@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.db.models import F, Sum
+from django.db.models import DecimalField, ExpressionWrapper, F, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
@@ -41,6 +41,42 @@ def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
         .order_by("-valor")[:8]
     )
 
+    itens_com_custo = itens.filter(custo_unitario__isnull=False).annotate(
+        lucro_item=ExpressionWrapper(
+            F("subtotal") - F("custo_unitario") * F("quantidade"),
+            output_field=DecimalField(max_digits=12, decimal_places=2),
+        )
+    )
+    lucro_total = itens_com_custo.aggregate(t=Sum("lucro_item"))["t"] or Decimal("0")
+    margem_total = (
+        (lucro_total / faturamento_total * 100).quantize(Decimal("0.1"))
+        if faturamento_total
+        else Decimal("0")
+    )
+
+    produtos_lucro = []
+    for produto in (
+        itens_com_custo.values("produto__nome")
+        .annotate(
+            quantidade=Sum("quantidade"),
+            faturamento=Sum("subtotal"),
+            lucro=Sum("lucro_item"),
+        )
+        .order_by("-lucro")[:8]
+    ):
+        margem = (
+            (produto["lucro"] / produto["faturamento"] * 100).quantize(Decimal("0.1"))
+            if produto["faturamento"]
+            else Decimal("0")
+        )
+        produtos_lucro.append(
+            {
+                **produto,
+                "custo": produto["faturamento"] - produto["lucro"],
+                "margem": margem,
+            }
+        )
+
     estoque_baixo_qs = Produto.objects.filter(
         ativo=True, quantidade_estoque__lte=F("estoque_minimo")
     ).select_related("categoria")
@@ -57,6 +93,9 @@ def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
         "ticket_medio": ticket_medio,
         "faturamento_por_dia": faturamento_por_dia,
         "produtos_mais_vendidos": produtos_mais_vendidos,
+        "lucro_total": lucro_total,
+        "margem_total": margem_total,
+        "produtos_lucro": produtos_lucro,
         "estoque_baixo": estoque_baixo_qs.order_by("quantidade_estoque"),
         "a_pagar_total": pagar_pendente.aggregate(t=Sum("valor"))["t"] or Decimal("0"),
         "a_pagar_vencido": (

@@ -25,6 +25,14 @@
         <span class="stat__valor">R$ {{ ticket_medio }}</span>
         <span class="stat__rotulo">Ticket médio</span>
     </div>
+    <div class="stat">
+        <span class="stat__valor">R$ {{ lucro_total }}</span>
+        <span class="stat__rotulo">Lucro no período</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{{ margem_total }}%</span>
+        <span class="stat__rotulo">Margem</span>
+    </div>
 </div>
 
 <div class="cartao" style="margin-bottom: 1.5rem;">
@@ -55,6 +63,40 @@
             {% empty %}
             <tr>
                 <td colspan="3">Nenhuma venda no período/filtro selecionado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="cartao" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Lucro por produto</h2>
+    <script id="dados-lucro" type="application/json">{{ produtos_lucro_json|safe }}</script>
+    <canvas class="grafico" data-tipo="bar" data-fonte="dados-lucro" height="90"></canvas>
+    <table class="tabela" style="margin-top: 1.5rem;">
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th>Quantidade vendida</th>
+                <th>Faturamento</th>
+                <th>Custo</th>
+                <th>Lucro</th>
+                <th>Margem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for produto in produtos_lucro %}
+            <tr>
+                <td>{{ produto.produto__nome }}</td>
+                <td>{{ produto.quantidade }}</td>
+                <td>R$ {{ produto.faturamento }}</td>
+                <td>R$ {{ produto.custo }}</td>
+                <td>R$ {{ produto.lucro }}</td>
+                <td>{{ produto.margem }}%</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">Nenhuma venda com custo registrado no período/filtro selecionado.</td>
             </tr>
             {% endfor %}
         </tbody>

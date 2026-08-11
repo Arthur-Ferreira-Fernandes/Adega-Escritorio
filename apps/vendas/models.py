@@ -75,6 +75,7 @@ class Venda(models.Model):
                 produto=produto,
                 quantidade=quantidade,
                 preco_unitario=produto.preco_venda,
+                custo_unitario=produto.preco_custo,
             )
         self.recalcular_total()
         return item
@@ -219,6 +220,7 @@ class ItemVenda(models.Model):
     produto = models.ForeignKey(Produto, on_delete=models.PROTECT, related_name="itens_venda")
     quantidade = models.PositiveIntegerField(default=1)
     preco_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    custo_unitario = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
 
     class Meta:
