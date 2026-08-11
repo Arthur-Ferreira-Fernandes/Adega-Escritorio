@@ -18,6 +18,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
     logging: *log-padrao
 
   redis:
@@ -27,6 +28,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
     logging: *log-padrao
 
   web:
@@ -43,6 +45,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: unless-stopped
     logging: *log-padrao
 
   backup:
@@ -68,6 +71,7 @@ services:
       - media_volume:/app/media:ro
     depends_on:
       - web
+    restart: unless-stopped
     logging: *log-padrao
 
 volumes:

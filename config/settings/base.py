@@ -11,6 +11,12 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 
+# O nginx (docker/nginx/conf.d/default.conf) já envia X-Forwarded-Proto.
+# Sem efeito hoje (nginx só escuta HTTP, sempre manda "http"), mas deixa
+# pronto pro dia que houver HTTPS na frente — sem isso, request.is_secure()
+# nunca fica True atrás de um proxy reverso.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
