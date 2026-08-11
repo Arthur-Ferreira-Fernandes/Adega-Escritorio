@@ -165,6 +165,7 @@
             <th>Saldo esperado</th>
             <th>Valor contado</th>
             <th>Diferença</th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -178,10 +179,11 @@
             <td>R$ {{ item.saldo_esperado }}</td>
             <td>R$ {{ item.valor_contado }}</td>
             <td style="{% if item.diferenca < 0 %}color: var(--cor-vinho);{% endif %}">R$ {{ item.diferenca }}</td>
+            <td><a href="{% url 'caixa:relatorio' pk=item.pk %}" target="_blank" class="botao botao--secundario">Imprimir relatório</a></td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="8">Nenhum caixa fechado ainda.</td>
+            <td colspan="9">Nenhum caixa fechado ainda.</td>
         </tr>
         {% endfor %}
     </tbody>

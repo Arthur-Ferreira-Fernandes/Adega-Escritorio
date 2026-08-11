@@ -173,6 +173,10 @@
             <div><strong>Cliente:</strong> {{ venda.cliente }}</div>
             {% endif %}
             <div><strong>Atendente:</strong> {{ venda.criado_por }}</div>
+            {% if venda.identificador and venda.quantidade_pessoas %}
+            <div><strong>Pessoas na mesa:</strong> {{ venda.quantidade_pessoas }}</div>
+            <div><strong>Tempo na mesa:</strong> {{ venda.criado_em|timesince:venda.finalizada_em }}</div>
+            {% endif %}
         </div>
 
         <table>
@@ -197,6 +201,9 @@
         </table>
 
         <p class="total">Total: R$ {{ venda.total }}</p>
+        {% if venda.valor_por_pessoa %}
+        <p class="total">Valor por pessoa ({{ venda.quantidade_pessoas }} pessoas): R$ {{ venda.valor_por_pessoa }}</p>
+        {% endif %}
 
         <table>
             <thead>

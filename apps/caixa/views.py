@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
 from .forms import AbrirCaixaForm, AutorizacaoAdminForm, FecharCaixaForm, MovimentoCaixaForm
@@ -131,6 +131,20 @@ def caixa_fechar(request):
     else:
         messages.error(request, _erros_formulario(form, "Informe o valor contado."))
     return _renderizar_painel(request)
+
+
+@login_required
+def caixa_relatorio(request, pk):
+    caixa = get_object_or_404(
+        Caixa.objects.select_related("aberto_por", "fechado_por"),
+        pk=pk,
+        status=Caixa.Status.FECHADO,
+    )
+    contexto = {
+        "caixa": caixa,
+        "movimentos": caixa.movimentos.select_related("criado_por").all(),
+    }
+    return render(request, "caixa/relatorio.html", contexto)
 
 
 @login_required

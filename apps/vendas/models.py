@@ -28,6 +28,9 @@ class Venda(models.Model):
     identificador = models.CharField(
         "Identificador (mesa/comanda)", max_length=50, blank=True
     )
+    quantidade_pessoas = models.PositiveIntegerField(
+        "Quantidade de pessoas na mesa", null=True, blank=True
+    )
     criado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="vendas"
     )
@@ -94,6 +97,12 @@ class Venda(models.Model):
     def falta_receber(self):
         recebido = self.pagamentos.aggregate(t=Sum("valor"))["t"] or Decimal("0")
         return self.total - recebido
+
+    @property
+    def valor_por_pessoa(self):
+        if not self.quantidade_pessoas:
+            return None
+        return (self.total / self.quantidade_pessoas).quantize(Decimal("0.01"))
 
     @property
     def troco_total(self):

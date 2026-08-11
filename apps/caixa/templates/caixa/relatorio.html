@@ -1,0 +1,227 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de fechamento · Caixa #{{ caixa.pk }}</title>
+    <link rel="icon" type="image/png" href="{% static 'img/favicon-32.png' %}">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            background: #fff;
+            color: #111;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            margin: 0;
+            padding: 2rem 1.5rem;
+        }
+
+        .comprovante {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .cabecalho {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 2px solid #111;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .cabecalho img {
+            height: 56px;
+            width: 56px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .cabecalho h1 {
+            font-size: 1.3rem;
+            margin: 0;
+        }
+
+        .cabecalho p {
+            margin: 0.15rem 0 0;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .titulo-doc {
+            text-align: center;
+            margin: 1.5rem 0 0.25rem;
+            font-size: 1.05rem;
+            font-weight: bold;
+        }
+
+        .aviso-fiscal {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #555;
+            margin: 0 0 1.5rem;
+        }
+
+        .dados-venda {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.4rem 1.5rem;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .dados-venda strong {
+            color: #555;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.5rem 0.4rem;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            color: #555;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .total {
+            text-align: right;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .total.negativo {
+            color: #a3123a;
+        }
+
+        .rodape {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .rodape small {
+            display: block;
+            margin-top: 0.4rem;
+            color: #777;
+            font-size: 0.78rem;
+        }
+
+        .nao-imprimir {
+            text-align: center;
+            margin-top: 2rem;
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+
+        .nao-imprimir button,
+        .nao-imprimir a {
+            font-family: inherit;
+            font-size: 0.9rem;
+            padding: 0.6rem 1.25rem;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .nao-imprimir button {
+            background: #111;
+            color: #fff;
+            border: none;
+        }
+
+        .nao-imprimir a {
+            background: #fff;
+            color: #111;
+            border: 1px solid #ccc;
+        }
+
+        @media print {
+            .nao-imprimir { display: none; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="comprovante">
+        <div class="cabecalho">
+            <img src="{% static 'img/logo.jpg' %}" alt="Adega &amp; Tabacaria Escritório">
+            <div>
+                <h1>Adega &amp; Tabacaria Escritório</h1>
+                <p>Relatório interno de fechamento de caixa</p>
+            </div>
+        </div>
+
+        <p class="titulo-doc">Relatório de fechamento de caixa #{{ caixa.pk }}</p>
+        <p class="aviso-fiscal">Este relatório não possui valor fiscal.</p>
+
+        <div class="dados-venda">
+            <div><strong>Aberto em:</strong> {{ caixa.aberto_em|date:"d/m/Y H:i" }}</div>
+            <div><strong>Fechado em:</strong> {{ caixa.fechado_em|date:"d/m/Y H:i" }}</div>
+            <div><strong>Aberto por:</strong> {{ caixa.aberto_por }}</div>
+            <div><strong>Fechado por:</strong> {{ caixa.fechado_por }}</div>
+            <div><strong>Duração:</strong> {{ caixa.aberto_em|timesince:caixa.fechado_em }}</div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                    <th>Descrição</th>
+                    <th>Data/hora</th>
+                    <th>Registrado por</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movimento in movimentos %}
+                <tr>
+                    <td>{{ movimento.get_tipo_display }}</td>
+                    <td>R$ {{ movimento.valor }}</td>
+                    <td>{{ movimento.descricao }}</td>
+                    <td>{{ movimento.criado_em|date:"d/m/Y H:i" }}</td>
+                    <td>{{ movimento.criado_por }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">Nenhuma movimentação registrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="total">Valor de abertura: R$ {{ caixa.valor_abertura }}</p>
+        <p class="total">Total de reforços: R$ {{ caixa.total_reforcos }}</p>
+        <p class="total">Total de sangrias: R$ {{ caixa.total_sangrias }}</p>
+        <p class="total">Total de vendas em dinheiro: R$ {{ caixa.total_vendas_dinheiro }}</p>
+        <p class="total">Saldo esperado: R$ {{ caixa.saldo_esperado }}</p>
+        <p class="total">Valor contado: R$ {{ caixa.valor_contado }}</p>
+        <p class="total{% if caixa.diferenca < 0 %} negativo{% endif %}">Diferença: R$ {{ caixa.diferenca }}</p>
+
+        <div class="rodape">
+            Relatório gerado para controle interno.
+            <small>Não substitui a conferência física do caixa.</small>
+        </div>
+
+        <div class="nao-imprimir">
+            <button type="button" onclick="window.print()">Imprimir</button>
+            <a href="{% url 'caixa:painel' %}">Voltar</a>
+        </div>
+    </div>
+</body>
+</html>

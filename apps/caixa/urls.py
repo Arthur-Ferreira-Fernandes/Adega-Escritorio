@@ -11,4 +11,5 @@ urlpatterns = [
     path("reforco/", views.caixa_reforco, name="reforco"),
     path("fechar/", views.caixa_fechar, name="fechar"),
     path("estender-limite/", views.caixa_estender_limite, name="estender_limite"),
+    path("<int:pk>/relatorio/", views.caixa_relatorio, name="relatorio"),
 ]

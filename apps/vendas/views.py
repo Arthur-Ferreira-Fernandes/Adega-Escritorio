@@ -18,6 +18,7 @@ from .forms import (
     FiltroHistoricoVendaForm,
     ItemVendaForm,
     NovaVendaForm,
+    QuantidadePessoasForm,
 )
 from .models import ItemVenda, PagamentoVenda, Venda
 
@@ -59,6 +60,7 @@ def nova_venda(request):
             venda = Venda.objects.create(
                 cliente=form.cleaned_data["cliente"],
                 identificador=form.cleaned_data["identificador"],
+                quantidade_pessoas=form.cleaned_data["quantidade_pessoas"],
                 criado_por=request.user,
             )
             return redirect("vendas:detalhe", pk=venda.pk)
@@ -84,6 +86,9 @@ def _contexto_venda(venda):
         "itens": venda.itens.select_related("produto"),
         "item_form": ItemVendaForm(),
         "escanear_form": EscanearCodigoForm(),
+        "pessoas_form": QuantidadePessoasForm(
+            initial={"quantidade_pessoas": venda.quantidade_pessoas}
+        ),
         "produtos_ativos": Produto.objects.filter(ativo=True),
         "falta_receber_bruto": str(venda.falta_receber),
     }
@@ -119,6 +124,20 @@ def venda_escanear(request, pk):
             messages.error(request, "; ".join(erro.messages))
     else:
         messages.error(request, "Informe um código de barras válido.")
+    return _responder_venda(request, venda)
+
+
+@login_required
+@require_POST
+def venda_atualizar_pessoas(request, pk):
+    venda = get_object_or_404(Venda, pk=pk)
+    form = QuantidadePessoasForm(request.POST)
+    if form.is_valid():
+        venda.quantidade_pessoas = form.cleaned_data["quantidade_pessoas"]
+        venda.save(update_fields=["quantidade_pessoas"])
+        messages.success(request, "Quantidade de pessoas na mesa atualizada.")
+    else:
+        messages.error(request, "Informe uma quantidade de pessoas válida.")
     return _responder_venda(request, venda)
 
 

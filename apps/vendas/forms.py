@@ -13,6 +13,9 @@ class NovaVendaForm(forms.Form):
     identificador = forms.CharField(
         max_length=50, required=False, label="Identificador (mesa/comanda)"
     )
+    quantidade_pessoas = forms.IntegerField(
+        min_value=1, required=False, label="Quantidade de pessoas na mesa"
+    )
 
 
 class ItemVendaForm(forms.Form):
@@ -41,6 +44,10 @@ class ItemVendaForm(forms.Form):
                 "Produto não encontrado ou inativo. Selecione um item da lista de sugestões."
             )
         return produto
+
+
+class QuantidadePessoasForm(forms.Form):
+    quantidade_pessoas = forms.IntegerField(min_value=1, label="Pessoas na mesa")
 
 
 class EscanearCodigoForm(forms.Form):

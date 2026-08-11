@@ -17,6 +17,24 @@
 </div>
 {% endif %}
 
+{% if venda.identificador and venda.status == "aberta" %}
+<div class="cartao" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Mesa</h2>
+    <p class="subtitulo-pagina" style="margin-bottom: 1rem;">Na mesa há: {{ venda.criado_em|timesince }}</p>
+    <form method="post" action="{% url 'vendas:atualizar_pessoas' pk=venda.pk %}"
+          hx-post="{% url 'vendas:atualizar_pessoas' pk=venda.pk %}"
+          hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
+          class="formulario">
+        {% csrf_token %}
+        <div class="campo">
+            <label for="{{ pessoas_form.quantidade_pessoas.id_for_label }}">{{ pessoas_form.quantidade_pessoas.label }}</label>
+            {{ pessoas_form.quantidade_pessoas }}
+        </div>
+        <button type="submit" class="botao botao--secundario">Atualizar</button>
+    </form>
+</div>
+{% endif %}
+
 <div class="pdv-layout">
     <div class="pdv-coluna-principal">
         <table class="tabela">
@@ -86,6 +104,12 @@
             <span class="stat__valor">R$ {{ venda.total }}</span>
             <span class="stat__rotulo">Total</span>
         </div>
+        {% if venda.valor_por_pessoa %}
+        <div class="stat" style="margin-bottom: 1rem;">
+            <span class="stat__valor">R$ {{ venda.valor_por_pessoa }}</span>
+            <span class="stat__rotulo">Valor por pessoa ({{ venda.quantidade_pessoas }} pessoas)</span>
+        </div>
+        {% endif %}
         {% if venda.status == "aberta" %}
         {% if venda.pagamentos.all %}
         <table class="tabela" style="margin-bottom: 1rem;">
@@ -194,6 +218,9 @@
         <p>—</p>
         {% endif %}
         <p><strong>Finalizada em:</strong> {{ venda.finalizada_em|date:"d/m/Y H:i"|default:"—" }}</p>
+        {% if venda.identificador %}
+        <p><strong>Tempo na mesa:</strong> {{ venda.criado_em|timesince:venda.finalizada_em }}</p>
+        {% endif %}
         {% if venda.status == "concluida" %}
         <a href="{% url 'vendas:comprovante' pk=venda.pk %}" target="_blank"
            class="botao botao--secundario" style="width: 100%; margin-top: 0.75rem; text-align: center;">Imprimir comprovante</a>
