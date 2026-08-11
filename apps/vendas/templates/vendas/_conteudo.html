@@ -1,5 +1,5 @@
 {% if venda.status == "aberta" and not venda.identificador %}
-<div id="aviso-venda-pendente" style="display: none;"></div>
+<div id="aviso-venda-pendente" style="display: none;" data-cancelar-url="{% url 'vendas:cancelar' pk=venda.pk %}"></div>
 {% endif %}
 
 <h1 class="titulo-pagina">{{ venda }}</h1>
