@@ -1,5 +1,4 @@
 from datetime import timedelta
-from decimal import Decimal
 
 from django.db.models import F
 from django.urls import reverse
@@ -7,11 +6,11 @@ from django.utils import timezone
 from django.utils.formats import number_format
 
 from apps.caixa.models import Caixa
+from apps.configuracoes.models import Configuracao
 from apps.estoque.models import Produto
 
 from .models import Notificacao
 
-LIMITE_SANGRIA = Decimal("1000")
 ANTECEDENCIA_LIMITE_CAIXA = timedelta(hours=1)
 
 
@@ -66,7 +65,7 @@ def _sincronizar_caixa_limite(caixa):
 def _sincronizar_caixa_sangria(caixa):
     chaves = []
     saldo = caixa.saldo_esperado()
-    if saldo > LIMITE_SANGRIA:
+    if saldo > Configuracao.obter().limite_sangria:
         chave = f"caixa:{caixa.pk}"
         Notificacao.registrar(
             Notificacao.Tipo.CAIXA_SANGRIA,

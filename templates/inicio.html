@@ -37,9 +37,11 @@
         <p>Criar contas, resetar senha e ativar/desativar funcionários.</p>
     </a>
     {% endif %}
-    <a href="/admin/" class="cartao cartao-modulo">
+    {% if user.is_superuser %}
+    <a href="{% url 'configuracoes:administracao' %}" class="cartao cartao-modulo">
         <h2>Administração</h2>
-        <p>Categorias, usuários e configurações avançadas.</p>
+        <p>Seu usuário/senha e configurações do caixa.</p>
     </a>
+    {% endif %}
 </div>
 {% endblock %}

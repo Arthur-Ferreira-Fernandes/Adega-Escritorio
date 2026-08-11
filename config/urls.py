@@ -19,4 +19,5 @@ urlpatterns = [
     path("relatorios/", include("apps.relatorios.urls")),
     path("notificacoes/", include("apps.notificacoes.urls")),
     path("usuarios/", include("apps.usuarios.urls")),
+    path("administracao/", include("apps.configuracoes.urls")),
 ]

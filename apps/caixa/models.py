@@ -8,12 +8,11 @@ from django.db.models import Q, Sum
 from django.utils import timezone
 from django.utils.formats import number_format
 
+from apps.configuracoes.models import Configuracao
 from apps.vendas.models import PagamentoVenda, Venda
 
 
 class Caixa(models.Model):
-    LIMITE_HORAS_PADRAO = 12
-
     class Status(models.TextChoices):
         ABERTO = "aberto", "Aberto"
         FECHADO = "fechado", "Fechado"
@@ -56,7 +55,8 @@ class Caixa(models.Model):
 
     @property
     def limite_em(self):
-        return self.aberto_em + timedelta(hours=self.LIMITE_HORAS_PADRAO + self.horas_extras)
+        limite_horas = Configuracao.obter().limite_horas_caixa
+        return self.aberto_em + timedelta(hours=limite_horas + self.horas_extras)
 
     @property
     def dentro_do_limite(self):

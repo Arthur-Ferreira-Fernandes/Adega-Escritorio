@@ -28,7 +28,7 @@ def _bloqueio_caixa():
         return "É necessário abrir o caixa antes de iniciar uma venda."
     if not caixa.dentro_do_limite:
         return (
-            "O caixa está aberto há mais de 12 horas. Peça a um administrador para "
+            "O caixa passou do limite de horas em aberto. Peça a um administrador para "
             "autorizar mais tempo na tela do Caixa."
         )
     return None
