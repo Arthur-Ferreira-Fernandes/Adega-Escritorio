@@ -75,51 +75,6 @@ a {
     color: var(--cor-texto-suave);
 }
 
-.cabecalho__nav {
-    display: flex;
-    align-items: center;
-    gap: 1.75rem;
-    flex-wrap: wrap;
-}
-
-.cabecalho__nav form {
-    display: contents;
-}
-
-.cabecalho__nav a,
-.cabecalho__nav button {
-    text-decoration: none;
-    color: var(--cor-texto-suave);
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding-bottom: 0.35rem;
-    border: none;
-    border-bottom: 2px solid transparent;
-    transition: color 0.15s ease, border-color 0.15s ease;
-    background: none;
-    font-family: inherit;
-    cursor: pointer;
-}
-
-.cabecalho__nav button {
-    padding: 0 0 0.35rem;
-    margin: 0;
-    appearance: none;
-    -webkit-appearance: none;
-    line-height: inherit;
-}
-
-.cabecalho__nav a:hover,
-.cabecalho__nav button:hover {
-    color: var(--cor-dourado-claro);
-}
-
-.cabecalho__nav a.ativo {
-    color: var(--cor-dourado);
-    border-bottom-color: var(--cor-dourado);
-}
-
 .cabecalho__admin {
     color: var(--cor-texto) !important;
     background: var(--cor-superficie-alt);
@@ -257,9 +212,22 @@ a {
 .barra-lateral {
     width: 240px;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
     background: var(--cor-superficie);
     border-right: 1px solid var(--cor-borda);
     min-height: calc(100vh - 78px);
+}
+
+.barra-lateral__rodape {
+    margin-top: auto;
+    border-top: 1px solid var(--cor-borda);
+}
+
+.barra-lateral__usuario summary {
+    color: var(--cor-texto);
+    font-family: var(--fonte-base);
+    font-size: 0.9rem;
 }
 
 .barra-lateral__grupo {

@@ -25,17 +25,6 @@
                 <small>Escritório</small>
             </span>
         </a>
-        <nav class="cabecalho__nav">
-            <button type="button" onclick="history.back()">&larr; Voltar</button>
-            <a href="{% url 'inicio' %}" class="{% if request.resolver_match.url_name == 'inicio' and not request.resolver_match.app_name %}ativo{% endif %}">Início</a>
-            {% if user.is_authenticated %}
-            <a href="{% url 'usuarios:minha_conta' %}">Minha conta</a>
-            <form method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button type="submit">Sair</button>
-            </form>
-            {% endif %}
-        </nav>
         {% if user.is_authenticated %}
         {% include "notificacoes/_sino.html" %}
         {% endif %}
@@ -86,6 +75,18 @@
                     </div>
                 </details>
             </nav>
+            <div class="barra-lateral__rodape">
+                <details class="barra-lateral__grupo barra-lateral__usuario">
+                    <summary>{{ user.username }}</summary>
+                    <div class="barra-lateral__submenu">
+                        <a href="{% url 'usuarios:minha_conta' %}">Meus dados</a>
+                        <form method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit">Sair</button>
+                        </form>
+                    </div>
+                </details>
+            </div>
         </aside>
         {% endif %}
         <main class="conteudo">
