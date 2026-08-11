@@ -1,3 +1,7 @@
+{% if venda.status == "aberta" and not venda.identificador %}
+<div id="aviso-venda-pendente" style="display: none;"></div>
+{% endif %}
+
 <h1 class="titulo-pagina">{{ venda }}</h1>
 <p class="subtitulo-pagina">
     {% if venda.cliente %}Cliente: {{ venda.cliente }} · {% endif %}
