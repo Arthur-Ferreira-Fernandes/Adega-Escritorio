@@ -77,7 +77,7 @@
             </nav>
             <div class="barra-lateral__rodape">
                 <details class="barra-lateral__grupo barra-lateral__usuario">
-                    <summary>{{ user.username }}</summary>
+                    <summary>{{ user.first_name|default:user.username }}</summary>
                     <div class="barra-lateral__submenu">
                         <a href="{% url 'usuarios:minha_conta' %}">Meus dados</a>
                         <form method="post" action="{% url 'logout' %}">
