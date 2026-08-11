@@ -28,7 +28,7 @@
             <a href="{% url 'inicio' %}" class="{% if request.resolver_match.url_name == 'inicio' and not request.resolver_match.app_name %}ativo{% endif %}">Início</a>
             {% if user.is_authenticated %}
             <a href="{% url 'usuarios:minha_conta' %}">Minha conta</a>
-            <form method="post" action="{% url 'logout' %}" style="margin: 0; display: inline;">
+            <form method="post" action="{% url 'logout' %}">
                 {% csrf_token %}
                 <button type="submit">Sair</button>
             </form>

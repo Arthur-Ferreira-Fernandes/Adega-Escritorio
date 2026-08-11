@@ -82,6 +82,10 @@ a {
     flex-wrap: wrap;
 }
 
+.cabecalho__nav form {
+    display: contents;
+}
+
 .cabecalho__nav a,
 .cabecalho__nav button {
     text-decoration: none;
