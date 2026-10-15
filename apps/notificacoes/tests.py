@@ -1,9 +1,7 @@
-from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.utils import timezone
 
 from apps.caixa.models import Caixa
 from apps.configuracoes.models import Configuracao
@@ -66,39 +64,6 @@ class SincronizarCaixaSangriaTests(TestCase):
     def test_sem_caixa_aberto_nao_gera_notificacao(self):
         servicos.sincronizar()
         self.assertFalse(Notificacao.objects.filter(tipo=Notificacao.Tipo.CAIXA_SANGRIA).exists())
-
-
-class SincronizarCaixaLimiteTests(TestCase):
-    def setUp(self):
-        self.usuario = User.objects.create_user(username="operador", password="senha123")
-
-    def test_dispara_notificacao_de_perigo_apos_limite(self):
-        config = Configuracao.obter()
-        config.limite_horas_caixa = 6
-        config.save()
-        caixa = Caixa.abrir(self.usuario, Decimal("100.00"))
-        Caixa.objects.filter(pk=caixa.pk).update(aberto_em=timezone.now() - timedelta(hours=7))
-
-        servicos.sincronizar()
-
-        notificacao = Notificacao.objects.get(
-            tipo=Notificacao.Tipo.CAIXA_LIMITE, resolvida=False
-        )
-        self.assertEqual(notificacao.nivel, Notificacao.Nivel.PERIGO)
-
-    def test_sem_notificacao_dentro_do_limite(self):
-        config = Configuracao.obter()
-        config.limite_horas_caixa = 12
-        config.save()
-        Caixa.abrir(self.usuario, Decimal("100.00"))
-
-        servicos.sincronizar()
-
-        self.assertFalse(
-            Notificacao.objects.filter(
-                tipo=Notificacao.Tipo.CAIXA_LIMITE, resolvida=False
-            ).exists()
-        )
 
 
 class SincronizarEstoqueTests(TestCase):

@@ -5,4 +5,4 @@ from .models import Configuracao
 
 @admin.register(Configuracao)
 class ConfiguracaoAdmin(admin.ModelAdmin):
-    list_display = ("limite_horas_caixa", "limite_sangria")
+    list_display = ("__str__", "limite_sangria")

@@ -4,9 +4,6 @@ from django.db import models
 
 
 class Configuracao(models.Model):
-    limite_horas_caixa = models.PositiveIntegerField(
-        "Limite de horas para o caixa ficar aberto", default=12
-    )
     limite_sangria = models.DecimalField(
         "Valor em caixa a partir do qual sugerir sangria",
         max_digits=10,

@@ -1,9 +1,11 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.caixa.models import Caixa
 from apps.estoque.models import Categoria, Produto
@@ -134,6 +136,12 @@ class VendaViewTests(TestCase):
         Caixa.abrir(self.usuario, Decimal("100.00"))
         resposta = self.client.post(reverse("vendas:rapida"))
         self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(Venda.objects.count(), 1)
+
+    def test_caixa_aberto_ha_muito_tempo_nao_bloqueia_vendas(self):
+        caixa = Caixa.abrir(self.usuario, Decimal("100.00"))
+        Caixa.objects.filter(pk=caixa.pk).update(aberto_em=timezone.now() - timedelta(hours=30))
+        self.client.post(reverse("vendas:rapida"))
         self.assertEqual(Venda.objects.count(), 1)
 
     def test_nova_comanda_com_pessoas(self):

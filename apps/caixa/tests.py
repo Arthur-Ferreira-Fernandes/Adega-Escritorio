@@ -1,13 +1,9 @@
-from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
-from django.utils import timezone
-
-from apps.configuracoes.models import Configuracao
 
 from .models import Caixa, MovimentoCaixa
 
@@ -78,30 +74,6 @@ class CaixaModelTests(TestCase):
             caixa.registrar_sangria(self.usuario, Decimal("10.00"), "teste")
         with self.assertRaises(ValidationError):
             caixa.fechar(self.usuario, Decimal("100.00"))
-
-    def test_estender_limite_soma_hora_extra(self):
-        caixa = Caixa.abrir(self.usuario, Decimal("100.00"))
-        limite_original = caixa.limite_em
-        caixa.estender_limite()
-        self.assertEqual(caixa.limite_em, limite_original + timedelta(hours=1))
-
-    def test_limite_em_respeita_configuracao(self):
-        config = Configuracao.obter()
-        config.limite_horas_caixa = 6
-        config.save()
-        caixa = Caixa.abrir(self.usuario, Decimal("100.00"))
-        Caixa.objects.filter(pk=caixa.pk).update(
-            aberto_em=timezone.now() - timedelta(hours=7)
-        )
-        caixa.refresh_from_db()
-        self.assertFalse(caixa.dentro_do_limite)
-
-    def test_dentro_do_limite_com_caixa_recem_aberto(self):
-        config = Configuracao.obter()
-        config.limite_horas_caixa = 12
-        config.save()
-        caixa = Caixa.abrir(self.usuario, Decimal("100.00"))
-        self.assertTrue(caixa.dentro_do_limite)
 
     def test_aberto_atual_retorna_none_sem_caixa(self):
         self.assertIsNone(Caixa.aberto_atual())

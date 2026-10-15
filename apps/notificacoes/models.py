@@ -5,7 +5,6 @@ from django.utils import timezone
 
 class Notificacao(models.Model):
     class Tipo(models.TextChoices):
-        CAIXA_LIMITE = "caixa_limite", "Caixa perto do limite"
         CAIXA_SANGRIA = "caixa_sangria", "Caixa precisa de sangria"
         ESTOQUE_MINIMO = "estoque_minimo", "Estoque no mínimo"
 

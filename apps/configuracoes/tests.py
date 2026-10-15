@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -12,18 +14,18 @@ class ConfiguracaoModelTests(TestCase):
         self.assertEqual(Configuracao.objects.count(), 0)
         config = Configuracao.obter()
         self.assertEqual(config.pk, 1)
-        self.assertEqual(config.limite_horas_caixa, 12)
+        self.assertEqual(config.limite_sangria, Decimal("1000"))
 
     def test_obter_sempre_retorna_a_mesma_linha(self):
         primeira = Configuracao.obter()
-        primeira.limite_horas_caixa = 6
+        primeira.limite_sangria = Decimal("500.00")
         primeira.save()
         segunda = Configuracao.obter()
         self.assertEqual(segunda.pk, 1)
-        self.assertEqual(segunda.limite_horas_caixa, 6)
+        self.assertEqual(segunda.limite_sangria, Decimal("500.00"))
 
     def test_save_forca_pk_1(self):
-        config = Configuracao(limite_horas_caixa=8)
+        config = Configuracao(limite_sangria=Decimal("800.00"))
         config.save()
         self.assertEqual(config.pk, 1)
 
@@ -61,10 +63,9 @@ class AdministracaoViewTests(TestCase):
         self.client.post(
             reverse("configuracoes:administracao"),
             {
-                "limite_horas_caixa": "6",
                 "limite_sangria": "500.00",
                 "salvar_configuracoes": "1",
             },
         )
         config = Configuracao.obter()
-        self.assertEqual(config.limite_horas_caixa, 6)
+        self.assertEqual(config.limite_sangria, Decimal("500.00"))

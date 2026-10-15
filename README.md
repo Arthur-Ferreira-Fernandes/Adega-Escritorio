@@ -148,7 +148,7 @@ docker compose exec web python manage.py test
 - `apps/caixa` — abertura, sangria, reforço, fechamento e relatório de caixa
 - `apps/financeiro` — contas a pagar e a receber
 - `apps/relatorios` — dashboard de faturamento, lucro/margem e estoque baixo
-- `apps/notificacoes` — sino de alertas (estoque baixo, limite de caixa, sugestão de sangria)
+- `apps/notificacoes` — sino de alertas (estoque baixo, sugestão de sangria)
 - `apps/usuarios` — contas de usuário, "Minha conta"
 - `apps/configuracoes` — dados do administrador e parâmetros do caixa
 - `apps/auditoria` — registro de alterações sensíveis feitas por usuários

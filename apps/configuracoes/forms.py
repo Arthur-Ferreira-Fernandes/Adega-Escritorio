@@ -9,9 +9,6 @@ User = get_user_model()
 
 
 class ConfiguracaoForm(forms.ModelForm):
-    limite_horas_caixa = forms.IntegerField(
-        label="Limite de horas para o caixa ficar aberto", min_value=1
-    )
     limite_sangria = DecimalMonetarioField(
         label="Valor em caixa a partir do qual sugerir sangria",
         max_digits=10,
@@ -20,7 +17,7 @@ class ConfiguracaoForm(forms.ModelForm):
 
     class Meta:
         model = Configuracao
-        fields = ["limite_horas_caixa", "limite_sangria"]
+        fields = ["limite_sangria"]
 
 
 class MeuUsuarioForm(forms.Form):

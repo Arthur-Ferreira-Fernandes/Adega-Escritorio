@@ -25,30 +25,7 @@
 <p class="subtitulo-pagina" style="margin-bottom: 1.5rem;">
     <span class="emblema emblema--aberta">Aberto</span>
     desde {{ caixa.aberto_em|date:"d/m/Y H:i" }} por {{ caixa.aberto_por }}
-    · limite para iniciar vendas até {{ caixa.limite_em|date:"d/m/Y H:i" }}
 </p>
-
-{% if not caixa.dentro_do_limite %}
-<div class="cartao cartao--destaque" style="margin-bottom: 1.5rem; max-width: 480px;">
-    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Caixa passou do limite de horas</h2>
-    <p class="subtitulo-pagina" style="margin-bottom: 1rem;">
-        Não é possível iniciar novas vendas até um administrador autorizar mais tempo.
-    </p>
-    <form method="post" action="{% url 'caixa:estender_limite' %}"
-          hx-post="{% url 'caixa:estender_limite' %}"
-          hx-target="#caixa-conteudo" hx-swap="innerHTML" hx-indicator="#caixa-conteudo"
-          class="formulario" style="flex-direction: column; align-items: stretch;">
-        {% csrf_token %}
-        {% for field in autorizacao_form %}
-        <div class="campo">
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-        </div>
-        {% endfor %}
-        <button type="submit" class="botao">Autorizar mais 1 hora</button>
-    </form>
-</div>
-{% endif %}
 
 <div class="grade-entradas" style="margin-bottom: 1.5rem;">
     <div class="cartao">

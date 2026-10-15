@@ -1,4 +1,3 @@
-from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -8,7 +7,6 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.formats import number_format
 
-from apps.configuracoes.models import Configuracao
 from apps.vendas.models import PagamentoVenda, Venda
 from config.agregados import Soma
 
@@ -23,7 +21,6 @@ class Caixa(models.Model):
     valor_contado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     aberto_em = models.DateTimeField(auto_now_add=True)
     fechado_em = models.DateTimeField(null=True, blank=True)
-    horas_extras = models.PositiveIntegerField(default=0)
     aberto_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="caixas_abertos"
     )
@@ -53,21 +50,6 @@ class Caixa(models.Model):
     @classmethod
     def aberto_atual(cls):
         return cls.objects.filter(status=cls.Status.ABERTO).first()
-
-    @property
-    def limite_em(self):
-        limite_horas = Configuracao.obter().limite_horas_caixa
-        return self.aberto_em + timedelta(hours=limite_horas + self.horas_extras)
-
-    @property
-    def dentro_do_limite(self):
-        return timezone.now() <= self.limite_em
-
-    def estender_limite(self):
-        if self.status != self.Status.ABERTO:
-            raise ValidationError("Não é possível estender: não há caixa aberto.")
-        self.horas_extras += 1
-        self.save(update_fields=["horas_extras"])
 
     @classmethod
     def abrir(cls, usuario, valor_abertura):
