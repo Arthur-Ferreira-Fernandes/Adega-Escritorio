@@ -26,6 +26,8 @@ datas = (
     + [
         (os.path.join(RAIZ, "templates"), "templates"),
         (os.path.join(RAIZ, "staticfiles"), "staticfiles"),
+        (os.path.join(SPECPATH, "adega.ico"), "desktop"),
+        (os.path.join(SPECPATH, "adega.png"), "desktop"),
     ]
 )
 
@@ -38,6 +40,26 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
+# Nome que o Windows mostra no Gerenciador de Tarefas e nas propriedades do .exe.
+versao = None
+if sys.platform == "win32":
+    from PyInstaller.utils.win32.versioninfo import (
+        FixedFileInfo, StringFileInfo, StringStruct, StringTable, VarFileInfo, VarStruct, VSVersionInfo,
+    )
+
+    versao = VSVersionInfo(
+        ffi=FixedFileInfo(),
+        kids=[
+            StringFileInfo([StringTable("041604B0", [
+                StringStruct("CompanyName", "Adega & Tabacaria Escritório"),
+                StringStruct("FileDescription", "Adega Escritório"),
+                StringStruct("ProductName", "Adega Escritório"),
+                StringStruct("OriginalFilename", "Adega.exe"),
+            ])]),
+            VarFileInfo([VarStruct("Translation", [0x0416, 1200])]),
+        ],
+    )
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -46,6 +68,7 @@ exe = EXE(
     name="Adega",
     console=False,  # sem janela preta: o app abre a própria janela (pywebview)
     icon=os.path.join(SPECPATH, "adega.ico"),
+    version=versao,
 )
 
 coll = COLLECT(exe, a.binaries, a.datas, name="Adega")

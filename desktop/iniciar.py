@@ -26,6 +26,13 @@ for nome in ("stdout", "stderr"):
     if getattr(sys, nome) is None:
         setattr(sys, nome, open(os.devnull, "w", encoding="utf-8"))
 
+NOME_APP = "Adega Escritório"
+# Identifica o app pro sistema (barra de tarefas): no Windows é o
+# AppUserModelID — igual ao dos atalhos em instalador.iss; no Linux é o
+# app_id do Wayland, que tem que bater com o nome do arquivo .desktop.
+ID_APP_WINDOWS = "ArthurFerreira.AdegaEscritorio"
+ID_APP_LINUX = "adega-escritorio"
+
 DIAS_DE_BACKUP = 30
 INTERVALO_BACKUP = 24 * 60 * 60
 
@@ -47,7 +54,7 @@ def avisar(texto):
     if sys.platform == "win32":
         import ctypes
 
-        ctypes.windll.user32.MessageBoxW(0, texto, "Adega", 0x40)
+        ctypes.windll.user32.MessageBoxW(0, texto, NOME_APP, 0x40)
     else:
         print(texto)
 
@@ -89,12 +96,64 @@ class Api:
     def abrir_janela(self, url):
         import webview
 
-        webview.create_window("Adega", url, width=900, height=800)
+        webview.create_window(NOME_APP, url, width=900, height=800)
+
+
+def instalar_atalho_linux(icone):
+    """Cria o .desktop que dá nome e ícone ao app na barra do GNOME/KDE.
+
+    No Wayland a janela não carrega ícone próprio: o sistema procura o
+    .desktop com o mesmo app_id e, sem ele, mostra uma engrenagem e "python3".
+    """
+    if getattr(sys, "frozen", False):
+        comando = f'"{sys.executable}"'
+    else:
+        comando = f'"{sys.executable}" "{Path(__file__).resolve()}"'
+    if os.environ.get("ADEGA_DATA_DIR"):
+        comando = f'env ADEGA_DATA_DIR="{os.environ["ADEGA_DATA_DIR"]}" {comando}'
+    conteudo = (
+        "[Desktop Entry]\n"
+        "Type=Application\n"
+        f"Name={NOME_APP}\n"
+        "Comment=Sistema de gestão da Adega & Tabacaria Escritório\n"
+        f"Exec={comando}\n"
+        f"Icon={icone}\n"
+        f"StartupWMClass={ID_APP_LINUX}\n"
+        "Categories=Office;\n"
+    )
+    arquivo = Path.home() / ".local/share/applications" / f"{ID_APP_LINUX}.desktop"
+    try:
+        if not arquivo.exists() or arquivo.read_text(encoding="utf-8") != conteudo:
+            arquivo.parent.mkdir(parents=True, exist_ok=True)
+            arquivo.write_text(conteudo, encoding="utf-8")
+    except OSError:
+        log.exception("Não foi possível criar o atalho do Linux")
+
+
+def identificar_app():
+    """Faz a barra de tarefas mostrar o logo e o nome do app. Devolve o ícone e a GUI."""
+    if sys.platform == "win32":
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(ID_APP_WINDOWS)
+        # O WinForms só aceita .ico.
+        return str(RAIZ / "desktop" / "adega.ico"), None
+    icone = str(RAIZ / "desktop" / "adega.png")
+    if sys.platform.startswith("linux"):
+        instalar_atalho_linux(icone)
+        from qtpy.QtGui import QGuiApplication
+
+        # Precisa vir antes do pywebview criar a QApplication.
+        QGuiApplication.setApplicationName(ID_APP_LINUX)
+        QGuiApplication.setDesktopFileName(ID_APP_LINUX)
+        return icone, "qt"
+    return icone, None
 
 
 def abrir_janela(url, titulo, pasta_dados):
     import webview
 
+    icone, gui = identificar_app()
     webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
     janela = webview.create_window(
         titulo, url, js_api=Api(), width=1280, height=800, min_size=(900, 600),
@@ -102,6 +161,8 @@ def abrir_janela(url, titulo, pasta_dados):
     )
     janela.events.loaded += lambda: janela.evaluate_js(JS_JANELAS_NOVAS)
     webview.start(
+        gui=gui,
+        icon=icone,
         private_mode=False,  # janelas compartilham o login
         storage_path=str(pasta_dados / "navegador"),
         localization={
@@ -110,7 +171,6 @@ def abrir_janela(url, titulo, pasta_dados):
             "global.cancel": "Cancelar",
             "global.quit": "Fechar",
         },
-        icon=str(RAIZ / "staticfiles" / "img" / "apple-touch-icon.png"),
     )
 
 

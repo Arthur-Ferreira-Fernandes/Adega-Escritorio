@@ -1,4 +1,4 @@
-; Instalador do Adega para Windows (Inno Setup 6). Gera AdegaSetup-<versão>.exe
+﻿; Instalador do Adega para Windows (Inno Setup 6). Gera AdegaSetup-<versão>.exe
 ; a partir da pasta dist\Adega criada pelo PyInstaller. Ver desktop/build.ps1.
 ;
 ; Instala só para o usuário atual (sem pedir administrador). Os dados ficam
@@ -10,7 +10,7 @@
 
 [Setup]
 AppId={{6F1C2A4E-8B3D-4E7A-9C51-2D8E0F4B7A13}
-AppName=Adega
+AppName=Adega Escritório
 AppVersion={#Versao}
 AppPublisher=Arthur Ferreira Fernandes
 DefaultDirName={autopf}\Adega
@@ -37,10 +37,12 @@ Name: "iniciarcomwindows"; Description: "Abrir o Adega automaticamente ao ligar 
 Source: "..\dist\Adega\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Adega"; Filename: "{app}\Adega.exe"
+; AppUserModelID igual ao ID_APP_WINDOWS de iniciar.py: é o que faz a janela
+; aberta e o atalho fixado na barra de tarefas serem o mesmo ícone.
+Name: "{group}\Adega Escritório"; Filename: "{app}\Adega.exe"; AppUserModelID: "ArthurFerreira.AdegaEscritorio"
 Name: "{group}\Dados e backups do Adega"; Filename: "{localappdata}\Adega"
-Name: "{autodesktop}\Adega"; Filename: "{app}\Adega.exe"; Tasks: areadetrabalho
-Name: "{userstartup}\Adega"; Filename: "{app}\Adega.exe"; Tasks: iniciarcomwindows
+Name: "{autodesktop}\Adega Escritório"; Filename: "{app}\Adega.exe"; AppUserModelID: "ArthurFerreira.AdegaEscritorio"; Tasks: areadetrabalho
+Name: "{userstartup}\Adega Escritório"; Filename: "{app}\Adega.exe"; AppUserModelID: "ArthurFerreira.AdegaEscritorio"; Tasks: iniciarcomwindows
 
 [Run]
-Filename: "{app}\Adega.exe"; Description: "Abrir o Adega agora"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\Adega.exe"; Description: "Abrir o Adega Escritório agora"; Flags: nowait postinstall skipifsilent
