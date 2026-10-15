@@ -26,7 +26,46 @@ Pra popular o banco com dados fictícios de uma adega de porte médio (só para 
 docker compose exec web python manage.py seed_demo
 ```
 
-## Instalar no computador do cliente
+## Versão desktop para Windows (instalador `.exe`, sem Docker)
+
+Para computadores Windows 10/11 comuns, o sistema também é distribuído como um instalador (`AdegaSetup-<versão>.exe`) que não precisa de Docker, Python nem internet. Nessa versão, o SQLite substitui o Postgres, o cache em memória substitui o Redis e o Waitress + WhiteNoise substituem o Gunicorn + Nginx. O código é o mesmo, e a configuração fica em `config/settings/desktop.py`.
+
+### Gerar o instalador
+
+- **Pelo GitHub (recomendado):** crie e envie uma tag de versão (`git tag v1.0.0 && git push --tags`). O workflow `.github/workflows/instalador-windows.yml` roda os testes, gera o instalador e o anexa a uma Release. Também dá para disparar pela aba **Actions → Instalador Windows → Run workflow** e baixar o artefato.
+- **Num Windows local** (Python 3.12 e Inno Setup 6 instalados): `powershell -ExecutionPolicy Bypass -File desktop\build.ps1 -Versao 1.0.0`. O resultado sai em `dist\`.
+
+### Instalar na adega
+
+1. Copie o `AdegaSetup-<versão>.exe` para o computador e execute. Não pede senha de administrador.
+   - O instalador não é assinado digitalmente, então o Windows pode mostrar "O Windows protegeu o computador". Clique em **Mais informações → Executar assim mesmo**.
+2. No primeiro uso, uma janela preta pede para criar o **usuário administrador**. A senha não aparece enquanto é digitada.
+3. O navegador abre sozinho em `http://localhost:8000/`.
+
+A janela preta **é o sistema**: pode minimizar, mas fechá-la desliga o Adega. Clicar no ícone com o sistema já aberto só abre o navegador de novo. No instalador, é possível marcar "Abrir o Adega automaticamente ao ligar o computador".
+
+### Dados, backups e atualização
+
+Tudo fica em `%LOCALAPPDATA%\Adega`. O menu Iniciar tem o atalho **Dados e backups do Adega**:
+
+- `adega.sqlite3`: o banco de dados.
+- `backups\`: cópia automática a cada abertura do sistema e a cada 24h com ele aberto. Guarda os últimos 30 dias. Copie essa pasta de vez em quando para um pendrive ou para a nuvem.
+- `adega.env`: configuração desta instalação, incluindo a `SECRET_KEY`, que é gerada automaticamente.
+- `logs\`: registros do sistema.
+
+**Atualizar:** basta rodar o instalador da versão nova. Os dados não são tocados, e as migrations rodam sozinhas ao abrir o sistema (com backup feito logo antes).
+
+**Restaurar um backup:** feche o Adega, apague `adega.sqlite3`, `adega.sqlite3-wal` e `adega.sqlite3-shm`, copie o backup desejado de `backups\` para o lugar e renomeie para `adega.sqlite3`.
+
+### Acesso pelo celular/tablet (rede local)
+
+1. Em `%LOCALAPPDATA%\Adega\adega.env`, troque `ACESSO_REDE=False` por `ACESSO_REDE=True` e reabra o Adega.
+2. Na primeira vez, o Windows pergunta se libera o acesso na rede. Marque **Redes privadas** e permita. Isso exige a senha de administrador do Windows.
+3. A janela preta mostra o endereço para usar no celular (ex.: `http://192.168.0.10:8000/`). O celular precisa estar no mesmo Wi-Fi.
+
+Para o endereço não mudar, reserve um IP fixo para o computador no roteador. O acesso é só por HTTP, sem criptografia, então use apenas numa rede Wi-Fi de confiança (não na rede aberta para clientes).
+
+## Instalar no computador do cliente (Docker)
 
 ### 1. Pré-requisitos
 
@@ -114,3 +153,4 @@ docker compose exec web python manage.py test
 - `apps/configuracoes` — dados do administrador e parâmetros do caixa
 - `apps/auditoria` — registro de alterações sensíveis feitas por usuários
 - `docker/` — Dockerfile da aplicação, configuração do Nginx e do backup automático do banco
+- `desktop/` — versão Windows: lançador (`iniciar.py`), empacotamento PyInstaller (`adega.spec`), instalador Inno Setup (`instalador.iss`) e script de build

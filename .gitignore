@@ -31,3 +31,8 @@ env/
 # Claude Code
 .claude/
 
+
+# Build da versão desktop (PyInstaller / Inno Setup)
+build/
+dist/
+.venv-desktop/

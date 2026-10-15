@@ -1,0 +1,49 @@
+name: Instalador Windows
+
+# Roda ao criar uma tag de versão (git tag v1.0.0 && git push --tags) ou
+# manualmente pela aba Actions. O instalador sai como artefato da execução
+# e, no caso de tag, também anexado a uma Release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Testes (SQLite, configuração desktop)
+        env:
+          ADEGA_DATA_DIR: ${{ runner.temp }}\adega-testes
+        run: |
+          pip install -r requirements/desktop.txt
+          python manage.py test --settings=config.settings.desktop
+
+      - name: Instalar Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Gerar instalador
+        shell: pwsh
+        run: |
+          $versao = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}".TrimStart("v") } else { "0.0.0-dev" }
+          ./desktop/build.ps1 -Versao $versao
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AdegaSetup
+          path: dist/AdegaSetup-*.exe
+
+      - name: Publicar na Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/AdegaSetup-*.exe
