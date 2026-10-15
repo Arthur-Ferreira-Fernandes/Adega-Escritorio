@@ -86,6 +86,42 @@ class VendaModelTests(TestCase):
         self.assertEqual(self.venda.status, Venda.Status.CONCLUIDA)
         self.assertIsNotNone(self.venda.finalizada_em)
 
+    def test_receber_sem_valor_quita_e_finaliza(self):
+        self.venda.adicionar_item(self.produto, 2)
+        self.venda.receber(Venda.FormaPagamento.CARTAO)
+        self.assertEqual(self.venda.status, Venda.Status.CONCLUIDA)
+        self.assertEqual(self.venda.pagamentos.get().valor, Decimal("100.00"))
+        self.produto.refresh_from_db()
+        self.assertEqual(self.produto.quantidade_estoque, 8)
+
+    def test_receber_dinheiro_com_troco_finaliza(self):
+        self.venda.adicionar_item(self.produto, 1)
+        pagamento = self.venda.receber(Venda.FormaPagamento.DINHEIRO, Decimal("70.00"))
+        self.assertEqual(pagamento.troco, Decimal("20.00"))
+        self.assertEqual(self.venda.status, Venda.Status.CONCLUIDA)
+
+    def test_receber_parcial_mantem_venda_aberta(self):
+        self.venda.adicionar_item(self.produto, 2)
+        self.venda.receber(Venda.FormaPagamento.PIX, Decimal("30.00"))
+        self.assertEqual(self.venda.status, Venda.Status.ABERTA)
+        self.assertEqual(self.venda.falta_receber, Decimal("70.00"))
+        self.venda.receber(Venda.FormaPagamento.CARTAO)
+        self.assertEqual(self.venda.status, Venda.Status.CONCLUIDA)
+
+    def test_receber_desfaz_pagamento_se_finalizar_falhar(self):
+        self.venda.adicionar_item(self.produto, 2)
+        Produto.objects.filter(pk=self.produto.pk).update(quantidade_estoque=1)
+        with self.assertRaises(ValidationError):
+            self.venda.receber(Venda.FormaPagamento.CARTAO)
+        self.venda.refresh_from_db()
+        self.assertEqual(self.venda.status, Venda.Status.ABERTA)
+        self.assertFalse(self.venda.pagamentos.exists())
+
+    def test_receber_bloqueia_venda_sem_itens(self):
+        with self.assertRaises(ValidationError):
+            self.venda.receber(Venda.FormaPagamento.CARTAO)
+        self.assertFalse(self.venda.pagamentos.exists())
+
     def test_finalizar_bloqueia_sem_itens(self):
         with self.assertRaises(ValidationError):
             self.venda.finalizar()
@@ -143,6 +179,17 @@ class VendaViewTests(TestCase):
         Caixa.objects.filter(pk=caixa.pk).update(aberto_em=timezone.now() - timedelta(hours=30))
         self.client.post(reverse("vendas:rapida"))
         self.assertEqual(Venda.objects.count(), 1)
+
+    def test_um_clique_no_cartao_finaliza_a_venda(self):
+        Caixa.abrir(self.usuario, Decimal("100.00"))
+        venda = Venda.objects.create(criado_por=self.usuario)
+        venda.adicionar_item(self.produto, 1)
+        self.client.post(
+            reverse("vendas:adicionar_pagamento", kwargs={"pk": venda.pk}),
+            {"forma_pagamento": "cartao", "valor": ""},
+        )
+        venda.refresh_from_db()
+        self.assertEqual(venda.status, Venda.Status.CONCLUIDA)
 
     def test_nova_comanda_com_pessoas(self):
         Caixa.abrir(self.usuario, Decimal("100.00"))

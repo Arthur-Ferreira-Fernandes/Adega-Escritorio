@@ -183,22 +183,30 @@ def venda_finalizar(request, pk):
 @require_POST
 def venda_adicionar_pagamento(request, pk):
     venda = get_object_or_404(Venda, pk=pk)
-    valor_txt = request.POST.get("valor", "")
+    # Valor em branco = receber exatamente o que falta (o caso mais comum).
+    valor_txt = request.POST.get("valor", "").strip()
     try:
-        valor = Decimal(valor_txt) if valor_txt.strip() else None
+        valor = Decimal(valor_txt) if valor_txt else None
     except InvalidOperation:
-        valor = None
-    if valor is None:
         messages.error(request, "Informe um valor válido.")
+        return _responder_venda(request, venda)
+    try:
+        pagamento = venda.receber(request.POST.get("forma_pagamento", ""), valor)
+    except ValidationError as erro:
+        venda.refresh_from_db()
+        messages.error(request, "; ".join(erro.messages))
+        return _responder_venda(request, venda)
+
+    if venda.status == Venda.Status.CONCLUIDA:
+        texto = "Venda finalizada."
     else:
-        try:
-            pagamento = venda.adicionar_pagamento(request.POST.get("forma_pagamento", ""), valor)
-            texto = f"Pagamento em {pagamento.get_forma_pagamento_display()} registrado."
-            if pagamento.troco:
-                texto += f" Troco: R$ {number_format(pagamento.troco, decimal_pos=2)}."
-            messages.success(request, texto)
-        except ValidationError as erro:
-            messages.error(request, "; ".join(erro.messages))
+        texto = (
+            f"Pagamento em {pagamento.get_forma_pagamento_display()} registrado. "
+            f"Falta receber R$ {number_format(venda.falta_receber, decimal_pos=2)}."
+        )
+    if pagamento.troco:
+        texto += f" Troco: R$ {number_format(pagamento.troco, decimal_pos=2)}."
+    messages.success(request, texto)
     return _responder_venda(request, venda)
 
 

@@ -493,6 +493,10 @@ a {
     gap: 0.5rem;
 }
 
+.mensagens:not(:has(li)) {
+    display: none;
+}
+
 .mensagem {
     padding: 0.75rem 1rem;
     border-radius: 8px;
@@ -724,6 +728,22 @@ a {
 .pdv-resumo {
     position: sticky;
     top: 1.5rem;
+}
+
+.pagamento-rapido {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.pagamento-rapido__botoes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.pagamento-rapido__botoes .botao {
+    padding: 0.9rem 0.5rem;
+    font-size: 1rem;
 }
 
 /* Campo de leitura do código de barras */

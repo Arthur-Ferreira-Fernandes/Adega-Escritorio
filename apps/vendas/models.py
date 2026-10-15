@@ -140,6 +140,22 @@ class Venda(models.Model):
         pagamento.save(update_fields=["valor", "valor_recebido"])
         return pagamento
 
+    def receber(self, forma_pagamento, valor_informado=None):
+        """Registra um pagamento e, se ele quitar a venda, já finaliza.
+
+        Sem valor, recebe exatamente o que falta. Tudo numa transação só: se a
+        finalização falhar (ex.: o estoque acabou), o pagamento é desfeito junto.
+        """
+        if not self.itens.exists():
+            raise ValidationError("Adicione pelo menos um item antes de receber o pagamento.")
+        with transaction.atomic():
+            if valor_informado is None:
+                valor_informado = self.falta_receber
+            pagamento = self.adicionar_pagamento(forma_pagamento, valor_informado)
+            if self.falta_receber <= 0:
+                self.finalizar()
+        return pagamento
+
     def remover_pagamento(self, pagamento):
         if self.status != self.Status.ABERTA:
             raise ValidationError("Só é possível remover pagamentos de uma venda aberta.")

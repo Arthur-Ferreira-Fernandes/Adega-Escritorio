@@ -154,32 +154,29 @@
             <span class="stat__valor">R$ {{ venda.falta_receber }}</span>
             <span class="stat__rotulo">Falta receber</span>
         </div>
-        <form method="post" action="{% url 'vendas:adicionar_pagamento' pk=venda.pk %}" class="formulario"
+        {% if venda.falta_receber > 0 %}
+        <form method="post" action="{% url 'vendas:adicionar_pagamento' pk=venda.pk %}" class="formulario pagamento-rapido"
               hx-post="{% url 'vendas:adicionar_pagamento' pk=venda.pk %}"
               hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
-              data-falta="{{ falta_receber_bruto }}">
+              data-falta="{{ falta_receber_bruto }}"{% if not itens %} data-sem-itens{% endif %}>
             {% csrf_token %}
             <div class="campo">
-                <label for="id_forma_pagamento_novo">Forma de pagamento</label>
-                <select name="forma_pagamento" id="id_forma_pagamento_novo">
-                    <option value="dinheiro">Dinheiro</option>
-                    <option value="cartao">Cartão</option>
-                    <option value="pix">Pix</option>
-                </select>
-            </div>
-            <div class="campo">
-                <label for="id_valor_novo">Valor recebido</label>
-                <input type="text" name="valor" id="id_valor_novo" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" data-max-digitos="10">
+                <label for="id_valor_novo">Valor recebido <small>(vazio = R$ {{ venda.falta_receber }})</small></label>
+                <input type="text" name="valor" id="id_valor_novo" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ {{ venda.falta_receber }}" data-max-digitos="10">
                 <span id="aviso-valor-pagamento" class="texto-perigo" style="display: none;"></span>
             </div>
-            <button type="button" class="botao botao--secundario" id="botao-usar-valor-total">Usar valor total (R$ {{ venda.falta_receber }})</button>
-            <button type="submit" class="botao botao--secundario" id="botao-confirmar-pagamento">Confirmar</button>
+            {# Enter no campo de valor = Dinheiro (primeiro botão do formulário). #}
+            <div class="pagamento-rapido__botoes">
+                <button type="submit" name="forma_pagamento" value="dinheiro" class="botao" {% if not itens %}disabled{% endif %}>Dinheiro</button>
+                <button type="submit" name="forma_pagamento" value="cartao" class="botao" data-sem-troco {% if not itens %}disabled{% endif %}>Cartão</button>
+                <button type="submit" name="forma_pagamento" value="pix" class="botao" data-sem-troco {% if not itens %}disabled{% endif %}>Pix</button>
+            </div>
+            <p class="campo-scanner__dica">Um clique recebe e finaliza a venda. Para pagamento dividido, digite o valor de cada parte.</p>
         </form>
-        {% if venda.falta_receber <= 0 %}
+        {% else %}
         <form method="post" action="{% url 'vendas:finalizar' pk=venda.pk %}"
               hx-post="{% url 'vendas:finalizar' pk=venda.pk %}"
-              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
-              hx-confirm="Tem certeza que deseja finalizar esta venda?">
+              hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
             {% csrf_token %}
             <button type="submit" class="botao" style="width: 100%; margin-top: 0.5rem;">Finalizar venda</button>
         </form>
@@ -226,6 +223,10 @@
         <p><strong>Tempo na mesa:</strong> {{ venda.criado_em|timesince:venda.finalizada_em }}</p>
         {% endif %}
         {% if venda.status == "concluida" %}
+        <form method="post" action="{% url 'vendas:rapida' %}">
+            {% csrf_token %}
+            <button type="submit" class="botao" style="width: 100%; margin-top: 0.75rem;" autofocus>Nova venda</button>
+        </form>
         <a href="{% url 'vendas:comprovante' pk=venda.pk %}" target="_blank"
            class="botao botao--secundario" style="width: 100%; margin-top: 0.75rem; text-align: center;">Imprimir comprovante</a>
         {% endif %}

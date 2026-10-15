@@ -1,7 +1,6 @@
-{% if messages %}
+{# Sempre renderizado, mesmo vazio: as respostas do htmx trocam este <ul> via hx-swap-oob, e sem ele na página as mensagens se perdiam. Vazio, também limpa as mensagens da ação anterior. #}
 <ul id="mensagens" class="mensagens" hx-swap-oob="true">
     {% for message in messages %}
     <li class="mensagem mensagem--{{ message.tags }}">{{ message }}</li>
     {% endfor %}
 </ul>
-{% endif %}
