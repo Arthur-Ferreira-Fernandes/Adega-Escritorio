@@ -123,12 +123,38 @@ def ativar_impressao(window):
     navegador.webview.printRequested.connect(imprimir)
 
 
+def ativar_downloads(window):
+    """No Linux (Qt) salva as planilhas exportadas com o nome que o sistema sugere.
+
+    O tratamento do pywebview usaria o caminho da URL como nome, sem extensão.
+    """
+    from qtpy.QtCore import QStandardPaths
+    from qtpy.QtWidgets import QFileDialog
+
+    navegador = window.native
+
+    def baixar(download):
+        pasta = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DownloadLocation)
+        caminho, _ = QFileDialog.getSaveFileName(
+            navegador, "Salvar arquivo", os.path.join(pasta, download.downloadFileName())
+        )
+        if not caminho:
+            download.cancel()
+            return
+        download.setDownloadDirectory(os.path.dirname(caminho))
+        download.setDownloadFileName(os.path.basename(caminho))
+        download.accept()
+
+    navegador.webview.page().profile().downloadRequested.connect(baixar)
+
+
 def criar_janela(*args, **kwargs):
     import webview
 
     janela = webview.create_window(*args, **kwargs)
     if sys.platform.startswith("linux"):
         janela.events.before_show += ativar_impressao
+        janela.events.before_show += ativar_downloads
     return janela
 
 
@@ -181,8 +207,12 @@ def identificar_app():
     icone = str(RAIZ / "desktop" / "adega.png")
     if sys.platform.startswith("linux"):
         instalar_atalho_linux(icone)
+        from qtpy.QtCore import QLocale
         from qtpy.QtGui import QGuiApplication
 
+        # O navegador do Qt herda o idioma daqui: sem isso as datas saem em
+        # inglês (07/18/2026) mesmo com o sistema em português.
+        QLocale.setDefault(QLocale(QLocale.Language.Portuguese, QLocale.Country.Brazil))
         # Precisa vir antes do pywebview criar a QApplication.
         QGuiApplication.setApplicationName(ID_APP_LINUX)
         QGuiApplication.setDesktopFileName(ID_APP_LINUX)
@@ -195,6 +225,8 @@ def abrir_janela(url, titulo, pasta_dados):
 
     icone, gui = identificar_app()
     webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
+    # Exportar para planilha. No Linux quem trata é ativar_downloads.
+    webview.settings["ALLOW_DOWNLOADS"] = not sys.platform.startswith("linux")
     janela = criar_janela(
         titulo, url, js_api=Api(), width=1280, height=800, min_size=(900, 600),
         confirm_close=True, maximized=True,

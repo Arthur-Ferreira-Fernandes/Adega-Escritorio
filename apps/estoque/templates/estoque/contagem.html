@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block titulo %}Contagem de estoque · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<h1 class="titulo-pagina">Contagem de estoque</h1>
+<p class="subtitulo-pagina">Conte a prateleira, digite a quantidade real e aplique. Só os produtos preenchidos mudam; cada ajuste fica registrado com quem fez.</p>
+
+<form method="get" class="filtro-periodo">
+    <div class="chips">
+        {% for valor, rotulo in filtros %}
+        <a href="?filtro={{ valor }}{% if categoria_id %}&amp;categoria={{ categoria_id }}{% endif %}" class="chip{% if filtro == valor %} ativo{% endif %}">{{ rotulo }}{% if valor == "negativos" and negativos %} ({{ negativos }}){% endif %}</a>
+        {% endfor %}
+    </div>
+    <div class="filtro-periodo__datas">
+        <input type="hidden" name="filtro" value="{{ filtro }}">
+        <div class="campo campo--compacto">
+            <label for="contagem-categoria">Categoria</label>
+            <select name="categoria" id="contagem-categoria" onchange="this.form.submit()">
+                <option value="">Todas</option>
+                {% for categoria in categorias %}
+                <option value="{{ categoria.pk }}"{% if categoria_id == categoria.pk|stringformat:"d" %} selected{% endif %}>{{ categoria.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="campo campo--compacto">
+            <label for="contagem-busca">Buscar</label>
+            <input type="search" name="busca" id="contagem-busca" value="{{ busca }}" placeholder="Nome, SKU ou código">
+        </div>
+        <button type="submit" class="botao botao--secundario">Filtrar</button>
+    </div>
+</form>
+
+<form method="post" id="form-contagem">
+    {% csrf_token %}
+    <div class="cartao" style="margin-bottom: 1.5rem; padding: 0;">
+        <table class="tabela tabela-contagem" style="margin: 0;">
+            <thead>
+                <tr><th>Produto</th><th>Categoria</th><th>No sistema</th><th>Contado</th><th>Diferença</th></tr>
+            </thead>
+            <tbody>
+                {% for produto in produtos %}
+                <tr data-sistema="{{ produto.quantidade_estoque }}" data-custo="{{ produto.preco_custo|stringformat:'s' }}">
+                    <td>{{ produto.nome }}{% if produto.codigo_barras %} <small class="nota">{{ produto.codigo_barras }}</small>{% endif %}</td>
+                    <td>{{ produto.categoria }}</td>
+                    <td class="{% if produto.quantidade_estoque < 0 %}texto-perigo{% endif %}">{{ produto.quantidade_estoque }}</td>
+                    <td><input type="number" name="contado_{{ produto.pk }}" min="0" step="1" inputmode="numeric" class="campo-contagem" aria-label="Quantidade contada de {{ produto.nome }}"></td>
+                    <td class="contagem-diferenca">—</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">Nenhum produto neste filtro.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if produtos %}
+    <div class="barra-acao-fixa">
+        <span id="contagem-resumo" class="nota">Nenhuma quantidade preenchida.</span>
+        <button type="submit" class="botao" data-atalho="Ctrl+S"
+                onclick="return confirm('Aplicar a contagem? O estoque dos produtos preenchidos será substituído pela quantidade contada.')">Aplicar contagem</button>
+    </div>
+    {% endif %}
+</form>
+
+<h2 class="titulo-pagina" style="font-size: 1.1rem; margin-top: 2rem;">Últimos ajustes</h2>
+<table class="tabela">
+    <thead><tr><th>Data</th><th>Produto</th><th>Antes</th><th>Contado</th><th>Diferença</th><th>Valor</th><th>Por</th></tr></thead>
+    <tbody>
+        {% for ajuste in ultimos_ajustes %}
+        <tr>
+            <td>{{ ajuste.criado_em|date:"d/m/Y H:i" }}</td>
+            <td>{{ ajuste.produto }}</td>
+            <td>{{ ajuste.quantidade_anterior }}</td>
+            <td>{{ ajuste.quantidade_contada }}</td>
+            <td class="{% if ajuste.diferenca < 0 %}texto-perigo{% endif %}">{% if ajuste.diferenca > 0 %}+{% endif %}{{ ajuste.diferenca }}</td>
+            <td class="{% if ajuste.diferenca < 0 %}texto-perigo{% endif %}">R$&nbsp;{{ ajuste.valor_diferenca }}</td>
+            <td>{{ ajuste.criado_por }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">Nenhuma contagem registrada ainda.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+<p class="nota">O total de perdas por produto está em <a href="{% url 'relatorios:compras' %}">Relatórios › Compras e perdas</a>.</p>
+
+<script>
+(function () {
+    var form = document.getElementById("form-contagem");
+    if (!form) return;
+    var real = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+    var campos = Array.from(form.querySelectorAll(".campo-contagem"));
+
+    function atualizar() {
+        var preenchidos = 0, menos = 0, valor = 0;
+        campos.forEach(function (campo) {
+            var linha = campo.closest("tr");
+            var celula = linha.querySelector(".contagem-diferenca");
+            celula.className = "contagem-diferenca";
+            if (campo.value === "") { celula.textContent = "—"; return; }
+            preenchidos++;
+            var diferenca = parseInt(campo.value, 10) - parseInt(linha.dataset.sistema, 10);
+            celula.textContent = diferenca === 0 ? "ok" : (diferenca > 0 ? "+" : "") + diferenca;
+            if (diferenca < 0) {
+                celula.classList.add("texto-perigo");
+                menos += -diferenca;
+                valor += -diferenca * parseFloat(linha.dataset.custo);
+            }
+        });
+        document.getElementById("contagem-resumo").textContent = preenchidos
+            ? preenchidos + " produto(s) preenchido(s)" + (menos ? " · faltando " + menos + " unidade(s), " + real.format(valor) : "")
+            : "Nenhuma quantidade preenchida.";
+    }
+
+    form.addEventListener("input", atualizar);
+    // Enter passa para o próximo produto, como numa planilha.
+    form.addEventListener("keydown", function (evento) {
+        if (evento.key !== "Enter" || !evento.target.classList.contains("campo-contagem")) return;
+        evento.preventDefault();
+        var proximo = campos[campos.indexOf(evento.target) + 1];
+        if (proximo) { proximo.focus(); proximo.select(); }
+    });
+})();
+</script>
+{% endblock %}

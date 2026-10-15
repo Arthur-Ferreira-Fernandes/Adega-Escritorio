@@ -1,0 +1,72 @@
+{% extends "relatorios/analise_base.html" %}
+
+{% block descricao %}Como as mesas e comandas rendem: ticket por mesa e por pessoa, tempo de permanência e quanto cada hora de mesa fatura.{% endblock %}
+
+{% block corpo %}
+{% if mesas.quantidade %}
+<div class="grade-stats" style="margin-bottom: 1.5rem;">
+    <div class="stat">
+        <span class="stat__valor">{{ mesas.quantidade }}</span>
+        <span class="stat__rotulo">Mesas atendidas · R$&nbsp;{{ mesas.faturamento }}</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">R$&nbsp;{{ mesas.ticket_medio }}</span>
+        <span class="stat__rotulo">Ticket médio por mesa</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{% if mesas.por_pessoa %}R$&nbsp;{{ mesas.por_pessoa }}{% else %}—{% endif %}</span>
+        <span class="stat__rotulo">Gasto médio por pessoa</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{{ mesas.permanencia_media }}</span>
+        <span class="stat__rotulo">Permanência média</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">R$&nbsp;{{ mesas.por_hora_de_mesa }}</span>
+        <span class="stat__rotulo">Faturamento por hora de mesa ocupada</span>
+    </div>
+</div>
+
+<div class="grade-duas">
+    <div class="cartao">
+        <div class="secao-titulo">
+            <h2 class="titulo-pagina" style="font-size: 1.1rem;">Por tempo de permanência</h2>
+            {% include "relatorios/_exportar.html" with tabela="mesas" %}
+        </div>
+        <table class="tabela">
+            <thead><tr><th>Ficaram</th><th>Mesas</th><th>Ticket médio</th><th>Por pessoa</th></tr></thead>
+            <tbody>
+                {% for linha in mesas.por_permanencia %}
+                <tr>
+                    <td>{{ linha.rotulo }}</td>
+                    <td>{{ linha.mesas }}</td>
+                    <td>{% if linha.mesas %}R$&nbsp;{{ linha.ticket }}{% else %}—{% endif %}</td>
+                    <td>{% if linha.por_pessoa %}R$&nbsp;{{ linha.por_pessoa }}{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="nota">Mostra se quem fica mais tempo também gasta mais — base para decidir consumação mínima ou couvert.</p>
+    </div>
+    <div class="cartao">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Por tamanho da mesa</h2>
+        <table class="tabela">
+            <thead><tr><th>Mesa com</th><th>Mesas</th><th>Ticket médio</th><th>Por pessoa</th></tr></thead>
+            <tbody>
+                {% for linha in mesas.por_pessoas %}
+                <tr>
+                    <td>{{ linha.rotulo }}</td>
+                    <td>{{ linha.mesas }}</td>
+                    <td>{% if linha.mesas %}R$&nbsp;{{ linha.ticket }}{% else %}—{% endif %}</td>
+                    <td>{% if linha.por_pessoa %}R$&nbsp;{{ linha.por_pessoa }}{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="nota">Só entram mesas com a quantidade de pessoas informada.</p>
+    </div>
+</div>
+{% else %}
+<div class="cartao"><p>Nenhuma mesa ou comanda concluída no período. Abra comandas com identificador (ex.: "Mesa 4") e quantidade de pessoas para ver esta análise.</p></div>
+{% endif %}
+{% endblock %}

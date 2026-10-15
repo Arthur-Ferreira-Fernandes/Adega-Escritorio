@@ -213,6 +213,30 @@
         <p class="total">Valor contado: R$ {{ caixa.valor_contado }}</p>
         <p class="total{% if caixa.diferenca < 0 %} negativo{% endif %}">Diferença: R$ {{ caixa.diferenca }}</p>
 
+        <p class="titulo-doc">Vendas do turno</p>
+        <div class="dados-venda">
+            <div><strong>Faturamento:</strong> R$ {{ resumo.faturamento }}</div>
+            <div><strong>Vendas:</strong> {{ resumo.numero_vendas }}</div>
+            <div><strong>Ticket médio:</strong> R$ {{ resumo.ticket_medio }}</div>
+            <div><strong>Lucro:</strong> R$ {{ resumo.lucro }}</div>
+            {% for forma in resumo.por_forma %}
+            <div><strong>{{ forma.forma }}:</strong> R$ {{ forma.valor }}</div>
+            {% endfor %}
+            {% if resumo.canceladas %}
+            <div><strong>Canceladas:</strong> {{ resumo.canceladas }} (R$ {{ resumo.valor_cancelado }})</div>
+            {% endif %}
+        </div>
+        {% if resumo.mais_vendidos %}
+        <table>
+            <thead><tr><th>Mais vendidos do turno</th><th>Quantidade</th><th>Valor</th></tr></thead>
+            <tbody>
+                {% for produto in resumo.mais_vendidos %}
+                <tr><td>{{ produto.produto__nome }}</td><td>{{ produto.quantidade }}</td><td>R$ {{ produto.valor }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
         <div class="rodape">
             Relatório gerado para controle interno.
             <small>Não substitui a conferência física do caixa.</small>

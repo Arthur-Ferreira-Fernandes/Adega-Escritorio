@@ -5,14 +5,13 @@
           hx-target="#estoque-entradas-conteudo" hx-swap="innerHTML" hx-indicator="#estoque-entradas-conteudo"
           class="formulario" style="flex-direction: column; align-items: stretch;">
         {% csrf_token %}
-        <div class="campo">
-            <label for="{{ entrada_form.produto_busca.id_for_label }}">{{ entrada_form.produto_busca.label }}</label>
+        <div class="campo busca-produto">
+            <label for="busca-produto">Produto <small>(nome ou código de barras)</small></label>
+            <input type="text" id="busca-produto" autocomplete="off" placeholder="Digite o nome ou passe o leitor…" autofocus
+                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="busca-produto-lista">
             {{ entrada_form.produto_busca }}
-            <datalist id="produtos-estoque-datalist">
-                {% for produto in produtos_ativos %}
-                <option value="{{ produto.nome }} (estoque atual: {{ produto.quantidade_estoque }}) | {{ produto.sku }}"></option>
-                {% endfor %}
-            </datalist>
+            <div id="busca-produto-lista" class="busca-produto__lista" role="listbox" hidden></div>
+            {{ produtos_busca|json_script:"produtos-dados" }}
         </div>
         <div class="campo">
             <label for="{{ entrada_form.quantidade.id_for_label }}">{{ entrada_form.quantidade.label }}</label>

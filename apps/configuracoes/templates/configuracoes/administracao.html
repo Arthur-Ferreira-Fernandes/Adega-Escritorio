@@ -42,13 +42,14 @@
     </div>
 
     <div class="cartao cartao--destaque" id="config-caixa">
-        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Configurações do caixa</h2>
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Configurações do sistema</h2>
         <form method="post" class="formulario" style="flex-direction: column; align-items: stretch;">
             {% csrf_token %}
             {% for field in config_form %}
             <div class="campo">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
+                {% if field.help_text %}<small class="campo__ajuda">{{ field.help_text }}</small>{% endif %}
                 {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
             </div>
             {% endfor %}

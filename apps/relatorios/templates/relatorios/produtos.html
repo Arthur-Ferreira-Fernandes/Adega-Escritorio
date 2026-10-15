@@ -1,0 +1,119 @@
+{% extends "relatorios/analise_base.html" %}
+
+{% block descricao %}Quais produtos sustentam o faturamento, quais estão parados com dinheiro empatado e quais saem juntos.{% endblock %}
+
+{% block corpo %}
+<div class="cartao tabela-recolhivel" style="margin-bottom: 1.5rem;">
+    <div class="secao-titulo">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Curva ABC</h2>
+        {% include "relatorios/_exportar.html" with tabela="abc" %}
+    </div>
+    <p class="nota" style="margin-top: 0;">Classe A são os produtos que somam 80% do faturamento — <strong>esses nunca podem faltar</strong>. A classe C vende pouco: candidata a sair de linha ou ganhar promoção.</p>
+    <div class="grade-stats" style="margin: 1rem 0 1.5rem;">
+        {% for classe, dados in abc.resumo.items %}
+        <div class="stat">
+            <span class="stat__valor"><span class="classe-abc classe-abc--{{ classe }}">{{ classe }}</span> {{ dados.produtos }} produto{{ dados.produtos|pluralize }}</span>
+            <span class="stat__rotulo">{{ dados.participacao }}% do faturamento (R$&nbsp;{{ dados.faturamento }})</span>
+        </div>
+        {% endfor %}
+    </div>
+    <table class="tabela">
+        <thead>
+            <tr><th>Classe</th><th>Produto</th><th>Categoria</th><th>Qtd.</th><th>Faturamento</th><th>% fat.</th><th>% acumulado</th><th>Estoque</th></tr>
+        </thead>
+        <tbody>
+            {% for linha in abc.linhas %}
+            <tr{% if forloop.counter > 15 %} class="linha-extra"{% endif %}>
+                <td><span class="classe-abc classe-abc--{{ linha.classe }}">{{ linha.classe }}</span></td>
+                <td>{{ linha.produto__nome }}</td>
+                <td>{{ linha.produto__categoria__nome }}</td>
+                <td>{{ linha.quantidade }}</td>
+                <td>R$&nbsp;{{ linha.faturamento }}</td>
+                <td>{{ linha.participacao }}%</td>
+                <td>{{ linha.acumulado }}%</td>
+                <td class="{% if linha.classe == 'A' and linha.produto__quantidade_estoque <= 0 %}texto-perigo{% endif %}">{{ linha.produto__quantidade_estoque }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8">Nenhuma venda concluída no período.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if abc.linhas|length > 15 %}
+    <button type="button" class="botao botao--secundario botao--pequeno tabela-recolhivel__botao"
+            onclick="this.closest('.tabela-recolhivel').classList.toggle('expandida')">
+        <span class="quando-recolhida">Mostrar todos os {{ abc.linhas|length }} produtos</span>
+        <span class="quando-expandida">Mostrar só os 15 primeiros</span>
+    </button>
+    {% endif %}
+</div>
+
+<div class="cartao" style="margin-bottom: 1.5rem;">
+    <div class="secao-titulo">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Produtos parados</h2>
+        <a href="?{{ periodo_qs }}&amp;parado={{ dias_parado }}&amp;exportar=parados" class="botao botao--secundario botao--pequeno">Exportar planilha</a>
+    </div>
+    <div class="chips" style="margin-bottom: 1rem;">
+        <span class="chips__rotulo">Sem venda há mais de</span>
+        {% for dias in opcoes_parado %}
+        <a href="?{{ periodo_qs }}&amp;parado={{ dias }}" class="chip{% if dias == dias_parado %} ativo{% endif %}">{{ dias }} dias</a>
+        {% endfor %}
+    </div>
+    <div class="grade-stats" style="margin-bottom: 1.5rem;">
+        <div class="stat">
+            <span class="stat__valor">R$&nbsp;{{ parados.capital_total }}</span>
+            <span class="stat__rotulo">Dinheiro parado no estoque (a preço de custo)</span>
+        </div>
+        <div class="stat">
+            <span class="stat__valor">{{ parados.linhas|length }}</span>
+            <span class="stat__rotulo">Produtos sem venda há {{ dias_parado }}+ dias</span>
+        </div>
+    </div>
+    <table class="tabela">
+        <thead>
+            <tr><th>Produto</th><th>Categoria</th><th>Última venda</th><th>Dias parado</th><th>Estoque</th><th>Dinheiro parado</th></tr>
+        </thead>
+        <tbody>
+            {% for linha in parados.linhas %}
+            <tr>
+                <td>{{ linha.produto.nome }}</td>
+                <td>{{ linha.produto.categoria }}</td>
+                <td>{{ linha.ultima_venda|date:"d/m/Y"|default:"Nunca vendido" }}</td>
+                <td>{{ linha.dias_parado }}</td>
+                <td>{{ linha.estoque }}</td>
+                <td>R$&nbsp;{{ linha.capital }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">Nenhum produto parado há mais de {{ dias_parado }} dias.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="cartao">
+    <div class="secao-titulo">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Comprados juntos</h2>
+        {% include "relatorios/_exportar.html" with tabela="juntos" %}
+    </div>
+    <p class="nota" style="margin-top: 0;">Ideias para combos e para o que deixar perto do caixa. Considera {{ juntos.vendas_analisadas }} venda{{ juntos.vendas_analisadas|pluralize }} do período e pares que saíram juntos pelo menos 2 vezes.</p>
+    <table class="tabela">
+        <thead>
+            <tr><th>Quem leva</th><th>Também leva</th><th>Frequência</th><th>Vendas juntos</th></tr>
+        </thead>
+        <tbody>
+            {% for linha in juntos.linhas %}
+            <tr>
+                <td>{{ linha.produto }}</td>
+                <td>{{ linha.leva_tambem }}</td>
+                <td>
+                    <span class="barra-percentual"><span style="width: {{ linha.confianca }}%;"></span></span>
+                    {{ linha.confianca }}% das vezes
+                </td>
+                <td>{{ linha.vezes }} de {{ linha.vendas_produto }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">Ainda não há pares de produtos vendidos juntos com frequência no período.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

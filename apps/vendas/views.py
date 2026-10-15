@@ -6,12 +6,18 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.formats import number_format
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 
+from apps.auditoria import servicos as auditoria
+from apps.auditoria.models import RegistroAuditoria
 from apps.caixa.models import Caixa
+from apps.estoque.forms import ProdutoRapidoForm
 from apps.estoque.models import Produto
+from apps.estoque.servicos import dados_para_busca, gerar_sku, mais_vendidos
+from apps.relatorios.exportar import resposta_csv
 
 from .forms import (
     EscanearCodigoForm,
@@ -20,7 +26,7 @@ from .forms import (
     NovaVendaForm,
     QuantidadePessoasForm,
 )
-from .models import ItemVenda, PagamentoVenda, Venda
+from .models import MINUTOS_COMANDA_PARADA, ItemVenda, PagamentoVenda, Venda
 
 
 def _bloqueio_caixa():
@@ -35,10 +41,15 @@ class InicioView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         contexto = super().get_context_data(**kwargs)
-        contexto["total_vendas"] = Venda.objects.count()
-        contexto["comandas_abertas"] = Venda.objects.filter(
-            status=Venda.Status.ABERTA
-        ).select_related("cliente")
+        abertas = list(
+            Venda.objects.filter(status=Venda.Status.ABERTA)
+            .select_related("cliente")
+            .order_by("criado_em")
+        )
+        contexto["comandas_abertas"] = abertas
+        contexto["total_em_aberto"] = sum((venda.total for venda in abertas), Decimal("0"))
+        contexto["paradas"] = sum(1 for venda in abertas if venda.parada)
+        contexto["minutos_parada"] = MINUTOS_COMANDA_PARADA
         contexto["pode_vender"] = _bloqueio_caixa() is None
         return contexto
 
@@ -75,8 +86,9 @@ def venda_rapida(request):
     return redirect("vendas:detalhe", pk=venda.pk)
 
 
-def _contexto_venda(venda):
+def _contexto_venda(venda, **extra):
     return {
+        **extra,
         "venda": venda,
         "itens": venda.itens.select_related("produto"),
         "item_form": ItemVendaForm(),
@@ -84,27 +96,15 @@ def _contexto_venda(venda):
         "pessoas_form": QuantidadePessoasForm(
             initial={"quantidade_pessoas": venda.quantidade_pessoas}
         ),
-        "produtos_busca": [
-            {
-                "sku": produto.sku,
-                "nome": produto.nome,
-                "categoria": produto.categoria.nome,
-                "codigo": produto.codigo_barras or "",
-                "preco": str(produto.preco_venda),
-                "estoque": produto.quantidade_estoque,
-                "minimo": produto.estoque_minimo,
-            }
-            for produto in Produto.objects.filter(ativo=True)
-            .select_related("categoria")
-            .order_by("categoria__nome", "nome")
-        ],
+        "produtos_busca": dados_para_busca(),
+        "produtos_rapidos": mais_vendidos() if venda.status == Venda.Status.ABERTA else [],
         "falta_receber_bruto": str(venda.falta_receber),
     }
 
 
-def _responder_venda(request, venda):
+def _responder_venda(request, venda, **extra):
     if request.headers.get("HX-Request") == "true":
-        return render(request, "vendas/_conteudo_htmx.html", _contexto_venda(venda))
+        return render(request, "vendas/_conteudo_htmx.html", _contexto_venda(venda, **extra))
     return redirect("vendas:detalhe", pk=venda.pk)
 
 
@@ -122,6 +122,14 @@ def venda_escanear(request, pk):
     venda = get_object_or_404(Venda, pk=pk)
     form = EscanearCodigoForm(request.POST)
     if form.is_valid():
+        codigo = form.cleaned_data["codigo_barras"]
+        if venda.status == Venda.Status.ABERTA and not Produto.objects.filter(
+            codigo_barras=codigo, ativo=True
+        ).exists():
+            # Código novo: oferece o cadastro na hora em vez de só dar erro.
+            return _responder_venda(
+                request, venda, cadastro_form=ProdutoRapidoForm(initial={"codigo_barras": codigo})
+            )
         try:
             item = venda.adicionar_por_codigo_barras(form.cleaned_data["codigo_barras"])
             messages.success(
@@ -132,6 +140,30 @@ def venda_escanear(request, pk):
             messages.error(request, "; ".join(erro.messages))
     else:
         messages.error(request, "Informe um código de barras válido.")
+    return _responder_venda(request, venda)
+
+
+@login_required
+@require_POST
+def venda_cadastro_rapido(request, pk):
+    venda = get_object_or_404(Venda, pk=pk)
+    form = ProdutoRapidoForm(request.POST)
+    if not form.is_valid():
+        return _responder_venda(request, venda, cadastro_form=form)
+    produto = form.save(commit=False)
+    produto.sku = gerar_sku(produto.codigo_barras)
+    produto.save()
+    auditoria.registrar(
+        request.user, RegistroAuditoria.Acao.CRIACAO, produto,
+        detalhes="Cadastro rápido pela venda (código de barras novo)",
+    )
+    try:
+        venda.adicionar_item(produto, 1)
+        messages.success(
+            request, f"{produto.nome} cadastrado e adicionado. Complete o cadastro em Estoque quando puder."
+        )
+    except ValidationError as erro:
+        messages.error(request, "; ".join(erro.messages))
     return _responder_venda(request, venda)
 
 
@@ -174,7 +206,7 @@ def venda_remover_item(request, pk, item_id):
     venda = get_object_or_404(Venda, pk=pk)
     item = get_object_or_404(ItemVenda, pk=item_id, venda=venda)
     try:
-        venda.remover_item(item)
+        venda.remover_item(item, usuario=request.user)
     except ValidationError as erro:
         messages.error(request, "; ".join(erro.messages))
     return _responder_venda(request, venda)
@@ -241,7 +273,7 @@ def venda_remover_pagamento(request, pk, pagamento_id):
 def venda_cancelar(request, pk):
     venda = get_object_or_404(Venda, pk=pk)
     try:
-        venda.cancelar()
+        venda.cancelar(usuario=request.user)
         messages.success(request, "Venda cancelada.")
     except ValidationError as erro:
         messages.error(request, "; ".join(erro.messages))
@@ -264,6 +296,9 @@ def historico(request):
         if form.cleaned_data.get("cliente"):
             vendas = vendas.filter(cliente=form.cleaned_data["cliente"])
 
+    if request.GET.get("exportar"):
+        return _exportar_vendas(vendas.distinct())
+
     paginator = Paginator(vendas, 20)
     pagina = paginator.get_page(request.GET.get("pagina"))
 
@@ -277,6 +312,34 @@ def historico(request):
         else "vendas/historico.html"
     )
     return render(request, template, contexto)
+
+
+def _exportar_vendas(vendas):
+    """Uma linha por item vendido, com os dados da venda: pronta para filtrar no Excel."""
+    itens = (
+        ItemVenda.objects.filter(venda__in=vendas)
+        .select_related("venda__cliente", "venda__criado_por", "produto__categoria")
+        .prefetch_related("venda__pagamentos")
+        .order_by("-venda__criado_em", "pk")
+    )
+    linhas = []
+    for item in itens:
+        venda = item.venda
+        linhas.append([
+            venda.pk, str(venda), venda.get_status_display(), venda.criado_em, venda.finalizada_em,
+            venda.cliente, venda.criado_por,
+            ", ".join(p.get_forma_pagamento_display() for p in venda.pagamentos.all()),
+            item.produto.nome, item.produto.categoria, item.quantidade, item.preco_unitario,
+            item.subtotal, item.custo_unitario,
+            item.subtotal - item.custo_unitario * item.quantidade if item.custo_unitario is not None else None,
+        ])
+    return resposta_csv(
+        f"vendas_{timezone.localdate():%Y-%m-%d}",
+        ["Venda", "Identificação", "Status", "Aberta em", "Finalizada em", "Cliente", "Atendente",
+         "Pagamento", "Produto", "Categoria", "Quantidade", "Preço unitário", "Subtotal",
+         "Custo unitário", "Lucro"],
+        linhas,
+    )
 
 
 @login_required

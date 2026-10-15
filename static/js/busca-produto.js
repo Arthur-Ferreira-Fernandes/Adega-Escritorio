@@ -51,7 +51,9 @@
         var achados = produtos().filter(function (produto) {
             return termos.every(function (termo) { return produto.busca.indexOf(termo) !== -1; });
         });
+        var codigo = texto.trim();
         function peso(produto) {
+            if (codigo && produto.codigo === codigo) return -1;  // leitor de código de barras
             if (!termos.length) return 0;
             if (produto.nomeBusca.indexOf(termos[0]) === 0) return 0;
             if (produto.nomeBusca.indexOf(" " + termos[0]) !== -1) return 1;
@@ -62,6 +64,9 @@
             var categoria = termos.length ? 0 : a.categoria.localeCompare(b.categoria, "pt-BR");
             return categoria || peso(a) - peso(b) || a.nome.localeCompare(b.nome, "pt-BR");
         });
+        // Código lido inteiro: só o produto dele, para o Enter do leitor escolher certo.
+        var exato = achados.filter(function (produto) { return codigo && produto.codigo === codigo; });
+        if (exato.length) achados = exato;
         // Agrupa por categoria mantendo a ordem de relevância das categorias.
         var grupos = [];
         var porCategoria = {};

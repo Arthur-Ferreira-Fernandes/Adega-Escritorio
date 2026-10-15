@@ -61,10 +61,10 @@ class EscanearCodigoForm(forms.Form):
 
 class FiltroHistoricoVendaForm(forms.Form):
     data_inicio = forms.DateField(
-        required=False, label="De", widget=forms.DateInput(attrs={"type": "date"})
+        required=False, label="De", widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"})
     )
     data_fim = forms.DateField(
-        required=False, label="Até", widget=forms.DateInput(attrs={"type": "date"})
+        required=False, label="Até", widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"})
     )
     status = forms.ChoiceField(
         choices=[("", "Todos")] + list(Venda.Status.choices), required=False, label="Status"

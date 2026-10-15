@@ -155,7 +155,7 @@
             <td>R$ {{ item.valor_abertura }}</td>
             <td>R$ {{ item.saldo_esperado }}</td>
             <td>R$ {{ item.valor_contado }}</td>
-            <td style="{% if item.diferenca < 0 %}color: var(--cor-vinho);{% endif %}">R$ {{ item.diferenca }}</td>
+            <td style="{% if item.diferenca < 0 %}color: var(--cor-alerta-texto);{% endif %}">R$ {{ item.diferenca }}</td>
             <td><a href="{% url 'caixa:relatorio' pk=item.pk %}" target="_blank" class="botao botao--secundario">Imprimir relatório</a></td>
         </tr>
         {% empty %}

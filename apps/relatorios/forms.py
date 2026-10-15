@@ -8,12 +8,12 @@ class FiltroRelatorioForm(forms.Form):
     data_inicio = forms.DateField(
         required=False,
         label="De",
-        widget=forms.DateInput(attrs={"type": "date"}),
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
     )
     data_fim = forms.DateField(
         required=False,
         label="Até",
-        widget=forms.DateInput(attrs={"type": "date"}),
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
     )
     categoria = forms.ModelChoiceField(
         queryset=Categoria.objects.all(),

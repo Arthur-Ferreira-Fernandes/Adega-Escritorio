@@ -12,6 +12,10 @@ from apps.estoque.models import Produto
 from config.agregados import Soma
 
 
+# Comanda aberta sem item ou pagamento novo há esse tempo aparece como parada.
+MINUTOS_COMANDA_PARADA = 40
+
+
 class Venda(models.Model):
     class Status(models.TextChoices):
         ABERTA = "aberta", "Aberta"
@@ -39,6 +43,16 @@ class Venda(models.Model):
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     criado_em = models.DateTimeField(auto_now_add=True)
     finalizada_em = models.DateTimeField(null=True, blank=True)
+    # Último item ou pagamento lançado: mostra comandas paradas há muito tempo.
+    atualizada_em = models.DateTimeField(null=True, blank=True)
+    cancelada_em = models.DateTimeField(null=True, blank=True)
+    cancelada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="vendas_canceladas",
+    )
 
     class Meta:
         verbose_name = "Venda"
@@ -48,9 +62,22 @@ class Venda(models.Model):
     def __str__(self):
         return self.identificador or f"Venda #{self.pk}"
 
+    @property
+    def ultima_movimentacao(self):
+        return self.atualizada_em or self.criado_em
+
+    @property
+    def minutos_parada(self):
+        return int((timezone.now() - self.ultima_movimentacao).total_seconds() // 60)
+
+    @property
+    def parada(self):
+        return self.status == self.Status.ABERTA and self.minutos_parada >= MINUTOS_COMANDA_PARADA
+
     def recalcular_total(self):
         self.total = sum((item.subtotal for item in self.itens.all()), start=0)
-        self.save(update_fields=["total"])
+        self.atualizada_em = timezone.now()
+        self.save(update_fields=["total", "atualizada_em"])
 
     def adicionar_item(self, produto, quantidade):
         if self.status != self.Status.ABERTA:
@@ -84,11 +111,19 @@ class Venda(models.Model):
             raise ValidationError("Nenhum produto ativo encontrado para este código de barras.")
         return self.adicionar_item(produto, quantidade=1)
 
-    def remover_item(self, item):
+    def remover_item(self, item, usuario=None):
         if self.status != self.Status.ABERTA:
             raise ValidationError("Só é possível remover itens de uma venda aberta.")
-        item.delete()
-        self.recalcular_total()
+        with transaction.atomic():
+            ItemRemovido.objects.create(
+                venda=self,
+                produto=item.produto,
+                quantidade=item.quantidade,
+                valor=item.subtotal,
+                removido_por=usuario or self.criado_por,
+            )
+            item.delete()
+            self.recalcular_total()
 
     @property
     def falta_receber(self):
@@ -134,6 +169,8 @@ class Venda(models.Model):
         if eh_dinheiro:
             pagamento.valor_recebido = (pagamento.valor_recebido or Decimal("0")) + valor_informado
         pagamento.save(update_fields=["valor", "valor_recebido"])
+        self.atualizada_em = timezone.now()
+        self.save(update_fields=["atualizada_em"])
         return pagamento
 
     def receber(self, forma_pagamento, valor_informado=None):
@@ -185,12 +222,14 @@ class Venda(models.Model):
             self.finalizada_em = timezone.now()
             self.save(update_fields=["status", "finalizada_em"])
 
-    def cancelar(self):
+    def cancelar(self, usuario=None):
         if self.status != self.Status.ABERTA:
             raise ValidationError("Somente vendas abertas podem ser canceladas.")
         self.pagamentos.all().delete()
         self.status = self.Status.CANCELADA
-        self.save(update_fields=["status"])
+        self.cancelada_em = timezone.now()
+        self.cancelada_por = usuario or self.criado_por
+        self.save(update_fields=["status", "cancelada_em", "cancelada_por"])
 
 
 class PagamentoVenda(models.Model):
@@ -235,3 +274,24 @@ class ItemVenda(models.Model):
     def save(self, *args, **kwargs):
         self.subtotal = self.quantidade * self.preco_unitario
         super().save(*args, **kwargs)
+
+
+class ItemRemovido(models.Model):
+    """Item tirado de uma venda aberta: sem isso, a remoção não deixaria rastro."""
+
+    venda = models.ForeignKey(Venda, on_delete=models.CASCADE, related_name="itens_removidos")
+    produto = models.ForeignKey(Produto, on_delete=models.PROTECT, related_name="+")
+    quantidade = models.PositiveIntegerField()
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    removido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="itens_removidos"
+    )
+    removido_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Item removido da venda"
+        verbose_name_plural = "Itens removidos das vendas"
+        ordering = ["-removido_em"]
+
+    def __str__(self):
+        return f"{self.produto} x{self.quantidade} (removido)"

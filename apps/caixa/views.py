@@ -4,7 +4,13 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.formats import number_format
 from django.views.decorators.http import require_POST
+
+from apps.notificacoes.models import Notificacao
+from apps.relatorios import analises
 
 from .forms import AbrirCaixaForm, FecharCaixaForm, MovimentoCaixaForm
 from .models import Caixa
@@ -131,6 +137,7 @@ def caixa_fechar(request):
     if form.is_valid():
         try:
             caixa.fechar(request.user, form.cleaned_data["valor_contado"])
+            resumo = _notificar_fechamento(caixa)
             logger.info(
                 "Caixa fechado",
                 extra={
@@ -139,7 +146,12 @@ def caixa_fechar(request):
                     "diferenca": str(caixa.diferenca()),
                 },
             )
-            messages.success(request, "Caixa fechado com sucesso.")
+            messages.success(
+                request,
+                f"Caixa fechado. No turno: R$ {number_format(resumo['faturamento'], decimal_pos=2)} "
+                f"em {resumo['numero_vendas']} venda{'s' if resumo['numero_vendas'] != 1 else ''}, "
+                f"lucro de R$ {number_format(resumo['lucro'], decimal_pos=2)}.",
+            )
         except ValidationError as erro:
             messages.error(request, "; ".join(erro.messages))
     else:
@@ -157,5 +169,31 @@ def caixa_relatorio(request, pk):
     contexto = {
         "caixa": caixa,
         "movimentos": caixa.movimentos.select_related("criado_por").all(),
+        "resumo": analises.resumo_do_caixa(caixa),
     }
     return render(request, "caixa/relatorio.html", contexto)
+
+
+def _notificar_fechamento(caixa):
+    """Deixa o resumo do turno no sino; só o do último fechamento fica ativo."""
+    resumo = analises.resumo_do_caixa(caixa)
+    diferenca = caixa.diferenca()
+    chave = f"caixa:{caixa.pk}"
+    texto_diferenca = (
+        "caixa sem diferença" if not diferenca
+        else f"{'sobra' if diferenca > 0 else 'falta'} de R$ {number_format(abs(diferenca), decimal_pos=2)} no caixa"
+    )
+    Notificacao.registrar(
+        Notificacao.Tipo.RESUMO_CAIXA,
+        chave,
+        (
+            f"Fechamento {timezone.localtime(caixa.fechado_em):%d/%m}: "
+            f"R$ {number_format(resumo['faturamento'], decimal_pos=2)} em {resumo['numero_vendas']} "
+            f"venda{'s' if resumo['numero_vendas'] != 1 else ''}, "
+            f"lucro R$ {number_format(resumo['lucro'], decimal_pos=2)}; {texto_diferenca}."
+        )[:255],
+        link=reverse("caixa:relatorio", kwargs={"pk": caixa.pk}),
+        nivel=Notificacao.Nivel.PERIGO if diferenca and diferenca < 0 else Notificacao.Nivel.AVISO,
+    )
+    Notificacao.resolver_ausentes(Notificacao.Tipo.RESUMO_CAIXA, [chave])
+    return resumo

@@ -3,32 +3,103 @@
 {% block titulo %}Adega &amp; Tabacaria Escritório{% endblock %}
 
 {% block conteudo %}
+{% if resumo %}
+<h1 class="titulo-pagina">{{ resumo.saudacao }}, {{ user.first_name|default:user.username }}</h1>
+<p class="subtitulo-pagina">Como está o dia até agora.</p>
+
+<div class="grade-stats" style="margin-bottom: 1.5rem;">
+    <a href="{% url 'relatorios:dashboard' %}?data_inicio={% now 'Y-m-d' %}&amp;data_fim={% now 'Y-m-d' %}" class="stat stat--link stat--principal">
+        <span class="stat__valor">R$&nbsp;{{ resumo.faturamento }}</span>
+        <span class="stat__rotulo">Faturamento de hoje</span>
+        {% if resumo.variacao is not None %}
+        <small class="stat__detalhe">
+            <span class="variacao {% if resumo.variacao >= 0 %}variacao--alta{% else %}variacao--baixa{% endif %}">{% if resumo.variacao >= 0 %}▲{% else %}▼{% endif %} {{ resumo.variacao|stringformat:"+d"|slice:"1:" }}%</span>
+            vs. {{ resumo.dia_comparado }} passada até esta hora (R$&nbsp;{{ resumo.faturamento_semana_passada }})
+        </small>
+        {% else %}
+        <small class="stat__detalhe">Sem vendas na {{ resumo.dia_comparado }} passada até esta hora</small>
+        {% endif %}
+    </a>
+    <div class="stat">
+        <span class="stat__valor">{{ resumo.numero_vendas }}</span>
+        <span class="stat__rotulo">Vendas · ticket médio R$&nbsp;{{ resumo.ticket_medio }}</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">R$&nbsp;{{ resumo.lucro }}</span>
+        <span class="stat__rotulo">Lucro de hoje · margem {{ resumo.margem }}%</span>
+    </div>
+    <a href="{% url 'vendas:inicio' %}" class="stat stat--link">
+        <span class="stat__valor">{{ resumo.comandas_abertas }}</span>
+        <span class="stat__rotulo">Comandas abertas · R$&nbsp;{{ resumo.valor_em_aberto }} a receber</span>
+    </a>
+</div>
+
+<div class="grade-duas" style="margin-bottom: 2rem;">
+    <div class="cartao">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Meta do mês</h2>
+        {% with meta=resumo.meta %}
+        {% if meta.ativa %}
+        <p class="meta__valores"><strong>R$&nbsp;{{ meta.faturamento }}</strong> de R$&nbsp;{{ meta.valor }} <span class="nota">({{ meta.percentual }}%)</span></p>
+        <div class="barra-meta" role="progressbar" aria-valuenow="{{ meta.percentual }}" aria-valuemin="0" aria-valuemax="100">
+            <span style="width: {{ meta.percentual_barra }}%;"></span>
+        </div>
+        <p class="nota">No ritmo atual o mês fecha em <strong>R$&nbsp;{{ meta.projecao }}</strong> ({{ meta.projecao_percentual }}% da meta).</p>
+        {% if meta.falta %}
+        <p class="nota">Faltam R$&nbsp;{{ meta.falta }}: <strong>R$&nbsp;{{ meta.por_dia_necessario }} por dia</strong> nos {{ meta.dias_restantes }} dia{{ meta.dias_restantes|pluralize }} que restam.</p>
+        {% else %}
+        <p class="nota" style="color: var(--cor-sucesso);">Meta batida!</p>
+        {% endif %}
+        {% else %}
+        <p>R$&nbsp;{{ meta.faturamento }} faturados neste mês · projeção de R$&nbsp;{{ meta.projecao }}.</p>
+        <p class="nota"><a href="{% url 'configuracoes:administracao' %}#config-caixa">Defina uma meta de faturamento</a> para acompanhar o progresso aqui.</p>
+        {% endif %}
+        {% endwith %}
+    </div>
+    <div class="cartao">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Precisa de atenção</h2>
+        {% if resumo.atencao %}
+        <ul class="lista-atencao">
+            {% for item in resumo.atencao %}
+            <li><span>{{ item.texto }}</span> <a href="{{ item.url }}">{{ item.acao }} →</a></li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="nota">Tudo em ordem: sem estoque negativo, reposição pendente ou comandas paradas.</p>
+        {% endif %}
+    </div>
+</div>
+
+<h2 class="titulo-pagina" style="font-size: 1.1rem;">Outros indicadores</h2>
+{% else %}
 <h1 class="titulo-pagina">Bem-vindo</h1>
 <p class="subtitulo-pagina">Indicadores rápidos do dia. Use o menu lateral para navegar entre os módulos.</p>
+{% endif %}
 
 <div class="grade-stats">
     <a href="{% url 'caixa:painel' %}" class="stat stat--link">
-        <span class="stat__valor" style="{% if not caixa %}color: var(--cor-vinho);{% endif %}">{% if caixa %}Aberto{% else %}Fechado{% endif %}</span>
+        <span class="stat__valor" style="{% if not caixa %}color: var(--cor-alerta-texto);{% endif %}">{% if caixa %}Aberto{% else %}Fechado{% endif %}</span>
         <span class="stat__rotulo">{% if caixa %}Caixa desde {{ caixa.aberto_em|date:"d/m H:i" }}{% else %}Caixa — clique para abrir{% endif %}</span>
     </a>
+    {% if not resumo %}
     <a href="{% url 'relatorios:dashboard' %}" class="stat stat--link">
-        <span class="stat__valor">R$ {{ faturamento_hoje }}</span>
+        <span class="stat__valor">R$&nbsp;{{ faturamento_hoje }}</span>
         <span class="stat__rotulo">Faturamento de hoje</span>
     </a>
     <a href="{% url 'vendas:inicio' %}" class="stat stat--link">
         <span class="stat__valor">{{ comandas_abertas }}</span>
         <span class="stat__rotulo">Comandas abertas</span>
     </a>
+    {% endif %}
     <a href="{% url 'estoque:produtos' %}" class="stat stat--link">
-        <span class="stat__valor" style="{% if estoque_baixo > 0 %}color: var(--cor-vinho);{% endif %}">{{ estoque_baixo }}</span>
+        <span class="stat__valor" style="{% if estoque_baixo > 0 %}color: var(--cor-alerta-texto);{% endif %}">{{ estoque_baixo }}</span>
         <span class="stat__rotulo">Produtos com estoque baixo</span>
     </a>
     <a href="{% url 'financeiro:contas_pagar' %}" class="stat stat--link">
-        <span class="stat__valor" style="{% if a_pagar_vencido > 0 %}color: var(--cor-vinho);{% endif %}">R$ {{ a_pagar_vencido }}</span>
+        <span class="stat__valor" style="{% if a_pagar_vencido > 0 %}color: var(--cor-alerta-texto);{% endif %}">R$&nbsp;{{ a_pagar_vencido }}</span>
         <span class="stat__rotulo">A pagar vencido</span>
     </a>
     <a href="{% url 'financeiro:contas_receber' %}" class="stat stat--link">
-        <span class="stat__valor" style="{% if a_receber_vencido > 0 %}color: var(--cor-vinho);{% endif %}">R$ {{ a_receber_vencido }}</span>
+        <span class="stat__valor" style="{% if a_receber_vencido > 0 %}color: var(--cor-alerta-texto);{% endif %}">R$&nbsp;{{ a_receber_vencido }}</span>
         <span class="stat__rotulo">A receber vencido</span>
     </a>
 </div>

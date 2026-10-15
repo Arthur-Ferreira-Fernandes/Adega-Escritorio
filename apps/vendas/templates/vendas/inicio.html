@@ -22,37 +22,40 @@
     </div>
 </div>
 
-<div class="grade-stats">
+<div class="grade-stats" style="margin-bottom: 1.5rem;">
     <div class="stat">
-        <span class="stat__valor">{{ total_vendas }}</span>
-        <span class="stat__rotulo">Vendas registradas</span>
+        <span class="stat__valor">{{ comandas_abertas|length }}</span>
+        <span class="stat__rotulo">Comandas abertas</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">R$&nbsp;{{ total_em_aberto }}</span>
+        <span class="stat__rotulo">A receber nas comandas</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor{% if paradas %} texto-perigo{% endif %}">{{ paradas }}</span>
+        <span class="stat__rotulo">Sem movimento há {{ minutos_parada }}+ min</span>
     </div>
 </div>
 
-<h2 class="titulo-pagina" style="font-size: 1.15rem;">Comandas abertas</h2>
+<h2 class="titulo-pagina" style="font-size: 1.15rem;">Mesas e comandas abertas</h2>
 {% if comandas_abertas %}
-<table class="tabela">
-    <thead>
-        <tr>
-            <th>Identificador</th>
-            <th>Cliente</th>
-            <th>Total parcial</th>
-            <th>Aberta em</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for venda in comandas_abertas %}
-        <tr>
-            <td>{{ venda.identificador|default:"—" }}</td>
-            <td>{{ venda.cliente|default:"—" }}</td>
-            <td>R$ {{ venda.total }}</td>
-            <td>{{ venda.criado_em|date:"d/m/Y H:i" }}</td>
-            <td><a href="{% url 'vendas:detalhe' pk=venda.pk %}">Ver / adicionar itens</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="grade-mesas">
+    {% for venda in comandas_abertas %}
+    <a href="{% url 'vendas:detalhe' pk=venda.pk %}" class="mesa-cartao{% if venda.parada %} mesa-cartao--parada{% endif %}">
+        <div class="mesa-cartao__topo">
+            <strong>{{ venda }}</strong>
+            {% if venda.quantidade_pessoas %}<span class="mesa-cartao__pessoas">{{ venda.quantidade_pessoas }} pessoa{{ venda.quantidade_pessoas|pluralize }}</span>{% endif %}
+        </div>
+        <div class="mesa-cartao__valor">R$&nbsp;{{ venda.total }}</div>
+        <div class="mesa-cartao__info">Aberta há {{ venda.criado_em|timesince }}{% if venda.cliente %} · {{ venda.cliente }}{% endif %}</div>
+        {% if venda.parada %}
+        <div class="mesa-cartao__alerta">Sem movimento há {{ venda.ultima_movimentacao|timesince }}</div>
+        {% else %}
+        <div class="mesa-cartao__info">Último lançamento há {{ venda.ultima_movimentacao|timesince }}</div>
+        {% endif %}
+    </a>
+    {% endfor %}
+</div>
 {% else %}
 <p class="subtitulo-pagina">Nenhuma comanda aberta no momento.</p>
 {% endif %}

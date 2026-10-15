@@ -20,10 +20,10 @@ MODELO_CHOICES = [
 
 class FiltroAuditoriaForm(forms.Form):
     data_inicio = forms.DateField(
-        required=False, label="De", widget=forms.DateInput(attrs={"type": "date"})
+        required=False, label="De", widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"})
     )
     data_fim = forms.DateField(
-        required=False, label="Até", widget=forms.DateInput(attrs={"type": "date"})
+        required=False, label="Até", widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"})
     )
     usuario = forms.ModelChoiceField(
         queryset=User.objects.all().order_by("username"),

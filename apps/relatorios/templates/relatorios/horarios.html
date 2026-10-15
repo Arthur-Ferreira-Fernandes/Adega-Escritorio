@@ -1,0 +1,60 @@
+{% extends "relatorios/analise_base.html" %}
+
+{% block descricao %}Em que dias e horários a adega mais vende: use para montar a escala da equipe, definir o horário de abertura e escolher quando fazer promoção.{% endblock %}
+
+{% block corpo %}
+{% if mapa.linhas %}
+<div class="grade-stats" style="margin-bottom: 1.5rem;">
+    <div class="stat">
+        <span class="stat__valor">{{ mapa.destaques.melhor_hora }}</span>
+        <span class="stat__rotulo">Horário que mais fatura</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{{ mapa.destaques.melhor_dia }}</span>
+        <span class="stat__rotulo">Dia mais forte</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{{ mapa.destaques.pior_dia }}</span>
+        <span class="stat__rotulo">Dia mais fraco (com vendas)</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{{ mapa.destaques.pico }}</span>
+        <span class="stat__rotulo">Pico: R$&nbsp;{{ mapa.destaques.pico_valor }}</span>
+    </div>
+</div>
+
+<div class="cartao">
+    <div class="secao-titulo">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Faturamento por dia da semana e hora</h2>
+        {% include "relatorios/_exportar.html" with tabela="horarios" %}
+    </div>
+    <div class="mapa-calor__rolagem">
+        <table class="mapa-calor">
+            <thead>
+                <tr>
+                    <th></th>
+                    {% for hora in mapa.horas %}<th>{{ hora|stringformat:"02d" }}h</th>{% endfor %}
+                    <th class="mapa-calor__total">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for linha in mapa.linhas %}
+                <tr>
+                    <th>{{ linha.dia }}</th>
+                    {% for celula in linha.celulas %}
+                    <td style="--intensidade: {{ celula.intensidade }}%;"
+                        title="{{ linha.dia }} {{ celula.hora|stringformat:'02d' }}h: R$&nbsp;{{ celula.valor }} em {{ celula.vendas }} venda{{ celula.vendas|pluralize }}"
+                        class="{% if celula.intensidade >= 55 %}forte{% endif %}">{% if celula.vendas %}{{ celula.vendas }}{% endif %}</td>
+                    {% endfor %}
+                    <td class="mapa-calor__total">R$&nbsp;{{ linha.total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="nota">Quanto mais forte a cor, maior o faturamento. O número é a quantidade de vendas; passe o mouse para ver o valor.</p>
+</div>
+{% else %}
+<div class="cartao"><p>Nenhuma venda concluída no período.</p></div>
+{% endif %}
+{% endblock %}

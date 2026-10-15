@@ -9,6 +9,31 @@
 </p>
 
 {% if venda.status == "aberta" %}
+{% if cadastro_form %}
+<div class="cartao cartao--destaque cadastro-rapido">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Código {{ cadastro_form.codigo_barras.value }} não cadastrado</h2>
+    <p class="nota" style="margin-top: 0;">Cadastre agora e o produto já entra na venda. Os outros dados (SKU, estoque mínimo…) podem ser completados depois em Estoque.</p>
+    <form method="post" action="{% url 'vendas:cadastro_rapido' pk=venda.pk %}"
+          hx-post="{% url 'vendas:cadastro_rapido' pk=venda.pk %}"
+          hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
+          class="formulario">
+        {% csrf_token %}
+        {{ cadastro_form.codigo_barras }}
+        {% for field in cadastro_form.visible_fields %}
+        <div class="campo">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p class="erro-campo">{{ field.errors|join:", " }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        {% if cadastro_form.non_field_errors or cadastro_form.codigo_barras.errors %}
+        <p class="erro-campo">{{ cadastro_form.non_field_errors|join:", " }} {{ cadastro_form.codigo_barras.errors|join:", " }}</p>
+        {% endif %}
+        <button type="submit" class="botao">Cadastrar e adicionar</button>
+        <a href="{% url 'vendas:detalhe' pk=venda.pk %}" class="botao botao--secundario" data-atalho="Esc">Cancelar</a>
+    </form>
+</div>
+{% else %}
 <div class="cartao cartao--destaque campo-scanner">
     <label for="{{ escanear_form.codigo_barras.id_for_label }}" class="campo-scanner__rotulo" data-atalho="F3">Escanear código de barras</label>
     <form method="post" action="{% url 'vendas:escanear' pk=venda.pk %}"
@@ -19,6 +44,27 @@
     </form>
     <p class="campo-scanner__dica">Aponte o leitor para o produto — o item é adicionado automaticamente ao pressionar Enter.</p>
 </div>
+{% endif %}
+
+{% if produtos_rapidos %}
+<div class="cartao produtos-rapidos">
+    <h2 class="campo-scanner__rotulo">Mais vendidos — um clique adiciona 1 unidade</h2>
+    <form method="post" action="{% url 'vendas:adicionar_item' pk=venda.pk %}"
+          hx-post="{% url 'vendas:adicionar_item' pk=venda.pk %}"
+          hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
+          class="produtos-rapidos__grade">
+        {% csrf_token %}
+        <input type="hidden" name="quantidade" value="1">
+        {% for produto in produtos_rapidos %}
+        <button type="submit" name="produto_busca" value="{{ produto.sku }}" class="produto-rapido"
+                {% if forloop.counter <= 9 %}data-atalho="Alt+{{ forloop.counter }}"{% endif %}>
+            <span class="produto-rapido__nome">{{ produto.nome }}</span>
+            <span class="produto-rapido__preco">R$ {{ produto.preco_venda }}</span>
+        </button>
+        {% endfor %}
+    </form>
+</div>
+{% endif %}
 {% endif %}
 
 {% if venda.identificador and venda.status == "aberta" %}

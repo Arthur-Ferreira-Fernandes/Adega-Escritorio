@@ -1,0 +1,77 @@
+{% extends "relatorios/analise_base.html" %}
+
+{% block descricao %}O que vai acabar e quanto comprar de cada fornecedor, e quanto se perdeu nas contagens de estoque.{% endblock %}
+
+{% block corpo %}
+<div class="cartao" style="margin-bottom: 1.5rem;">
+    <div class="secao-titulo">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Lista de compras sugerida</h2>
+        {% include "relatorios/_exportar.html" with tabela="compras" %}
+    </div>
+    <p class="nota" style="margin-top: 0;">Pelo ritmo de venda dos últimos {{ previsao.dias_base }} dias, para durar {{ previsao.cobertura }} dias além do estoque mínimo{% if user.is_superuser %} (<a href="{% url 'configuracoes:administracao' %}#config-caixa">mudar</a>){% endif %}. Fornecedor é o da última entrada de cada produto. Estoque negativo entra como zero — confira na contagem antes de comprar. Não depende do período escolhido acima.</p>
+    {% if previsao.fornecedores %}
+    <div class="grade-stats" style="margin: 1rem 0 1.5rem;">
+        <div class="stat">
+            <span class="stat__valor">R$&nbsp;{{ previsao.total }}</span>
+            <span class="stat__rotulo">Custo estimado da compra</span>
+        </div>
+    </div>
+    {% for grupo in previsao.fornecedores %}
+    <h3 class="subtitulo-secao">{{ grupo.fornecedor }} <span class="nota">· R$&nbsp;{{ grupo.total }}</span></h3>
+    <table class="tabela" style="margin-bottom: 1.25rem;">
+        <thead><tr><th>Produto</th><th>Estoque</th><th>Vende por dia</th><th>Acaba em</th><th>Comprar</th><th>Custo estimado</th></tr></thead>
+        <tbody>
+            {% for item in grupo.itens %}
+            <tr>
+                <td>{{ item.produto.nome }}</td>
+                <td class="{% if item.estoque <= 0 %}texto-perigo{% endif %}">{{ item.estoque }}</td>
+                <td>{{ item.media_dia }}</td>
+                <td>{% if item.conferir %}<a href="{% url 'estoque:contagem' %}?busca={{ item.produto.sku|urlencode }}" class="texto-perigo" title="Estoque negativo costuma ser entrada não lançada">Conte antes de comprar</a>{% elif item.dias_restantes is None %}—{% elif item.dias_restantes == 0 %}<span class="texto-perigo">Já acabou</span>{% else %}{{ item.dias_restantes }} dia{{ item.dias_restantes|pluralize }}{% endif %}</td>
+                <td><strong>{{ item.comprar }}</strong></td>
+                <td>R$&nbsp;{{ item.custo_estimado }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endfor %}
+    {% else %}
+    <p>Nenhum produto precisando de reposição agora.</p>
+    {% endif %}
+</div>
+
+<div class="cartao">
+    <div class="secao-titulo">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Perdas na contagem de estoque</h2>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{% url 'estoque:contagem' %}" class="botao botao--pequeno">Fazer contagem</a>
+            {% include "relatorios/_exportar.html" with tabela="perdas" %}
+        </div>
+    </div>
+    <div class="grade-stats" style="margin-bottom: 1.5rem;">
+        <div class="stat">
+            <span class="stat__valor{% if perdas.perdas %} texto-perigo{% endif %}">R$&nbsp;{{ perdas.perdas }}</span>
+            <span class="stat__rotulo">Faltou na prateleira (a preço de custo)</span>
+        </div>
+        <div class="stat">
+            <span class="stat__valor">R$&nbsp;{{ perdas.sobras }}</span>
+            <span class="stat__rotulo">Sobrou na prateleira (geralmente entrada não lançada)</span>
+        </div>
+    </div>
+    <table class="tabela">
+        <thead><tr><th>Produto</th><th>Contagens com ajuste</th><th>Unidades a menos</th><th>Valor perdido</th></tr></thead>
+        <tbody>
+            {% for linha in perdas.linhas %}
+            <tr>
+                <td>{{ linha.produto.nome }}</td>
+                <td>{{ linha.ajustes }}</td>
+                <td class="texto-perigo">{{ linha.diferenca }}</td>
+                <td class="texto-perigo">R$&nbsp;{{ linha.valor }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">Nenhuma perda registrada em contagens no período.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="nota">Produto que aparece aqui em toda contagem pode indicar furto, quebra ou venda sem registro.</p>
+</div>
+{% endblock %}

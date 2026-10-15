@@ -1,0 +1,70 @@
+{% extends "relatorios/analise_base.html" %}
+
+{% block descricao %}Quanto sobra de verdade: do faturamento, descontando custo dos produtos, taxas da maquininha, perdas de estoque e despesas pagas.{% endblock %}
+
+{% block corpo %}
+{% if not dre.taxas_configuradas %}
+<div class="aviso-nota">
+    As taxas de cartão e Pix ainda estão em 0%. {% if user.is_superuser %}<a href="{% url 'configuracoes:administracao' %}#config-caixa">Informe as taxas da sua maquininha</a>{% else %}Peça ao administrador para informar as taxas da maquininha{% endif %} para o lucro real ficar correto.
+</div>
+{% endif %}
+
+<div class="grade-stats" style="margin-bottom: 1.5rem;">
+    <div class="stat">
+        <span class="stat__valor">R$&nbsp;{{ dre.faturamento }}</span>
+        <span class="stat__rotulo">Faturamento</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">R$&nbsp;{{ dre.lucro_bruto }}</span>
+        <span class="stat__rotulo">Lucro bruto · margem {{ dre.margem_bruta }}%</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">R$&nbsp;{{ dre.taxas }}</span>
+        <span class="stat__rotulo">Pago em taxas de cartão e Pix</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor{% if dre.lucro_liquido < 0 %} texto-perigo{% endif %}">R$&nbsp;{{ dre.lucro_liquido }}</span>
+        <span class="stat__rotulo">Lucro líquido · margem {{ dre.margem_liquida }}%</span>
+    </div>
+</div>
+
+<div class="grade-duas" style="margin-bottom: 1.5rem;">
+    <div class="cartao">
+        <div class="secao-titulo">
+            <h2 class="titulo-pagina" style="font-size: 1.1rem;">Resultado do período</h2>
+            {% include "relatorios/_exportar.html" with tabela="lucro" %}
+        </div>
+        <table class="tabela tabela-dre">
+            <tbody>
+                {% for linha in dre.linhas %}
+                <tr class="tabela-dre__{{ linha.tipo }}">
+                    <td>{{ linha.rotulo }}</td>
+                    <td class="{% if linha.valor < 0 %}texto-perigo{% endif %}">R$&nbsp;{{ linha.valor }}</td>
+                    <td class="tabela-dre__pct">{{ linha.percentual }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if dre.itens_sem_custo %}
+        <p class="nota">{{ dre.itens_sem_custo }} item{{ dre.itens_sem_custo|pluralize:"ns" }} vendido{{ dre.itens_sem_custo|pluralize }} sem custo registrado não entra{{ dre.itens_sem_custo|pluralize:"m" }} no custo dos produtos.</p>
+        {% endif %}
+    </div>
+    <div class="cartao">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Formas de pagamento</h2>
+        <table class="tabela">
+            <thead><tr><th>Forma</th><th>Recebido</th><th>% das vendas</th><th>Taxa</th></tr></thead>
+            <tbody>
+                {% for forma in dre.por_forma %}
+                <tr>
+                    <td>{{ forma.forma }}</td>
+                    <td>R$&nbsp;{{ forma.valor }}</td>
+                    <td>{{ forma.participacao }}%</td>
+                    <td>{% if forma.taxa %}R$&nbsp;{{ forma.taxa }} <small class="nota">({{ forma.taxa_percentual }}%)</small>{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="nota">Dinheiro não tem taxa. Incentivar Pix ou dinheiro em vez de cartão aumenta o lucro.</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+<nav class="abas" aria-label="Relatórios">
+    <a href="{% url 'relatorios:dashboard' %}" class="{% if aba == 'geral' %}ativo{% endif %}">Visão geral</a>
+    <a href="{% url 'relatorios:horarios' %}?{{ periodo_qs }}" class="{% if aba == 'horarios' %}ativo{% endif %}">Horários</a>
+    <a href="{% url 'relatorios:produtos' %}?{{ periodo_qs }}" class="{% if aba == 'produtos' %}ativo{% endif %}">Produtos</a>
+    <a href="{% url 'relatorios:lucro' %}?{{ periodo_qs }}" class="{% if aba == 'lucro' %}ativo{% endif %}">Lucro real</a>
+    <a href="{% url 'relatorios:mesas' %}?{{ periodo_qs }}" class="{% if aba == 'mesas' %}ativo{% endif %}">Mesas</a>
+    {% if user.is_superuser %}
+    <a href="{% url 'relatorios:equipe' %}?{{ periodo_qs }}" class="{% if aba == 'equipe' %}ativo{% endif %}">Equipe e caixa</a>
+    {% endif %}
+    <a href="{% url 'relatorios:clientes' %}?{{ periodo_qs }}" class="{% if aba == 'clientes' %}ativo{% endif %}">Clientes</a>
+    <a href="{% url 'relatorios:compras' %}?{{ periodo_qs }}" class="{% if aba == 'compras' %}ativo{% endif %}">Compras e perdas</a>
+</nav>

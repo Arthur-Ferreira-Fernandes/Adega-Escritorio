@@ -18,6 +18,7 @@ urlpatterns = [
         views.categorias_excluir,
         name="categorias_excluir",
     ),
+    path("contagem/", views.contagem, name="contagem"),
     path("entradas/", views.entradas_lista, name="entradas"),
     path("entradas/registrar/", views.entradas_registrar, name="entradas_registrar"),
 ]

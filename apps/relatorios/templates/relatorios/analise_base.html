@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block titulo %}Relatórios · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<h1 class="titulo-pagina">Relatórios</h1>
+<p class="subtitulo-pagina">{% block descricao %}{% endblock %}</p>
+{% include "relatorios/_abas.html" %}
+
+{% block filtro %}
+<div class="filtro-periodo">
+    <div class="chips" aria-label="Período">
+        {% for valor, rotulo in atalhos %}
+        <a href="?periodo={{ valor }}" class="chip{% if atalho == valor %} ativo{% endif %}">{{ rotulo }}</a>
+        {% endfor %}
+    </div>
+    <form method="get" class="filtro-periodo__datas">
+        {% for field in periodo_form %}
+        <div class="campo campo--compacto">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+        </div>
+        {% endfor %}
+        <button type="submit" class="botao botao--secundario">Aplicar</button>
+    </form>
+</div>
+<p class="periodo-atual">{{ inicio|date:"d/m/Y" }}{% if fim != inicio %} a {{ fim|date:"d/m/Y" }}{% endif %}</p>
+{% endblock %}
+
+{% block corpo %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "relatorios/analise_base.html" %}
+
+{% block descricao %}Desempenho de cada atendente e as diferenças no fechamento do caixa. Visível só para administradores.{% endblock %}
+
+{% block corpo %}
+<div class="cartao" style="margin-bottom: 1.5rem;">
+    <div class="secao-titulo">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Atendentes</h2>
+        {% include "relatorios/_exportar.html" with tabela="equipe" %}
+    </div>
+    <div class="tabela-rolagem">
+    <table class="tabela">
+        <thead>
+            <tr><th>Atendente</th><th>Vendas</th><th>Faturamento</th><th>Ticket médio</th><th>Canceladas</th><th>Itens removidos</th><th>Caixas fechados</th><th>Diferença de caixa</th></tr>
+        </thead>
+        <tbody>
+            {% for linha in equipe.linhas %}
+            <tr>
+                <td>{{ linha.usuario.first_name|default:linha.usuario.username|default:"—" }}</td>
+                <td>{{ linha.vendas }}</td>
+                <td>R$&nbsp;{{ linha.faturamento }}</td>
+                <td>R$&nbsp;{{ linha.ticket_medio }}</td>
+                <td class="{% if linha.taxa_cancelamento >= 10 %}texto-perigo{% endif %}">
+                    {{ linha.canceladas }}{% if linha.canceladas %} · R$&nbsp;{{ linha.valor_cancelado }} <small>({{ linha.taxa_cancelamento }}%)</small>{% endif %}
+                </td>
+                <td>{{ linha.removidos }}{% if linha.removidos %} · R$&nbsp;{{ linha.valor_removido }}{% endif %}</td>
+                <td>{{ linha.fechamentos }}</td>
+                <td class="{% if linha.diferenca < 0 %}texto-perigo{% endif %}">{% if linha.fechamentos %}R$&nbsp;{{ linha.diferenca }}{% else %}—{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8">Nenhuma atividade no período.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    <p class="nota">Cancelamentos (com itens) e itens removidos de vendas abertas ficam registrados com quem fez. Muitos cancelamentos da mesma pessoa merecem atenção — em vermelho a partir de 10% das vendas.</p>
+</div>
+
+<div class="cartao">
+    <div class="secao-titulo">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Quebra de caixa</h2>
+        {% include "relatorios/_exportar.html" with tabela="caixas" %}
+    </div>
+    <div class="grade-stats" style="margin-bottom: 1.5rem;">
+        <div class="stat">
+            <span class="stat__valor{% if equipe.caixas.total < 0 %} texto-perigo{% endif %}">R$&nbsp;{{ equipe.caixas.total }}</span>
+            <span class="stat__rotulo">Diferença somada no período</span>
+        </div>
+        <div class="stat">
+            <span class="stat__valor{% if equipe.caixas.faltas < 0 %} texto-perigo{% endif %}">R$&nbsp;{{ equipe.caixas.faltas }}</span>
+            <span class="stat__rotulo">Só as faltas</span>
+        </div>
+        <div class="stat">
+            <span class="stat__valor">{{ equipe.caixas.com_diferenca }} de {{ equipe.caixas.linhas|length }}</span>
+            <span class="stat__rotulo">Fechamentos com diferença</span>
+        </div>
+    </div>
+    <table class="tabela">
+        <thead><tr><th>Fechado em</th><th>Por</th><th>Esperado</th><th>Contado</th><th>Diferença</th><th></th></tr></thead>
+        <tbody>
+            {% for linha in equipe.caixas.linhas %}
+            <tr>
+                <td>{{ linha.fechado_em|date:"d/m/Y H:i" }}</td>
+                <td>{{ linha.caixa.fechado_por }}</td>
+                <td>R$&nbsp;{{ linha.esperado }}</td>
+                <td>R$&nbsp;{{ linha.contado }}</td>
+                <td class="{% if linha.diferenca < 0 %}texto-perigo{% endif %}">R$&nbsp;{{ linha.diferenca }}</td>
+                <td><a href="{% url 'caixa:relatorio' pk=linha.caixa.pk %}" target="_blank">Relatório</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">Nenhum caixa fechado no período.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

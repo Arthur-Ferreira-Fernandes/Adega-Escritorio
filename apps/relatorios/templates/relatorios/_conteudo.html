@@ -14,7 +14,7 @@
 
 <div class="grade-stats" style="margin-bottom: 1.5rem;">
     <div class="stat">
-        <span class="stat__valor">R$ {{ faturamento_total }}</span>
+        <span class="stat__valor">R$&nbsp;{{ faturamento_total }}</span>
         <span class="stat__rotulo">Faturamento no período</span>
     </div>
     <div class="stat">
@@ -22,11 +22,11 @@
         <span class="stat__rotulo">Vendas no período</span>
     </div>
     <div class="stat">
-        <span class="stat__valor">R$ {{ ticket_medio }}</span>
+        <span class="stat__valor">R$&nbsp;{{ ticket_medio }}</span>
         <span class="stat__rotulo">Ticket médio</span>
     </div>
     <div class="stat">
-        <span class="stat__valor">R$ {{ lucro_total }}</span>
+        <span class="stat__valor">R$&nbsp;{{ lucro_total }}</span>
         <span class="stat__rotulo">Lucro no período</span>
     </div>
     <div class="stat">
@@ -58,7 +58,7 @@
             <tr>
                 <td>{{ produto.produto__nome }}</td>
                 <td>{{ produto.quantidade }}</td>
-                <td>R$ {{ produto.valor }}</td>
+                <td>R$&nbsp;{{ produto.valor }}</td>
             </tr>
             {% empty %}
             <tr>
@@ -89,9 +89,9 @@
             <tr>
                 <td>{{ produto.produto__nome }}</td>
                 <td>{{ produto.quantidade }}</td>
-                <td>R$ {{ produto.faturamento }}</td>
-                <td>R$ {{ produto.custo }}</td>
-                <td>R$ {{ produto.lucro }}</td>
+                <td>R$&nbsp;{{ produto.faturamento }}</td>
+                <td>R$&nbsp;{{ produto.custo }}</td>
+                <td>R$&nbsp;{{ produto.lucro }}</td>
                 <td>{{ produto.margem }}%</td>
             </tr>
             {% empty %}
@@ -137,19 +137,19 @@
     <p class="subtitulo-pagina" style="margin-bottom: 1rem;">Situação atual, não filtrada pelo período acima.</p>
     <div class="grade-stats">
         <div class="stat">
-            <span class="stat__valor">R$ {{ a_pagar_total }}</span>
+            <span class="stat__valor">R$&nbsp;{{ a_pagar_total }}</span>
             <span class="stat__rotulo">A pagar (pendente)</span>
         </div>
         <div class="stat">
-            <span class="stat__valor" style="{% if a_pagar_vencido > 0 %}color: var(--cor-vinho);{% endif %}">R$ {{ a_pagar_vencido }}</span>
+            <span class="stat__valor" style="{% if a_pagar_vencido > 0 %}color: var(--cor-alerta-texto);{% endif %}">R$&nbsp;{{ a_pagar_vencido }}</span>
             <span class="stat__rotulo">A pagar (vencido)</span>
         </div>
         <div class="stat">
-            <span class="stat__valor">R$ {{ a_receber_total }}</span>
+            <span class="stat__valor">R$&nbsp;{{ a_receber_total }}</span>
             <span class="stat__rotulo">A receber (pendente)</span>
         </div>
         <div class="stat">
-            <span class="stat__valor" style="{% if a_receber_vencido > 0 %}color: var(--cor-vinho);{% endif %}">R$ {{ a_receber_vencido }}</span>
+            <span class="stat__valor" style="{% if a_receber_vencido > 0 %}color: var(--cor-alerta-texto);{% endif %}">R$&nbsp;{{ a_receber_vencido }}</span>
             <span class="stat__rotulo">A receber (vencido)</span>
         </div>
     </div>

@@ -64,8 +64,15 @@ class AdministracaoViewTests(TestCase):
             reverse("configuracoes:administracao"),
             {
                 "limite_sangria": "500.00",
+                "meta_faturamento_mensal": "R$ 60.000,00",
+                "taxa_cartao": "2.5",
+                "taxa_pix": "0.99",
+                "dias_cobertura_compra": "10",
                 "salvar_configuracoes": "1",
             },
         )
         config = Configuracao.obter()
         self.assertEqual(config.limite_sangria, Decimal("500.00"))
+        self.assertEqual(config.meta_faturamento_mensal, Decimal("60000.00"))
+        self.assertEqual((config.taxa_cartao, config.taxa_pix), (Decimal("2.50"), Decimal("0.99")))
+        self.assertEqual(config.dias_cobertura_compra, 10)

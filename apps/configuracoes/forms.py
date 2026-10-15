@@ -14,10 +14,26 @@ class ConfiguracaoForm(forms.ModelForm):
         max_digits=10,
         decimal_places=2,
     )
+    meta_faturamento_mensal = DecimalMonetarioField(
+        label="Meta de faturamento do mês",
+        max_digits=12,
+        decimal_places=2,
+        help_text="Aparece na tela inicial com a projeção do mês. Zero = sem meta.",
+    )
 
     class Meta:
         model = Configuracao
-        fields = ["limite_sangria"]
+        fields = [
+            "limite_sangria",
+            "meta_faturamento_mensal",
+            "taxa_cartao",
+            "taxa_pix",
+            "dias_cobertura_compra",
+        ]
+        widgets = {
+            "taxa_cartao": forms.NumberInput(attrs={"step": "0.01", "min": "0", "max": "100"}),
+            "taxa_pix": forms.NumberInput(attrs={"step": "0.01", "min": "0", "max": "100"}),
+        }
 
 
 class MeuUsuarioForm(forms.Form):

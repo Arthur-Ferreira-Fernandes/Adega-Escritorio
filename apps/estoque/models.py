@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils.text import slugify
 
 from apps.clientes.models import Fornecedor
@@ -95,6 +95,22 @@ class Produto(models.Model):
         self.refresh_from_db(fields=["quantidade_estoque", "preco_custo"])
         return entrada
 
+    def ajustar_contagem(self, *, quantidade_contada, usuario):
+        """Troca o estoque pela quantidade contada na prateleira e guarda a diferença."""
+        with transaction.atomic():
+            atual = Produto.objects.select_for_update().get(pk=self.pk).quantidade_estoque
+            ajuste = AjusteEstoque.objects.create(
+                produto=self,
+                quantidade_anterior=atual,
+                quantidade_contada=quantidade_contada,
+                diferenca=quantidade_contada - atual,
+                custo_unitario=self.preco_custo,
+                criado_por=usuario,
+            )
+            Produto.objects.filter(pk=self.pk).update(quantidade_estoque=quantidade_contada)
+        self.quantidade_estoque = quantidade_contada
+        return ajuste
+
 
 class EntradaEstoque(models.Model):
     produto = models.ForeignKey(Produto, on_delete=models.PROTECT, related_name="entradas")
@@ -119,3 +135,32 @@ class EntradaEstoque(models.Model):
     @property
     def valor_total(self):
         return self.quantidade * self.custo_unitario
+
+
+class AjusteEstoque(models.Model):
+    """Correção de estoque feita na contagem (inventário).
+
+    Diferenças negativas repetidas no mesmo produto indicam perda ou furto.
+    """
+
+    produto = models.ForeignKey(Produto, on_delete=models.PROTECT, related_name="ajustes")
+    quantidade_anterior = models.IntegerField()
+    quantidade_contada = models.IntegerField()
+    diferenca = models.IntegerField()
+    custo_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="ajustes_estoque"
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Ajuste de estoque"
+        verbose_name_plural = "Ajustes de estoque"
+        ordering = ["-criado_em"]
+
+    def __str__(self):
+        return f"{self.produto} {self.diferenca:+d}"
+
+    @property
+    def valor_diferenca(self):
+        return self.diferenca * self.custo_unitario

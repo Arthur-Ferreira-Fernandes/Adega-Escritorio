@@ -8,6 +8,7 @@
     --cor-texto: #f2ead9;
     --cor-texto-suave: #b3a68a;
     --cor-vinho: #7a1128;
+    --cor-alerta-texto: #ec8a9c;
     --cor-sucesso: #7fbf7f;
     --cor-texto-sobre-dourado: #17130d;
     --cor-texto-sobre-vinho: #f2ead9;
@@ -32,6 +33,7 @@
     --cor-texto: #2a2117;
     --cor-texto-suave: #6b5d45;
     --cor-vinho: #7a1128;
+    --cor-alerta-texto: #9b1532;
     --cor-sucesso: #2f7a3a;
     --cor-texto-sobre-dourado: #fffdf8;
     --cor-texto-sobre-vinho: #fffdf8;
@@ -293,7 +295,7 @@ a {
 }
 
 .barra-lateral {
-    width: 240px;
+    width: 256px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -303,6 +305,8 @@ a {
     top: var(--altura-cabecalho);
     height: calc(100vh - var(--altura-cabecalho));
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cor-borda) transparent;
 }
 
 .barra-lateral__rodape {
@@ -461,12 +465,15 @@ a {
     border-radius: 10px;
     padding: 1.25rem 1.5rem;
     box-shadow: 0 12px 28px var(--sombra);
+    container-type: inline-size;
 }
 
+/* O tamanho acompanha a largura do cartão: "R$ 588.847,80" cabe numa linha só. */
 .stat__valor {
     display: block;
     font-family: var(--fonte-marca);
-    font-size: 2.25rem;
+    font-size: clamp(1.35rem, 15cqi, 2.25rem);
+    white-space: nowrap;
     color: var(--cor-dourado);
     line-height: 1;
     margin-bottom: 0.4rem;
@@ -479,8 +486,9 @@ a {
     letter-spacing: 0.08em;
 }
 
+/* O vinho da marca é escuro demais para texto no tema escuro. */
 .texto-perigo {
-    color: var(--cor-vinho) !important;
+    color: var(--cor-alerta-texto) !important;
 }
 
 .stat--troco {
@@ -997,9 +1005,11 @@ a {
 
 /* Busca de produto por nome na venda (static/js/busca-produto.js) */
 
+/* Sem flex-basis: no formulário em coluna (entrada de estoque) ele viraria altura. */
 .busca-produto {
     position: relative;
-    flex: 1 1 320px;
+    flex-grow: 1;
+    min-width: min(320px, 100%);
 }
 
 .busca-produto input {
@@ -1088,4 +1098,520 @@ a {
     padding: 0.7rem 1rem;
     color: var(--cor-texto-suave);
     font-size: 0.85rem;
+}
+
+/* Utilitários dos relatórios e painéis */
+
+.campo__ajuda,
+.nota {
+    color: var(--cor-texto-suave);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.nota {
+    margin: 0.75rem 0 0;
+}
+
+.aviso-nota {
+    margin-bottom: 1.5rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--cor-borda);
+    border-left: 3px solid var(--cor-dourado);
+    border-radius: 8px;
+    background: var(--cor-superficie);
+    font-size: 0.9rem;
+}
+
+.aviso-nota a,
+.nota a {
+    color: var(--cor-dourado);
+}
+
+.botao--pequeno {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8rem;
+}
+
+.grade-duas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.secao-titulo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+
+.secao-titulo .titulo-pagina {
+    margin: 0;
+}
+
+.subtitulo-secao {
+    margin: 1.25rem 0 0.6rem;
+    font-size: 0.95rem;
+    color: var(--cor-dourado-claro);
+}
+
+.tabela-rolagem {
+    overflow-x: auto;
+}
+
+/* Abas dos relatórios */
+
+.abas {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--cor-borda);
+    overflow-x: auto;
+}
+
+.abas a {
+    padding: 0.65rem 1rem;
+    border-bottom: 2px solid transparent;
+    color: var(--cor-texto-suave);
+    text-decoration: none;
+    white-space: nowrap;
+    font-size: 0.92rem;
+}
+
+.abas a:hover {
+    color: var(--cor-dourado-claro);
+}
+
+.abas a.ativo {
+    border-bottom-color: var(--cor-dourado);
+    color: var(--cor-dourado);
+    font-weight: 600;
+}
+
+/* Filtro de período (atalhos + datas) */
+
+.filtro-periodo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.filtro-periodo__datas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+.campo--compacto input,
+.campo--compacto select {
+    min-width: 0;
+}
+
+.periodo-atual {
+    margin: 0 0 1.5rem;
+    color: var(--cor-texto-suave);
+    font-size: 0.85rem;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.chips__rotulo {
+    margin-right: 0.25rem;
+    color: var(--cor-texto-suave);
+    font-size: 0.85rem;
+}
+
+.chip {
+    padding: 0.35rem 0.85rem;
+    border: 1px solid var(--cor-borda);
+    border-radius: 999px;
+    color: var(--cor-texto-suave);
+    font-size: 0.85rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.chip:hover {
+    border-color: var(--cor-dourado);
+    color: var(--cor-dourado-claro);
+}
+
+.chip.ativo {
+    border-color: var(--cor-dourado);
+    background: var(--cor-dourado);
+    color: var(--cor-texto-sobre-dourado);
+    font-weight: 600;
+}
+
+/* Mapa de calor de horários */
+
+.mapa-calor__rolagem {
+    overflow-x: auto;
+}
+
+.mapa-calor {
+    border-collapse: separate;
+    border-spacing: 3px;
+    width: 100%;
+    font-size: 0.75rem;
+}
+
+.mapa-calor th {
+    padding: 0.3rem;
+    color: var(--cor-texto-suave);
+    font-weight: 600;
+    text-align: center;
+}
+
+.mapa-calor tbody th {
+    text-align: left;
+    padding-right: 0.6rem;
+}
+
+.mapa-calor td {
+    min-width: 2.4rem;
+    height: 2.2rem;
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--cor-dourado) var(--intensidade, 0%), var(--cor-superficie-alt));
+    color: var(--cor-texto);
+    text-align: center;
+    font-weight: 600;
+}
+
+.mapa-calor td.forte {
+    color: var(--cor-texto-sobre-dourado);
+}
+
+.mapa-calor .mapa-calor__total {
+    min-width: 6rem;
+    background: none;
+    color: var(--cor-texto-suave);
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Curva ABC, barras e DRE */
+
+.classe-abc {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 6px;
+    font-family: var(--fonte-base);
+    font-size: 0.8rem;
+    font-weight: 700;
+    vertical-align: middle;
+}
+
+.stat__valor .classe-abc {
+    width: 2rem;
+    height: 2rem;
+    font-size: 1rem;
+}
+
+.classe-abc--A {
+    background: var(--cor-dourado);
+    color: var(--cor-texto-sobre-dourado);
+}
+
+.classe-abc--B {
+    border: 1px solid var(--cor-dourado);
+    color: var(--cor-dourado);
+}
+
+.classe-abc--C {
+    border: 1px solid var(--cor-borda);
+    color: var(--cor-texto-suave);
+}
+
+.barra-percentual {
+    display: inline-block;
+    width: 5rem;
+    height: 0.45rem;
+    margin-right: 0.4rem;
+    border-radius: 999px;
+    background: var(--cor-superficie-alt);
+    overflow: hidden;
+    vertical-align: middle;
+}
+
+.barra-percentual span {
+    display: block;
+    height: 100%;
+    background: var(--cor-dourado);
+}
+
+.tabela-dre td:nth-child(2),
+.tabela-dre__pct {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.tabela-dre__pct {
+    color: var(--cor-texto-suave);
+    font-size: 0.85rem;
+}
+
+.tabela-dre__subtotal td,
+.tabela-dre__total td {
+    font-weight: 600;
+}
+
+.tabela-dre__resultado td {
+    border-top: 2px solid var(--cor-dourado);
+    color: var(--cor-dourado);
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+/* Tela inicial do dono */
+
+.stat__detalhe {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--cor-texto-suave);
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
+.variacao {
+    margin-left: 0.35rem;
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.variacao--alta {
+    background: color-mix(in srgb, var(--cor-sucesso) 20%, transparent);
+    color: var(--cor-sucesso);
+}
+
+.variacao--baixa {
+    background: color-mix(in srgb, var(--cor-vinho) 25%, transparent);
+    color: var(--cor-dourado-claro);
+}
+
+.meta__valores {
+    margin: 0 0 0.6rem;
+    font-size: 1.05rem;
+}
+
+.barra-meta {
+    height: 0.75rem;
+    border-radius: 999px;
+    background: var(--cor-superficie-alt);
+    overflow: hidden;
+}
+
+.barra-meta span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--cor-dourado), var(--cor-dourado-claro));
+}
+
+.lista-atencao {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.lista-atencao li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--cor-borda);
+    font-size: 0.92rem;
+}
+
+.lista-atencao li:last-child {
+    border-bottom: none;
+}
+
+.lista-atencao a {
+    color: var(--cor-dourado);
+    white-space: nowrap;
+}
+
+/* Venda: produtos rápidos e cadastro rápido */
+
+.produtos-rapidos {
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+}
+
+.produtos-rapidos .campo-scanner__rotulo {
+    margin-top: 0;
+}
+
+.produtos-rapidos__grade {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.6rem;
+}
+
+.produto-rapido {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--cor-borda);
+    border-radius: 8px;
+    background: var(--cor-superficie-alt);
+    color: var(--cor-texto);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.produto-rapido:hover {
+    border-color: var(--cor-dourado);
+}
+
+.produto-rapido__nome {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: 0.85rem;
+    line-height: 1.25;
+}
+
+.produto-rapido__preco {
+    color: var(--cor-dourado);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.produto-rapido[data-atalho]::after {
+    order: -1;
+    margin: 0 0 0.15rem;
+}
+
+.cadastro-rapido {
+    margin-bottom: 1.5rem;
+}
+
+/* Painel de mesas */
+
+.grade-mesas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.mesa-cartao {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--cor-borda);
+    border-radius: 10px;
+    background: var(--cor-superficie);
+    color: inherit;
+    text-decoration: none;
+    box-shadow: 0 12px 28px var(--sombra);
+}
+
+.mesa-cartao:hover {
+    border-color: var(--cor-dourado);
+}
+
+.mesa-cartao--parada {
+    border-color: var(--cor-vinho);
+    box-shadow: 0 0 0 1px var(--cor-vinho), 0 12px 28px var(--sombra);
+}
+
+.mesa-cartao__topo {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 1rem;
+}
+
+.mesa-cartao__pessoas,
+.mesa-cartao__info {
+    color: var(--cor-texto-suave);
+    font-size: 0.8rem;
+}
+
+.mesa-cartao__valor {
+    font-family: var(--fonte-marca);
+    font-size: 1.6rem;
+    color: var(--cor-dourado);
+}
+
+.mesa-cartao__alerta {
+    color: var(--cor-dourado-claro);
+    background: color-mix(in srgb, var(--cor-vinho) 30%, transparent);
+    border-radius: 6px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Contagem de estoque */
+
+.tabela-contagem input {
+    width: 6rem;
+    padding: 0.4rem 0.5rem;
+    background: var(--cor-superficie-alt);
+    border: 1px solid var(--cor-borda);
+    border-radius: 6px;
+    color: var(--cor-texto);
+    font-size: 0.95rem;
+}
+
+.tabela-contagem input:focus {
+    outline: none;
+    border-color: var(--cor-dourado);
+}
+
+.contagem-diferenca {
+    font-weight: 600;
+}
+
+.barra-acao-fixa {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--cor-borda);
+    border-radius: 10px;
+    background: var(--cor-superficie);
+    box-shadow: 0 -8px 24px var(--sombra);
+}
+
+/* Tabela longa que começa mostrando só as primeiras linhas */
+
+.tabela-recolhivel:not(.expandida) .linha-extra,
+.tabela-recolhivel:not(.expandida) .quando-expandida,
+.tabela-recolhivel.expandida .quando-recolhida {
+    display: none;
+}
+
+.tabela-recolhivel__botao {
+    margin-top: 0.25rem;
 }

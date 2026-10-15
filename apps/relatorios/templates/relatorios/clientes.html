@@ -1,0 +1,82 @@
+{% extends "relatorios/analise_base.html" %}
+
+{% block descricao %}Quem são os melhores clientes, quem está voltando e quem sumiu — base para fidelidade e para chamar de volta pelo WhatsApp.{% endblock %}
+
+{% block corpo %}
+<div class="grade-stats" style="margin-bottom: 1.5rem;">
+    <div class="stat">
+        <span class="stat__valor">{{ clientes.ativos }}</span>
+        <span class="stat__rotulo">Clientes que compraram no período</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{{ clientes.novos }}</span>
+        <span class="stat__rotulo">Primeira compra no período</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{{ clientes.recorrentes }}</span>
+        <span class="stat__rotulo">Já compraram mais de uma vez</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{{ clientes.vendas_identificadas }}%</span>
+        <span class="stat__rotulo">Vendas com cliente identificado</span>
+    </div>
+</div>
+{% if clientes.vendas_identificadas < 50 %}
+<div class="aviso-nota">Só {{ clientes.vendas_identificadas }}% das vendas têm cliente. Quanto mais vendas com o cliente informado, mais completa fica esta análise.</div>
+{% endif %}
+
+<div class="cartao" style="margin-bottom: 1.5rem;">
+    <div class="secao-titulo">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Melhores clientes do período</h2>
+        {% include "relatorios/_exportar.html" with tabela="melhores" %}
+    </div>
+    <table class="tabela">
+        <thead><tr><th>Cliente</th><th>Compras</th><th>Gasto no período</th><th>Gasto total</th><th>Ticket médio</th><th>Última compra</th></tr></thead>
+        <tbody>
+            {% for c in clientes.melhores %}
+            <tr>
+                <td>{{ c.cliente.nome }}</td>
+                <td>{{ c.compras_periodo }}</td>
+                <td>R$&nbsp;{{ c.gasto_periodo }}</td>
+                <td>R$&nbsp;{{ c.gasto_total }}</td>
+                <td>R$&nbsp;{{ c.ticket }}</td>
+                <td>{{ c.ultima_compra|date:"d/m/Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">Nenhuma venda com cliente identificado no período.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="cartao">
+    <div class="secao-titulo">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Clientes sumidos</h2>
+        <a href="?{{ periodo_qs }}&amp;sumido={{ clientes.dias_sumido }}&amp;exportar=sumidos" class="botao botao--secundario botao--pequeno">Exportar planilha</a>
+    </div>
+    <div class="chips" style="margin-bottom: 1rem;">
+        <span class="chips__rotulo">Sem comprar há mais de</span>
+        {% for dias in opcoes_sumido %}
+        <a href="?{{ periodo_qs }}&amp;sumido={{ dias }}" class="chip{% if dias == clientes.dias_sumido %} ativo{% endif %}">{{ dias }} dias</a>
+        {% endfor %}
+    </div>
+    <table class="tabela">
+        <thead><tr><th>Cliente</th><th>Gasto total</th><th>Compras</th><th>Última compra</th><th>Sem comprar</th><th></th></tr></thead>
+        <tbody>
+            {% for c in clientes.sumidos %}
+            <tr>
+                <td>{{ c.cliente.nome }}</td>
+                <td>R$&nbsp;{{ c.gasto_total }}</td>
+                <td>{{ c.compras_total }}</td>
+                <td>{{ c.ultima_compra|date:"d/m/Y" }}</td>
+                <td>{{ c.dias_sem_comprar }} dias</td>
+                <td>{% if c.whatsapp %}<a href="{{ c.whatsapp }}" target="_blank" rel="noopener">Chamar no WhatsApp</a>{% else %}<span class="nota">sem telefone</span>{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6">Nenhum cliente sem comprar há mais de {{ clientes.dias_sumido }} dias.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="nota">Ordenados por quanto já gastaram: os primeiros são os que mais vale a pena trazer de volta.</p>
+</div>
+{% endblock %}

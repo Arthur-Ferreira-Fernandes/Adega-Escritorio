@@ -6,6 +6,7 @@
     function nomeDaTecla(evento) {
         var tecla = evento.key.length === 1 ? evento.key.toUpperCase() : evento.key;
         if (tecla === "Delete") tecla = "Del";
+        if (tecla === "Escape") tecla = "Esc";
         var partes = [];
         if (evento.ctrlKey || evento.metaKey) partes.push("Ctrl");
         if (evento.altKey) partes.push("Alt");
