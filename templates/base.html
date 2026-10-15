@@ -45,7 +45,7 @@
         {% if user.is_authenticated %}
         <aside class="barra-lateral">
             <nav>
-                <details class="barra-lateral__grupo" {% if request.resolver_match.app_name == "vendas" %}open{% endif %}>
+                <details class="barra-lateral__grupo" open>
                     <summary>Vendas</summary>
                     <div class="barra-lateral__submenu">
                         <form method="post" action="{% url 'vendas:rapida' %}">
@@ -57,7 +57,7 @@
                         <a href="{% url 'vendas:historico' %}" data-atalho="Ctrl+H" class="{% if request.resolver_match.view_name == 'vendas:historico' %}ativo{% endif %}">Histórico de vendas</a>
                     </div>
                 </details>
-                <details class="barra-lateral__grupo" {% if request.resolver_match.app_name == "estoque" %}open{% endif %}>
+                <details class="barra-lateral__grupo" open>
                     <summary>Estoque</summary>
                     <div class="barra-lateral__submenu">
                         <a href="{% url 'estoque:produtos' %}" data-atalho="Ctrl+E" class="{% if request.resolver_match.view_name == 'estoque:produtos' %}ativo{% endif %}">Ver produtos</a>
@@ -65,15 +65,14 @@
                         <a href="{% url 'estoque:entradas' %}" data-atalho="Ctrl+I" class="{% if request.resolver_match.view_name == 'estoque:entradas' %}ativo{% endif %}">Registrar entrada</a>
                     </div>
                 </details>
-                <details class="barra-lateral__grupo" {% if request.resolver_match.app_name == "caixa" %}open{% endif %}>
+                <details class="barra-lateral__grupo" open>
                     <summary>Caixa</summary>
                     <div class="barra-lateral__submenu">
                         <a href="{% url 'caixa:painel' %}" data-atalho="Ctrl+K" class="{% if request.resolver_match.view_name == 'caixa:painel' %}ativo{% endif %}">Abrir/fechar caixa</a>
                         <a href="{% url 'configuracoes:administracao' %}#config-caixa">Tempo de caixa aberto</a>
                     </div>
                 </details>
-                <details class="barra-lateral__grupo"
-                    {% if request.resolver_match.app_name == "relatorios" or request.resolver_match.app_name == "auditoria" or request.resolver_match.app_name == "usuarios" or request.resolver_match.app_name == "configuracoes" or request.resolver_match.app_name == "financeiro" or request.resolver_match.app_name == "clientes" %}open{% endif %}>
+                <details class="barra-lateral__grupo" open>
                     <summary>Administrativa</summary>
                     <div class="barra-lateral__submenu">
                         <a href="{% url 'relatorios:dashboard' %}" class="{% if request.resolver_match.view_name == 'relatorios:dashboard' %}ativo{% endif %}">Relatórios</a>
