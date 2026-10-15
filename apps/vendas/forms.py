@@ -19,26 +19,19 @@ class NovaVendaForm(forms.Form):
 
 
 class ItemVendaForm(forms.Form):
+    # Recebe o SKU escolhido na lista de sugestões (static/js/busca-produto.js).
     produto_busca = forms.CharField(
         label="Produto",
-        widget=forms.TextInput(
-            attrs={
-                "list": "produtos-datalist",
-                "autocomplete": "off",
-                "placeholder": "Digite o nome do produto…",
-            }
-        ),
+        widget=forms.HiddenInput,
+        error_messages={
+            "required": "Selecione um produto da lista de sugestões digitando parte do nome."
+        },
     )
     quantidade = forms.IntegerField(min_value=1, initial=1, label="Quantidade")
 
     def clean_produto_busca(self):
-        texto = self.cleaned_data["produto_busca"].strip()
-        _, separador, sku = texto.rpartition(" | ")
-        if not separador:
-            raise forms.ValidationError(
-                "Selecione um produto da lista de sugestões digitando parte do nome."
-            )
-        produto = Produto.objects.filter(sku=sku.strip(), ativo=True).first()
+        sku = self.cleaned_data["produto_busca"].strip()
+        produto = Produto.objects.filter(sku=sku, ativo=True).first()
         if produto is None:
             raise forms.ValidationError(
                 "Produto não encontrado ou inativo. Selecione um item da lista de sugestões."

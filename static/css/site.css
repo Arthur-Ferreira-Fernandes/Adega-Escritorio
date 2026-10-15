@@ -879,7 +879,8 @@ a {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.4rem;
+    padding-right: 1rem;
 }
 
 .barra-lateral__submenu [data-atalho]::after {
@@ -992,4 +993,104 @@ a {
     margin: 1.25rem 0 0;
     font-size: 0.8rem;
     color: var(--cor-texto-suave);
+}
+
+/* Busca de produto por nome na venda (static/js/busca-produto.js) */
+
+.busca-produto {
+    position: relative;
+    flex: 1 1 320px;
+}
+
+.busca-produto input {
+    width: 100%;
+}
+
+.busca-produto__lista {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 0;
+    z-index: 25;
+    width: max(100%, min(520px, calc(100vw - 2rem)));
+    max-height: min(420px, 60vh);
+    overflow-y: auto;
+    padding: 0.35rem 0;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: 10px;
+    box-shadow: 0 18px 40px var(--sombra-forte);
+}
+
+.busca-produto__grupo {
+    position: sticky;
+    top: -0.35rem;
+    padding: 0.6rem 1rem 0.3rem;
+    background: var(--cor-superficie);
+    color: var(--cor-texto-suave);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.busca-produto__item {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    font-size: 0.92rem;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+}
+
+.busca-produto__item--ativo {
+    background: var(--cor-superficie-alt);
+    border-left-color: var(--cor-dourado);
+}
+
+.busca-produto__item--esgotado {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.busca-produto__nome mark {
+    background: none;
+    color: var(--cor-dourado-claro);
+    font-weight: 700;
+}
+
+.busca-produto__estoque {
+    padding: 0.1rem 0.55rem;
+    border: 1px solid var(--cor-borda);
+    border-radius: 999px;
+    color: var(--cor-texto-suave);
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+
+.busca-produto__estoque--baixo {
+    border-color: var(--cor-dourado);
+    color: var(--cor-dourado-claro);
+}
+
+.busca-produto__estoque--esgotado {
+    border-color: var(--cor-vinho);
+    background: var(--cor-vinho);
+    color: var(--cor-texto-sobre-vinho);
+}
+
+.busca-produto__preco {
+    min-width: 5.5rem;
+    text-align: right;
+    color: var(--cor-dourado);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.busca-produto__aviso {
+    padding: 0.7rem 1rem;
+    color: var(--cor-texto-suave);
+    font-size: 0.85rem;
 }

@@ -84,7 +84,20 @@ def _contexto_venda(venda):
         "pessoas_form": QuantidadePessoasForm(
             initial={"quantidade_pessoas": venda.quantidade_pessoas}
         ),
-        "produtos_ativos": Produto.objects.filter(ativo=True),
+        "produtos_busca": [
+            {
+                "sku": produto.sku,
+                "nome": produto.nome,
+                "categoria": produto.categoria.nome,
+                "codigo": produto.codigo_barras or "",
+                "preco": str(produto.preco_venda),
+                "estoque": produto.quantidade_estoque,
+                "minimo": produto.estoque_minimo,
+            }
+            for produto in Produto.objects.filter(ativo=True)
+            .select_related("categoria")
+            .order_by("categoria__nome", "nome")
+        ],
         "falta_receber_bruto": str(venda.falta_receber),
     }
 

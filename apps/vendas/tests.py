@@ -191,6 +191,41 @@ class VendaViewTests(TestCase):
         venda.refresh_from_db()
         self.assertEqual(venda.status, Venda.Status.CONCLUIDA)
 
+    def test_adicionar_item_pelo_sku_da_busca(self):
+        venda = Venda.objects.create(criado_por=self.usuario)
+        self.client.post(
+            reverse("vendas:adicionar_item", kwargs={"pk": venda.pk}),
+            {"produto_busca": self.produto.sku, "quantidade": "2"},
+        )
+        item = venda.itens.get()
+        self.assertEqual((item.produto, item.quantidade), (self.produto, 2))
+
+    def test_adicionar_item_sem_escolher_produto_nao_adiciona(self):
+        venda = Venda.objects.create(criado_por=self.usuario)
+        for valor in ("", "SKU-inexistente"):
+            self.client.post(
+                reverse("vendas:adicionar_item", kwargs={"pk": venda.pk}),
+                {"produto_busca": valor, "quantidade": "1"},
+            )
+        self.assertFalse(venda.itens.exists())
+
+    def test_tela_da_venda_envia_produtos_para_a_busca(self):
+        venda = Venda.objects.create(criado_por=self.usuario)
+        resposta = self.client.get(reverse("vendas:detalhe", kwargs={"pk": venda.pk}))
+        self.assertEqual(
+            resposta.context["produtos_busca"],
+            [{
+                "sku": self.produto.sku,
+                "nome": "Vinho Teste",
+                "categoria": "Categoria Teste",
+                "codigo": "",
+                "preco": "50.00",
+                "estoque": 10,
+                "minimo": 5,
+            }],
+        )
+        self.assertContains(resposta, 'id="produtos-dados"')
+
     def test_nova_comanda_com_pessoas(self):
         Caixa.abrir(self.usuario, Decimal("100.00"))
         self.client.post(
