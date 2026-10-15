@@ -64,6 +64,13 @@ def avisar(texto):
         ctypes.windll.user32.MessageBoxW(0, texto, NOME_APP, 0x40)
     else:
         print(texto)
+        # Aberto pelo menu de aplicativos não há terminal: mostra como notificação.
+        try:
+            import subprocess
+
+            subprocess.run(["notify-send", "--app-name", NOME_APP, NOME_APP, texto], timeout=5)
+        except (OSError, subprocess.SubprocessError):
+            pass
 
 
 def porta_em_uso(porta):
