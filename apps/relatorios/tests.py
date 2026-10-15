@@ -4,8 +4,11 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 
+from apps.clientes.models import Fornecedor
 from apps.estoque.models import Categoria, Produto
+from apps.financeiro.models import ContaPagar
 from apps.vendas.models import ItemVenda, PagamentoVenda, Venda
+from config.agregados import Soma
 
 from .servicos import calcular_metricas
 
@@ -60,3 +63,23 @@ class CalcularMetricasTests(TestCase):
         metricas = calcular_metricas(self.data_inicio, self.data_fim, None, "")
         self.assertEqual(metricas["numero_vendas"], 1)
         self.assertEqual(metricas["ticket_medio"], Decimal("119.80"))
+
+
+class SomaMonetariaTests(TestCase):
+    def test_soma_devolve_sempre_duas_casas(self):
+        fornecedor = Fornecedor.objects.create(nome="Fornecedor", documento="00.000.000/0001-00")
+        hoje = timezone.now().date()
+        for valor in ("1000.10", "978.10", "0.10"):
+            ContaPagar.objects.create(
+                fornecedor=fornecedor, descricao="Conta", valor=Decimal(valor), vencimento=hoje
+            )
+        total = ContaPagar.objects.aggregate(t=Soma("valor"))["t"]
+        self.assertEqual(str(total), "1978.30")
+
+    def test_soma_redonda_mantem_centavos(self):
+        fornecedor = Fornecedor.objects.create(nome="Fornecedor", documento="00.000.000/0001-00")
+        ContaPagar.objects.create(
+            fornecedor=fornecedor, descricao="Conta", valor=Decimal("4587.00"),
+            vencimento=timezone.now().date(),
+        )
+        self.assertEqual(str(ContaPagar.objects.aggregate(t=Soma("valor"))["t"]), "4587.00")

@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import F, Sum
+from django.db.models import F
 from django.shortcuts import render
 from django.utils import timezone
 
@@ -9,6 +9,7 @@ from apps.caixa.models import Caixa
 from apps.estoque.models import Produto
 from apps.financeiro.models import ContaPagar, ContaReceber
 from apps.vendas.models import Venda
+from config.agregados import Soma
 
 
 @login_required
@@ -18,15 +19,15 @@ def inicio(request):
     faturamento_hoje = (
         Venda.objects.filter(
             status=Venda.Status.CONCLUIDA, finalizada_em__date=hoje
-        ).aggregate(t=Sum("total"))["t"]
+        ).aggregate(t=Soma("total"))["t"]
         or Decimal("0")
     )
     a_pagar_vencido = (
-        ContaPagar.objects.filter(pago=False, vencimento__lt=hoje).aggregate(t=Sum("valor"))["t"]
+        ContaPagar.objects.filter(pago=False, vencimento__lt=hoje).aggregate(t=Soma("valor"))["t"]
         or Decimal("0")
     )
     a_receber_vencido = (
-        ContaReceber.objects.filter(recebido=False, vencimento__lt=hoje).aggregate(t=Sum("valor"))["t"]
+        ContaReceber.objects.filter(recebido=False, vencimento__lt=hoje).aggregate(t=Soma("valor"))["t"]
         or Decimal("0")
     )
 

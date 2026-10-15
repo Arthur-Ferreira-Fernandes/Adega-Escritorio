@@ -1,12 +1,13 @@
 from decimal import Decimal
 
-from django.db.models import DecimalField, ExpressionWrapper, F, Sum
+from django.db.models import DecimalField, ExpressionWrapper, F
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 from apps.estoque.models import Produto
 from apps.financeiro.models import ContaPagar, ContaReceber
 from apps.vendas.models import ItemVenda, Venda
+from config.agregados import Soma
 
 
 def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
@@ -20,7 +21,7 @@ def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
     if forma_pagamento:
         itens = itens.filter(venda__pagamentos__forma_pagamento=forma_pagamento)
 
-    faturamento_total = itens.aggregate(total=Sum("subtotal"))["total"] or Decimal("0")
+    faturamento_total = itens.aggregate(total=Soma("subtotal"))["total"] or Decimal("0")
     numero_vendas = itens.values("venda").distinct().count()
     ticket_medio = (
         (faturamento_total / numero_vendas).quantize(Decimal("0.01"))
@@ -31,13 +32,13 @@ def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
     faturamento_por_dia = list(
         itens.annotate(dia=TruncDate("venda__criado_em"))
         .values("dia")
-        .annotate(total=Sum("subtotal"))
+        .annotate(total=Soma("subtotal"))
         .order_by("dia")
     )
 
     produtos_mais_vendidos = list(
         itens.values("produto__nome")
-        .annotate(quantidade=Sum("quantidade"), valor=Sum("subtotal"))
+        .annotate(quantidade=Soma("quantidade"), valor=Soma("subtotal"))
         .order_by("-valor")[:8]
     )
 
@@ -47,7 +48,7 @@ def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
             output_field=DecimalField(max_digits=12, decimal_places=2),
         )
     )
-    lucro_total = itens_com_custo.aggregate(t=Sum("lucro_item"))["t"] or Decimal("0")
+    lucro_total = itens_com_custo.aggregate(t=Soma("lucro_item"))["t"] or Decimal("0")
     margem_total = (
         (lucro_total / faturamento_total * 100).quantize(Decimal("0.1"))
         if faturamento_total
@@ -58,9 +59,9 @@ def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
     for produto in (
         itens_com_custo.values("produto__nome")
         .annotate(
-            quantidade=Sum("quantidade"),
-            faturamento=Sum("subtotal"),
-            lucro=Sum("lucro_item"),
+            quantidade=Soma("quantidade"),
+            faturamento=Soma("subtotal"),
+            lucro=Soma("lucro_item"),
         )
         .order_by("-lucro")[:8]
     ):
@@ -97,14 +98,14 @@ def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
         "margem_total": margem_total,
         "produtos_lucro": produtos_lucro,
         "estoque_baixo": estoque_baixo_qs.order_by("quantidade_estoque"),
-        "a_pagar_total": pagar_pendente.aggregate(t=Sum("valor"))["t"] or Decimal("0"),
+        "a_pagar_total": pagar_pendente.aggregate(t=Soma("valor"))["t"] or Decimal("0"),
         "a_pagar_vencido": (
-            pagar_pendente.filter(vencimento__lt=hoje).aggregate(t=Sum("valor"))["t"]
+            pagar_pendente.filter(vencimento__lt=hoje).aggregate(t=Soma("valor"))["t"]
             or Decimal("0")
         ),
-        "a_receber_total": receber_pendente.aggregate(t=Sum("valor"))["t"] or Decimal("0"),
+        "a_receber_total": receber_pendente.aggregate(t=Soma("valor"))["t"] or Decimal("0"),
         "a_receber_vencido": (
-            receber_pendente.filter(vencimento__lt=hoje).aggregate(t=Sum("valor"))["t"]
+            receber_pendente.filter(vencimento__lt=hoje).aggregate(t=Soma("valor"))["t"]
             or Decimal("0")
         ),
     }

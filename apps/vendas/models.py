@@ -3,12 +3,12 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
-from django.db.models import Sum
 from django.utils import timezone
 from django.utils.formats import number_format
 
 from apps.clientes.models import Cliente
 from apps.estoque.models import Produto
+from config.agregados import Soma
 
 
 class Venda(models.Model):
@@ -96,7 +96,7 @@ class Venda(models.Model):
 
     @property
     def falta_receber(self):
-        recebido = self.pagamentos.aggregate(t=Sum("valor"))["t"] or Decimal("0")
+        recebido = self.pagamentos.aggregate(t=Soma("valor"))["t"] or Decimal("0")
         return self.total - recebido
 
     @property

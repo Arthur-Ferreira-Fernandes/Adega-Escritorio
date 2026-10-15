@@ -8,8 +8,37 @@
     --cor-texto: #f2ead9;
     --cor-texto-suave: #b3a68a;
     --cor-vinho: #7a1128;
+    --cor-sucesso: #7fbf7f;
+    --cor-texto-sobre-dourado: #17130d;
+    --cor-texto-sobre-vinho: #f2ead9;
+    --cor-cabecalho-topo: #141210;
+    --cor-cabecalho-base: #0c0a08;
+    --sombra: rgba(0, 0, 0, 0.35);
+    --sombra-forte: rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
     --fonte-marca: Georgia, "Times New Roman", serif;
     --fonte-base: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Tema claro: ligado pelo botão do cabeçalho (static/js/tema.js). */
+:root[data-tema="claro"] {
+    --cor-fundo: #f6f1e7;
+    --cor-superficie: #fffdf8;
+    --cor-superficie-alt: #efe7d6;
+    --cor-borda: #d9cbb0;
+    --cor-dourado: #8f6d12;
+    --cor-dourado-claro: #6e520a;
+    --cor-texto: #2a2117;
+    --cor-texto-suave: #6b5d45;
+    --cor-vinho: #7a1128;
+    --cor-sucesso: #2f7a3a;
+    --cor-texto-sobre-dourado: #fffdf8;
+    --cor-texto-sobre-vinho: #fffdf8;
+    --cor-cabecalho-topo: #fffdf8;
+    --cor-cabecalho-base: #f3ecdf;
+    --sombra: rgba(60, 40, 10, 0.12);
+    --sombra-forte: rgba(60, 40, 10, 0.18);
+    color-scheme: light;
 }
 
 * {
@@ -35,7 +64,7 @@ a {
     justify-content: space-between;
     gap: 1.5rem;
     padding: 0.75rem 2rem;
-    background: linear-gradient(180deg, #141210, #0c0a08);
+    background: linear-gradient(180deg, var(--cor-cabecalho-topo), var(--cor-cabecalho-base));
     border-bottom: 1px solid var(--cor-borda);
     flex-wrap: wrap;
 }
@@ -87,6 +116,49 @@ a {
     border-color: var(--cor-dourado);
 }
 
+/* Botão de tema claro/escuro */
+
+.cabecalho__acoes {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.botao-tema {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    background: var(--cor-superficie-alt);
+    color: var(--cor-texto-suave);
+    border: 1px solid var(--cor-borda);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.botao-tema:hover {
+    color: var(--cor-dourado-claro);
+    border-color: var(--cor-dourado);
+}
+
+.botao-tema svg {
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+/* Mostra o ícone do tema para o qual o clique vai trocar. */
+.botao-tema__sol,
+:root[data-tema="claro"] .botao-tema__lua {
+    display: block;
+}
+
+.botao-tema__lua,
+:root[data-tema="claro"] .botao-tema__sol {
+    display: none;
+}
+
 /* Sino de notificações */
 
 .sino-notificacoes {
@@ -114,7 +186,7 @@ a {
 
 .sino-contador {
     background: var(--cor-vinho);
-    color: var(--cor-texto);
+    color: var(--cor-texto-sobre-vinho);
     border-radius: 999px;
     font-size: 0.7rem;
     font-weight: bold;
@@ -132,7 +204,7 @@ a {
     background: var(--cor-superficie);
     border: 1px solid var(--cor-borda);
     border-radius: 10px;
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 12px 28px var(--sombra-forte);
     z-index: 20;
 }
 
@@ -355,7 +427,7 @@ a {
     border: 1px solid var(--cor-borda);
     border-radius: 10px;
     padding: 1.5rem;
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 12px 28px var(--sombra);
 }
 
 /* Grade de estatísticas */
@@ -371,7 +443,7 @@ a {
     border: 1px solid var(--cor-borda);
     border-radius: 10px;
     padding: 1.25rem 1.5rem;
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 12px 28px var(--sombra);
 }
 
 .stat__valor {
@@ -494,7 +566,7 @@ a {
 .botao {
     display: inline-block;
     background: var(--cor-dourado);
-    color: #17130d;
+    color: var(--cor-texto-sobre-dourado);
     border: none;
     border-radius: 6px;
     padding: 0.6rem 1.25rem;
@@ -611,8 +683,8 @@ a {
 }
 
 .emblema--concluida {
-    color: #7fbf7f;
-    border-color: #7fbf7f;
+    color: var(--cor-sucesso);
+    border-color: var(--cor-sucesso);
 }
 
 .emblema--cancelada {
@@ -631,7 +703,7 @@ a {
 
 .cartao--destaque {
     border-color: var(--cor-dourado);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(201, 162, 39, 0.25);
+    box-shadow: 0 12px 28px var(--sombra), 0 0 0 1px rgba(201, 162, 39, 0.25);
 }
 
 /* Layout do PDV (tela de detalhe da venda) */

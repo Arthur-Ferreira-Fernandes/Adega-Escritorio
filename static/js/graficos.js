@@ -1,11 +1,14 @@
+// As cores vêm das variáveis do CSS, então seguem o tema claro/escuro.
 function coresGrafico() {
+    const css = getComputedStyle(document.documentElement);
+    const cor = (nome) => css.getPropertyValue(nome).trim();
     return {
-        serie: "#c9a227",
+        serie: cor("--cor-dourado"),
         serieArea: "rgba(201, 162, 39, 0.12)",
-        grade: "#3a2f1c",
-        textoPrimario: "#f2ead9",
-        textoSecundario: "#b3a68a",
-        superficie: "#17130d",
+        grade: cor("--cor-borda"),
+        textoPrimario: cor("--cor-texto"),
+        textoSecundario: cor("--cor-texto-suave"),
+        superficie: cor("--cor-superficie"),
     };
 }
 
@@ -92,3 +95,11 @@ function inicializarGraficos(escopo) {
 
 document.addEventListener("DOMContentLoaded", () => inicializarGraficos());
 document.body.addEventListener("htmx:afterSwap", (evento) => inicializarGraficos(evento.target));
+document.addEventListener("tema:alterado", () => {
+    document.querySelectorAll(".grafico").forEach((canvas) => {
+        const grafico = Chart.getChart(canvas);
+        if (grafico) grafico.destroy();
+        delete canvas.dataset.graficoInicializado;
+    });
+    inicializarGraficos();
+});

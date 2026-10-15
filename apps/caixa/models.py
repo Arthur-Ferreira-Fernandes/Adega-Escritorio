@@ -4,12 +4,13 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, models, transaction
-from django.db.models import Q, Sum
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.formats import number_format
 
 from apps.configuracoes.models import Configuracao
 from apps.vendas.models import PagamentoVenda, Venda
+from config.agregados import Soma
 
 
 class Caixa(models.Model):
@@ -139,13 +140,13 @@ class Caixa(models.Model):
 
     def total_sangrias(self):
         return (
-            self.movimentos.filter(tipo=MovimentoCaixa.Tipo.SANGRIA).aggregate(t=Sum("valor"))["t"]
+            self.movimentos.filter(tipo=MovimentoCaixa.Tipo.SANGRIA).aggregate(t=Soma("valor"))["t"]
             or Decimal("0")
         )
 
     def total_reforcos(self):
         return (
-            self.movimentos.filter(tipo=MovimentoCaixa.Tipo.REFORCO).aggregate(t=Sum("valor"))["t"]
+            self.movimentos.filter(tipo=MovimentoCaixa.Tipo.REFORCO).aggregate(t=Soma("valor"))["t"]
             or Decimal("0")
         )
 
@@ -157,7 +158,7 @@ class Caixa(models.Model):
                 venda__status=Venda.Status.CONCLUIDA,
                 venda__finalizada_em__gte=self.aberto_em,
                 venda__finalizada_em__lte=fim,
-            ).aggregate(t=Sum("valor"))["t"]
+            ).aggregate(t=Soma("valor"))["t"]
             or Decimal("0")
         )
 
