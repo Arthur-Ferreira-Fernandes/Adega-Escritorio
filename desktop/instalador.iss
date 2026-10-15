@@ -40,7 +40,7 @@ Source: "..\dist\Adega\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Name: "{group}\Adega"; Filename: "{app}\Adega.exe"
 Name: "{group}\Dados e backups do Adega"; Filename: "{localappdata}\Adega"
 Name: "{autodesktop}\Adega"; Filename: "{app}\Adega.exe"; Tasks: areadetrabalho
-Name: "{userstartup}\Adega"; Filename: "{app}\Adega.exe"; WindowState: minimized; Tasks: iniciarcomwindows
+Name: "{userstartup}\Adega"; Filename: "{app}\Adega.exe"; Tasks: iniciarcomwindows
 
 [Run]
 Filename: "{app}\Adega.exe"; Description: "Abrir o Adega agora"; Flags: nowait postinstall skipifsilent

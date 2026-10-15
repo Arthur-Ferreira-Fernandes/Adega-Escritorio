@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block titulo %}Primeiro acesso · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<div class="tela-login">
+    <div class="cartao cartao--destaque login-cartao">
+        <h1 class="titulo-pagina" style="text-align: center;">Bem-vindo!</h1>
+        <p class="subtitulo-pagina" style="text-align: center;">Crie o usuário administrador do sistema. Guarde bem a senha: é com ela que se cadastram os outros usuários.</p>
+
+        {% if form.errors %}
+        <p class="mensagem mensagem--error">Corrija o erro abaixo.</p>
+        {% endif %}
+
+        <form method="post" class="formulario" style="flex-direction: column; align-items: stretch;">
+            {% csrf_token %}
+            {% for campo in form %}
+            <div class="campo">
+                <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+                {{ campo }}
+                {% if campo.errors %}<p class="erro-campo">{{ campo.errors|join:", " }}</p>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="botao" style="width: 100%;">Criar administrador e entrar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

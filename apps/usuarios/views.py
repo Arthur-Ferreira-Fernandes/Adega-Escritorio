@@ -1,14 +1,21 @@
+from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import get_user_model, update_session_auth_hash
+from django.contrib.auth import get_user_model, login, update_session_auth_hash
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import PasswordChangeForm
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.auditoria import servicos as auditoria
 from apps.auditoria.models import RegistroAuditoria
 
-from .forms import MeusDadosForm, NovoUsuarioForm, ResetarSenhaForm
+from .forms import (
+    MeusDadosForm,
+    NovoUsuarioForm,
+    PrimeiroAdministradorForm,
+    ResetarSenhaForm,
+)
 
 User = get_user_model()
 
@@ -158,3 +165,35 @@ def minha_conta(request):
         "usuarios/minha_conta.html",
         {"dados_form": dados_form, "senha_form": senha_form},
     )
+
+
+def primeiro_acesso(request):
+    """Cria o primeiro administrador pela tela (versão desktop).
+
+    Só existe enquanto não há nenhum administrador, e só para quem está no
+    próprio computador do sistema — com ACESSO_REDE ligado, um celular na
+    rede não pode chegar primeiro e virar dono do sistema.
+    """
+    if not (
+        settings.PRIMEIRO_ACESSO_PELA_TELA
+        and request.META.get("REMOTE_ADDR") in ("127.0.0.1", "::1")
+        and not User.objects.filter(is_superuser=True).exists()
+    ):
+        raise Http404
+    if request.method == "POST":
+        form = PrimeiroAdministradorForm(request.POST)
+        if form.is_valid():
+            administrador = User.objects.create_user(
+                username=form.cleaned_data["username"],
+                first_name=form.cleaned_data["first_name"],
+                password=form.cleaned_data["password1"],
+                is_staff=True,
+                is_superuser=True,
+            )
+            auditoria.registrar(administrador, RegistroAuditoria.Acao.CRIACAO, administrador)
+            login(request, administrador)
+            messages.success(request, "Administrador criado. Bem-vindo ao sistema!")
+            return redirect("inicio")
+    else:
+        form = PrimeiroAdministradorForm()
+    return render(request, "usuarios/primeiro_acesso.html", {"form": form})

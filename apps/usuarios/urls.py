@@ -10,4 +10,5 @@ urlpatterns = [
     path("<int:pk>/resetar-senha/", views.usuarios_resetar_senha, name="resetar_senha"),
     path("<int:pk>/alternar-ativo/", views.usuarios_alternar_ativo, name="alternar_ativo"),
     path("minha-conta/", views.minha_conta, name="minha_conta"),
+    path("primeiro-acesso/", views.primeiro_acesso, name="primeiro_acesso"),
 ]

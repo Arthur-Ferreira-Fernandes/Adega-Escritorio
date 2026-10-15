@@ -47,6 +47,7 @@ from .base import BASE_DIR, LOGGING, MIDDLEWARE, env  # noqa: E402
 
 DEBUG = False
 SECURE_PROXY_SSL_HEADER = None  # sem proxy reverso na frente
+PRIMEIRO_ACESSO_PELA_TELA = True
 
 PORTA = env.int("PORTA", default=8000)
 ACESSO_REDE = env.bool("ACESSO_REDE", default=False)

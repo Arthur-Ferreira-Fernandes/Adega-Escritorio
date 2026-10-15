@@ -1,10 +1,11 @@
 """Ponto de entrada da versão desktop (vira o Adega.exe).
 
-Prepara o banco, faz backup, garante que existe um administrador, sobe o
-servidor e abre o navegador. A janela preta que fica aberta É o sistema:
-fechá-la desliga o Adega.
+Prepara o banco, faz backup, sobe o servidor e abre o sistema numa janela
+própria (pywebview — no Windows usa o WebView2, o motor do Edge). Fechar a
+janela desliga o sistema, inclusive para celulares conectados pela rede.
 """
 
+import logging
 import os
 import socket
 import sqlite3
@@ -20,8 +21,35 @@ RAIZ = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(RAIZ))
 os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings.desktop"
 
+# O .exe roda sem console: sem isso, qualquer print/log no terminal quebra.
+for nome in ("stdout", "stderr"):
+    if getattr(sys, nome) is None:
+        setattr(sys, nome, open(os.devnull, "w", encoding="utf-8"))
+
 DIAS_DE_BACKUP = 30
 INTERVALO_BACKUP = 24 * 60 * 60
+
+log = logging.getLogger("apps.desktop")
+
+# Os links com target="_blank" (comprovante de venda, relatório de caixa) iriam
+# para o navegador externo, que não tem o login: abre numa janela do app.
+JS_JANELAS_NOVAS = """
+document.addEventListener("click", function (evento) {
+    var link = evento.target.closest("a[target=_blank]");
+    if (!link || !window.pywebview) return;
+    evento.preventDefault();
+    window.pywebview.api.abrir_janela(link.href);
+}, true);
+"""
+
+
+def avisar(texto):
+    if sys.platform == "win32":
+        import ctypes
+
+        ctypes.windll.user32.MessageBoxW(0, texto, "Adega", 0x40)
+    else:
+        print(texto)
 
 
 def porta_em_uso(porta):
@@ -43,7 +71,7 @@ def fazer_backup(settings):
     for antigo in settings.BACKUP_DIR.glob("adega_*.sqlite3"):
         if antigo.stat().st_mtime < limite:
             antigo.unlink()
-    print(f"Backup criado: {destino}")
+    log.info("Backup criado", extra={"arquivo": str(destino)})
 
 
 def backup_periodico(settings):
@@ -51,71 +79,93 @@ def backup_periodico(settings):
         time.sleep(INTERVALO_BACKUP)
         try:
             fazer_backup(settings)
-        except Exception as erro:  # um backup que falha não pode derrubar o sistema
-            print(f"Falha no backup automático: {erro}")
+        except Exception:  # um backup que falha não pode derrubar o sistema
+            log.exception("Falha no backup automático")
 
 
-def garantir_administrador():
-    from django.contrib.auth import get_user_model
-    from django.core.management import call_command
+class Api:
+    """Funções que o JavaScript das páginas pode chamar (window.pywebview.api)."""
 
-    if get_user_model().objects.filter(is_superuser=True).exists():
-        return
-    print()
-    print("=" * 60)
-    print(" PRIMEIRO USO: crie o usuário administrador do sistema.")
-    print(" (a senha não aparece enquanto você digita — é normal)")
-    print("=" * 60)
-    call_command("createsuperuser")
+    def abrir_janela(self, url):
+        import webview
+
+        webview.create_window("Adega", url, width=900, height=800)
+
+
+def abrir_janela(url, titulo, pasta_dados):
+    import webview
+
+    webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
+    janela = webview.create_window(
+        titulo, url, js_api=Api(), width=1280, height=800, min_size=(900, 600),
+        confirm_close=True,
+    )
+    janela.events.loaded += lambda: janela.evaluate_js(JS_JANELAS_NOVAS)
+    webview.start(
+        private_mode=False,  # janelas compartilham o login
+        storage_path=str(pasta_dados / "navegador"),
+        localization={
+            "global.quitConfirmation": "Fechar o Adega? O sistema será desligado.",
+            "global.ok": "OK",
+            "global.cancel": "Cancelar",
+            "global.quit": "Fechar",
+        },
+        icon=str(RAIZ / "staticfiles" / "img" / "apple-touch-icon.png"),
+    )
 
 
 def main():
-    if sys.platform == "win32":
-        import ctypes
-
-        ctypes.windll.kernel32.SetConsoleTitleW("Adega — NÃO FECHE esta janela")
-
     import django
 
     django.setup()
     from django.conf import settings
+    from django.contrib.auth import get_user_model
     from django.core.management import call_command
 
-    url = f"http://localhost:{settings.PORTA}/"
     if porta_em_uso(settings.PORTA):
-        # Já tem um Adega rodando (clicaram duas vezes no ícone): só abre o navegador.
-        webbrowser.open(url)
+        avisar("O Adega já está aberto. Procure a janela dele na barra de tarefas.")
         return
 
-    print("Iniciando o Adega...")
     fazer_backup(settings)
     call_command("migrate", interactive=False, verbosity=0)
     if not getattr(sys, "frozen", False):
         call_command("collectstatic", interactive=False, verbosity=0)
-    garantir_administrador()
 
-    from waitress import serve
     from django.core.wsgi import get_wsgi_application
-
-    threading.Thread(target=backup_periodico, args=(settings,), daemon=True).start()
-    threading.Timer(1.5, webbrowser.open, args=(url,)).start()
+    from waitress import create_server
 
     host = "0.0.0.0" if settings.ACESSO_REDE else "127.0.0.1"
-    print()
-    print(f"Adega rodando em {url}")
-    for ip in settings.IPS_REDE:
-        print(f"Na rede local (celular/tablet): http://{ip}:{settings.PORTA}/")
-    print(f"Dados e backups em: {settings.DATA_DIR}")
-    print("Mantenha esta janela aberta (pode minimizar). Fechar = desligar o sistema.")
-    serve(get_wsgi_application(), host=host, port=settings.PORTA, threads=8)
+    servidor = create_server(get_wsgi_application(), host=host, port=settings.PORTA, threads=8)
+    threading.Thread(target=servidor.run, daemon=True).start()
+    threading.Thread(target=backup_periodico, args=(settings,), daemon=True).start()
+
+    url = f"http://localhost:{settings.PORTA}/"
+    if not get_user_model().objects.filter(is_superuser=True).exists():
+        url += "usuarios/primeiro-acesso/"
+    titulo = "Adega & Tabacaria Escritório"
+    if settings.IPS_REDE:
+        titulo += f"  —  no celular: http://{settings.IPS_REDE[0]}:{settings.PORTA}/"
+    log.info("Adega iniciado", extra={"url": url, "rede": settings.IPS_REDE})
+
+    try:
+        abrir_janela(url, titulo, settings.DATA_DIR)
+    except Exception:
+        # Sem WebView2 (Windows muito desatualizado): cai pro navegador.
+        log.exception("Não foi possível abrir a janela do app; usando o navegador")
+        webbrowser.open(url)
+        avisar("O Adega foi aberto no navegador.\n\nClique em OK somente quando quiser DESLIGAR o sistema.")
 
 
 if __name__ == "__main__":
     try:
         main()
     except Exception:
+        log.exception("Erro ao iniciar o Adega")
         import traceback
 
-        traceback.print_exc()
-        input("\nO Adega encontrou um erro e vai fechar. Tire uma foto desta tela e pressione Enter.")
+        avisar(
+            "O Adega encontrou um erro e não pôde abrir.\n\n"
+            + traceback.format_exc(limit=3)
+            + "\nTire uma foto desta mensagem e envie para o suporte."
+        )
         sys.exit(1)

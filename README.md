@@ -28,7 +28,7 @@ docker compose exec web python manage.py seed_demo
 
 ## Versão desktop para Windows (instalador `.exe`, sem Docker)
 
-Para computadores Windows 10/11 comuns, o sistema também é distribuído como um instalador (`AdegaSetup-<versão>.exe`) que não precisa de Docker, Python nem internet. Nessa versão, o SQLite substitui o Postgres, o cache em memória substitui o Redis e o Waitress + WhiteNoise substituem o Gunicorn + Nginx. O código é o mesmo, e a configuração fica em `config/settings/desktop.py`.
+Para computadores Windows 10/11 comuns, o sistema também é distribuído como um instalador (`AdegaSetup-<versão>.exe`) que não precisa de Docker, Python nem internet. Nessa versão, o SQLite substitui o Postgres, o cache em memória substitui o Redis e o Waitress + WhiteNoise substituem o Gunicorn + Nginx. O sistema abre numa janela própria, sem barra de endereço, pelo pywebview, que no Windows usa o WebView2 do Edge. O código é o mesmo, e a configuração fica em `config/settings/desktop.py`.
 
 ### Gerar o instalador
 
@@ -39,10 +39,9 @@ Para computadores Windows 10/11 comuns, o sistema também é distribuído como u
 
 1. Copie o `AdegaSetup-<versão>.exe` para o computador e execute. Não pede senha de administrador.
    - O instalador não é assinado digitalmente, então o Windows pode mostrar "O Windows protegeu o computador". Clique em **Mais informações → Executar assim mesmo**.
-2. No primeiro uso, uma janela preta pede para criar o **usuário administrador**. A senha não aparece enquanto é digitada.
-3. O navegador abre sozinho em `http://localhost:8000/`.
+2. No primeiro uso, a janela do Adega abre na tela **Bem-vindo!**, onde se cria o usuário administrador. Essa tela só existe enquanto não há nenhum administrador e só funciona no próprio computador.
 
-A janela preta **é o sistema**: pode minimizar, mas fechá-la desliga o Adega. Clicar no ícone com o sistema já aberto só abre o navegador de novo. No instalador, é possível marcar "Abrir o Adega automaticamente ao ligar o computador".
+Fechar a janela **desliga o sistema**, inclusive para celulares conectados, por isso o Adega pede confirmação antes. Comprovantes e relatórios de caixa abrem numa segunda janela, com o botão de imprimir. Se o Windows não tiver o WebView2 (só em versões muito desatualizadas), o sistema abre no navegador e mostra um aviso cujo OK desliga o sistema. Erros ao abrir aparecem numa caixa de mensagem e ficam registrados em `logs\app.log`. No instalador, é possível marcar "Abrir o Adega automaticamente ao ligar o computador".
 
 ### Dados, backups e atualização
 
@@ -50,6 +49,7 @@ Tudo fica em `%LOCALAPPDATA%\Adega`. O menu Iniciar tem o atalho **Dados e backu
 
 - `adega.sqlite3`: o banco de dados.
 - `backups\`: cópia automática a cada abertura do sistema e a cada 24h com ele aberto. Guarda os últimos 30 dias. Copie essa pasta de vez em quando para um pendrive ou para a nuvem.
+- `navegador\`: dados da janela do app, como o login salvo.
 - `adega.env`: configuração desta instalação, incluindo a `SECRET_KEY`, que é gerada automaticamente.
 - `logs\`: registros do sistema.
 
@@ -61,7 +61,7 @@ Tudo fica em `%LOCALAPPDATA%\Adega`. O menu Iniciar tem o atalho **Dados e backu
 
 1. Em `%LOCALAPPDATA%\Adega\adega.env`, troque `ACESSO_REDE=False` por `ACESSO_REDE=True` e reabra o Adega.
 2. Na primeira vez, o Windows pergunta se libera o acesso na rede. Marque **Redes privadas** e permita. Isso exige a senha de administrador do Windows.
-3. A janela preta mostra o endereço para usar no celular (ex.: `http://192.168.0.10:8000/`). O celular precisa estar no mesmo Wi-Fi.
+3. O título da janela do Adega mostra o endereço para usar no celular (ex.: `http://192.168.0.10:8000/`). O celular precisa estar no mesmo Wi-Fi.
 
 Para o endereço não mudar, reserve um IP fixo para o computador no roteador. O acesso é só por HTTP, sem criptografia, então use apenas numa rede Wi-Fi de confiança (não na rede aberta para clientes).
 

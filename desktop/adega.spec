@@ -44,7 +44,7 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name="Adega",
-    console=True,
+    console=False,  # sem janela preta: o app abre a própria janela (pywebview)
     icon=os.path.join(SPECPATH, "adega.ico"),
 )
 

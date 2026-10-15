@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 User = get_user_model()
@@ -132,3 +132,38 @@ class MinhaContaViewTests(TestCase):
         self.assertTrue(self.usuario.check_password("SenhaNova456"))
         resposta_seguinte = self.client.get(reverse("usuarios:minha_conta"))
         self.assertEqual(resposta_seguinte.status_code, 200)
+
+
+@override_settings(PRIMEIRO_ACESSO_PELA_TELA=True)
+class PrimeiroAcessoTests(TestCase):
+    dados = {
+        "username": "dono",
+        "first_name": "Dono",
+        "password1": "SenhaForte123",
+        "password2": "SenhaForte123",
+    }
+
+    def test_cria_administrador_e_ja_entra(self):
+        resposta = self.client.post(reverse("usuarios:primeiro_acesso"), self.dados)
+        self.assertRedirects(resposta, reverse("inicio"), fetch_redirect_response=False)
+        dono = User.objects.get(username="dono")
+        self.assertTrue(dono.is_superuser and dono.is_staff)
+        self.assertEqual(int(self.client.session["_auth_user_id"]), dono.pk)
+
+    def test_some_quando_ja_existe_administrador(self):
+        User.objects.create_user(username="admin", password="x", is_superuser=True)
+        resposta = self.client.post(reverse("usuarios:primeiro_acesso"), self.dados)
+        self.assertEqual(resposta.status_code, 404)
+        self.assertFalse(User.objects.filter(username="dono").exists())
+
+    def test_bloqueado_para_outro_aparelho_da_rede(self):
+        resposta = self.client.post(
+            reverse("usuarios:primeiro_acesso"), self.dados, REMOTE_ADDR="192.168.0.20"
+        )
+        self.assertEqual(resposta.status_code, 404)
+        self.assertFalse(User.objects.exists())
+
+    @override_settings(PRIMEIRO_ACESSO_PELA_TELA=False)
+    def test_desligado_fora_da_versao_desktop(self):
+        resposta = self.client.get(reverse("usuarios:primeiro_acesso"))
+        self.assertEqual(resposta.status_code, 404)

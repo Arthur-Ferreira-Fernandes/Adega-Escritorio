@@ -105,6 +105,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "/admin/login/"
 
+# Tela de criação do primeiro administrador (usuarios:primeiro_acesso). Só a
+# versão desktop liga isso; no Docker o primeiro acesso é pelo createsuperuser.
+PRIMEIRO_ACESSO_PELA_TELA = False
+
 USE_THOUSAND_SEPARATOR = True
 
 LOG_DIR = BASE_DIR / "logs"

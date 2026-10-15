@@ -35,6 +35,10 @@ class NovoUsuarioForm(forms.Form):
         return _validar_senhas(self, super().clean())
 
 
+class PrimeiroAdministradorForm(NovoUsuarioForm):
+    is_superuser = None  # o primeiro usuário é sempre administrador
+
+
 class MeusDadosForm(forms.Form):
     first_name = forms.CharField(label="Nome", max_length=150)
     username = forms.CharField(label="Usuário (login)", max_length=150)
