@@ -197,7 +197,7 @@ def abrir_janela(url, titulo, pasta_dados):
     webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
     janela = criar_janela(
         titulo, url, js_api=Api(), width=1280, height=800, min_size=(900, 600),
-        confirm_close=True,
+        confirm_close=True, maximized=True,
     )
     janela.events.loaded += lambda: janela.evaluate_js(JS_JANELAS_NOVAS)
     webview.start(
