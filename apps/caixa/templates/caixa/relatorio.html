@@ -219,9 +219,19 @@
         </div>
 
         <div class="nao-imprimir">
-            <button type="button" onclick="window.print()">Imprimir</button>
-            <a href="{% url 'caixa:painel' %}">Voltar</a>
+            <button type="button" onclick="window.print()">Imprimir (Ctrl+P)</button>
+            <a href="{% url 'caixa:painel' %}" id="voltar">Voltar (Esc)</a>
         </div>
     </div>
+    <script>
+        document.addEventListener("keydown", function (evento) {
+            if ((evento.ctrlKey || evento.metaKey) && evento.key.toLowerCase() === "p") {
+                evento.preventDefault();
+                window.print();
+            } else if (evento.key === "Escape") {
+                document.getElementById("voltar").click();
+            }
+        });
+    </script>
 </body>
 </html>

@@ -10,7 +10,7 @@
 
 {% if venda.status == "aberta" %}
 <div class="cartao cartao--destaque campo-scanner">
-    <span class="campo-scanner__rotulo">Escanear código de barras</span>
+    <label for="{{ escanear_form.codigo_barras.id_for_label }}" class="campo-scanner__rotulo" data-atalho="F3">Escanear código de barras</label>
     <form method="post" action="{% url 'vendas:escanear' pk=venda.pk %}"
           hx-post="{% url 'vendas:escanear' pk=venda.pk %}"
           hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
@@ -85,7 +85,7 @@
                   hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
                 {% csrf_token %}
                 <div class="campo">
-                    <label for="{{ item_form.produto_busca.id_for_label }}">{{ item_form.produto_busca.label }}</label>
+                    <label for="{{ item_form.produto_busca.id_for_label }}" data-atalho="F4">{{ item_form.produto_busca.label }}</label>
                     {{ item_form.produto_busca }}
                     <datalist id="produtos-datalist">
                         {% for produto in produtos_ativos %}
@@ -161,15 +161,15 @@
               data-falta="{{ falta_receber_bruto }}"{% if not itens %} data-sem-itens{% endif %}>
             {% csrf_token %}
             <div class="campo">
-                <label for="id_valor_novo">Valor recebido <small>(vazio = R$ {{ venda.falta_receber }})</small></label>
+                <label for="id_valor_novo" data-atalho="F9">Valor recebido <small>(vazio = R$ {{ venda.falta_receber }})</small></label>
                 <input type="text" name="valor" id="id_valor_novo" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ {{ venda.falta_receber }}" data-max-digitos="10">
                 <span id="aviso-valor-pagamento" class="texto-perigo" style="display: none;"></span>
             </div>
             {# Enter no campo de valor = Dinheiro (primeiro botão do formulário). #}
             <div class="pagamento-rapido__botoes">
-                <button type="submit" name="forma_pagamento" value="dinheiro" class="botao" {% if not itens %}disabled{% endif %}>Dinheiro</button>
-                <button type="submit" name="forma_pagamento" value="cartao" class="botao" data-sem-troco {% if not itens %}disabled{% endif %}>Cartão</button>
-                <button type="submit" name="forma_pagamento" value="pix" class="botao" data-sem-troco {% if not itens %}disabled{% endif %}>Pix</button>
+                <button type="submit" name="forma_pagamento" value="dinheiro" class="botao" data-atalho="F6" {% if not itens %}disabled{% endif %}>Dinheiro</button>
+                <button type="submit" name="forma_pagamento" value="cartao" class="botao" data-atalho="F7" data-sem-troco {% if not itens %}disabled{% endif %}>Cartão</button>
+                <button type="submit" name="forma_pagamento" value="pix" class="botao" data-atalho="F8" data-sem-troco {% if not itens %}disabled{% endif %}>Pix</button>
             </div>
             <p class="campo-scanner__dica">Um clique recebe e finaliza a venda. Para pagamento dividido, digite o valor de cada parte.</p>
         </form>
@@ -178,7 +178,7 @@
               hx-post="{% url 'vendas:finalizar' pk=venda.pk %}"
               hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
             {% csrf_token %}
-            <button type="submit" class="botao" style="width: 100%; margin-top: 0.5rem;">Finalizar venda</button>
+            <button type="submit" class="botao" data-atalho="F10" style="width: 100%; margin-top: 0.5rem;">Finalizar venda</button>
         </form>
         {% endif %}
         <form method="post" action="{% url 'vendas:cancelar' pk=venda.pk %}"
@@ -186,7 +186,7 @@
               hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
               hx-confirm="Tem certeza que deseja cancelar esta venda? Essa ação não pode ser desfeita.">
             {% csrf_token %}
-            <button type="submit" class="botao botao--perigo" style="width: 100%; margin-top: 0.5rem;">Cancelar venda</button>
+            <button type="submit" class="botao botao--perigo" data-atalho="Ctrl+Del" style="width: 100%; margin-top: 0.5rem;">Cancelar venda</button>
         </form>
         {% else %}
         <p><strong>Pagamento:</strong></p>
@@ -225,9 +225,9 @@
         {% if venda.status == "concluida" %}
         <form method="post" action="{% url 'vendas:rapida' %}">
             {% csrf_token %}
-            <button type="submit" class="botao" style="width: 100%; margin-top: 0.75rem;" autofocus>Nova venda</button>
+            <button type="submit" class="botao" data-atalho="F2" style="width: 100%; margin-top: 0.75rem;" autofocus>Nova venda</button>
         </form>
-        <a href="{% url 'vendas:comprovante' pk=venda.pk %}" target="_blank"
+        <a href="{% url 'vendas:comprovante' pk=venda.pk %}" target="_blank" data-atalho="Ctrl+P"
            class="botao botao--secundario" style="width: 100%; margin-top: 0.75rem; text-align: center;">Imprimir comprovante</a>
         {% endif %}
         {% endif %}

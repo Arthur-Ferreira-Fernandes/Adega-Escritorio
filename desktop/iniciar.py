@@ -40,14 +40,21 @@ log = logging.getLogger("apps.desktop")
 
 # Os links com target="_blank" (comprovante de venda, relatório de caixa) iriam
 # para o navegador externo, que não tem o login: abre numa janela do app.
+# No Linux (Qt) abre na mesma janela: o pywebview cria um QWebEngineProfile
+# novo, na mesma pasta, para cada janela, e o Chromium entra em loop
+# consumindo memória até travar o computador. As páginas têm "Voltar".
+if sys.platform.startswith("linux"):
+    JS_ABRIR_LINK = "location.href = link.href;"
+else:
+    JS_ABRIR_LINK = "window.pywebview.api.abrir_janela(link.href);"
 JS_JANELAS_NOVAS = """
 document.addEventListener("click", function (evento) {
     var link = evento.target.closest("a[target=_blank]");
     if (!link || !window.pywebview) return;
     evento.preventDefault();
-    window.pywebview.api.abrir_janela(link.href);
+    %s
 }, true);
-"""
+""" % JS_ABRIR_LINK
 
 
 def avisar(texto):
@@ -90,13 +97,39 @@ def backup_periodico(settings):
             log.exception("Falha no backup automático")
 
 
+def ativar_impressao(window):
+    """No Linux (Qt) o window.print() não faz nada sozinho: abre o diálogo de impressão."""
+    from qtpy.QtPrintSupport import QPrintDialog, QPrinter
+
+    navegador = window.native
+
+    def imprimir():
+        impressora = QPrinter(QPrinter.PrinterMode.HighResolution)
+        # O Qt rasteriza cada página na resolução da impressora: na máxima,
+        # são centenas de MB por página. 300 dpi basta para um comprovante.
+        impressora.setResolution(300)
+        if QPrintDialog(impressora, navegador).exec() != QPrintDialog.DialogCode.Accepted:
+            return
+        navegador._impressora = impressora  # a impressão é assíncrona
+        navegador.webview.print(impressora)
+
+    navegador.webview.printRequested.connect(imprimir)
+
+
+def criar_janela(*args, **kwargs):
+    import webview
+
+    janela = webview.create_window(*args, **kwargs)
+    if sys.platform.startswith("linux"):
+        janela.events.before_show += ativar_impressao
+    return janela
+
+
 class Api:
     """Funções que o JavaScript das páginas pode chamar (window.pywebview.api)."""
 
     def abrir_janela(self, url):
-        import webview
-
-        webview.create_window(NOME_APP, url, width=900, height=800)
+        criar_janela(NOME_APP, url, width=900, height=800)
 
 
 def instalar_atalho_linux(icone):
@@ -155,7 +188,7 @@ def abrir_janela(url, titulo, pasta_dados):
 
     icone, gui = identificar_app()
     webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
-    janela = webview.create_window(
+    janela = criar_janela(
         titulo, url, js_api=Api(), width=1280, height=800, min_size=(900, 600),
         confirm_close=True,
     )
