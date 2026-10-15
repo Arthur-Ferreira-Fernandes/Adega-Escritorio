@@ -1,9 +1,10 @@
-// Busca de produto por nome na venda: as sugestões aparecem enquanto digita,
-// agrupadas por categoria, com preço e estoque. ↑/↓ escolhem, Enter confirma
+// Busca de produto por nome na venda: ao entrar no campo a lista inteira
+// aparece, e vai sendo filtrada enquanto digita; agrupada por categoria, com
+// preço e estoque (que pode estar zerado ou negativo: a venda não é barrada). ↑/↓ escolhem, Enter confirma
 // (e leva para a quantidade), Esc fecha. O formulário envia só o SKU, num
 // campo oculto. Os produtos vêm do <script id="produtos-dados"> da página.
 (function () {
-    var LIMITE = 50;
+    var LIMITE = 300;
     var real = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
     var cache = { elemento: null, produtos: [] };
     var estado = { resultados: [], ativo: -1 };
@@ -57,7 +58,9 @@
             return 2;
         }
         achados.sort(function (a, b) {
-            return peso(a) - peso(b) || a.nome.localeCompare(b.nome, "pt-BR");
+            // Lista inteira (nada digitado): categorias em ordem alfabética.
+            var categoria = termos.length ? 0 : a.categoria.localeCompare(b.categoria, "pt-BR");
+            return categoria || peso(a) - peso(b) || a.nome.localeCompare(b.nome, "pt-BR");
         });
         // Agrupa por categoria mantendo a ordem de relevância das categorias.
         var grupos = [];
@@ -103,7 +106,8 @@
 
     function selo(produto) {
         if (produto.estoque <= 0) {
-            return '<span class="busca-produto__estoque busca-produto__estoque--esgotado">Esgotado</span>';
+            var texto = produto.estoque < 0 ? produto.estoque + " em estoque" : "Sem estoque";
+            return '<span class="busca-produto__estoque busca-produto__estoque--esgotado">' + texto + "</span>";
         }
         var classe = produto.estoque <= produto.minimo ? " busca-produto__estoque--baixo" : "";
         return '<span class="busca-produto__estoque' + classe + '">' + produto.estoque + " em estoque</span>";
@@ -112,7 +116,7 @@
     function desenhar(p, texto, mostrarTodos) {
         var resultados = filtrar(texto, mostrarTodos);
         estado.resultados = resultados.slice(0, LIMITE);
-        estado.ativo = estado.resultados.findIndex(function (produto) { return produto.estoque > 0; });
+        estado.ativo = estado.resultados.length ? 0 : -1;
 
         if (!estado.resultados.length && !texto.trim()) {
             fechar(p);
@@ -125,10 +129,8 @@
                 categoria = produto.categoria;
                 html += '<div class="busca-produto__grupo" role="presentation">' + escapar(categoria) + "</div>";
             }
-            var esgotado = produto.estoque <= 0;
-            html += '<div class="busca-produto__item' + (esgotado ? " busca-produto__item--esgotado" : "") +
-                '" role="option" id="busca-produto-op-' + indice + '" data-indice="' + indice + '"' +
-                (esgotado ? ' aria-disabled="true"' : "") + ">" +
+            html += '<div class="busca-produto__item" role="option" id="busca-produto-op-' + indice +
+                '" data-indice="' + indice + '">' +
                 '<span class="busca-produto__nome">' + destacar(produto.nome, texto) + "</span>" +
                 selo(produto) +
                 '<span class="busca-produto__preco">' + real.format(Number(produto.preco)) + "</span>" +
@@ -161,14 +163,8 @@
 
     function mover(p, passo) {
         var total = estado.resultados.length;
-        for (var i = 1; i <= total; i++) {
-            var indice = (estado.ativo + passo * i + total * i) % total;
-            if (estado.resultados[indice].estoque > 0) {
-                estado.ativo = indice;
-                marcar(p);
-                return;
-            }
-        }
+        estado.ativo = (estado.ativo + passo + total) % total;
+        marcar(p);
     }
 
     function fechar(p) {
@@ -178,11 +174,9 @@
     }
 
     function escolher(p, produto) {
-        if (!produto || produto.estoque <= 0) return;
+        if (!produto) return;
         p.campo.value = produto.nome;
         p.sku.value = produto.sku;
-        p.quantidade.max = produto.estoque;
-        if (parseInt(p.quantidade.value, 10) > produto.estoque) p.quantidade.value = produto.estoque;
         fechar(p);
         p.quantidade.focus();
         p.quantidade.select();
@@ -196,8 +190,7 @@
         if (evento.target.id !== "busca-produto") return;
         var p = partes();
         p.sku.value = "";  // mudou o texto: o produto escolhido deixa de valer
-        p.quantidade.removeAttribute("max");
-        desenhar(p, p.campo.value, false);
+        desenhar(p, p.campo.value, true);
     });
 
     document.addEventListener("keydown", function (evento) {
@@ -238,7 +231,7 @@
     });
 
     document.addEventListener("mousemove", function (evento) {
-        var item = evento.target.closest(".busca-produto__item:not(.busca-produto__item--esgotado)");
+        var item = evento.target.closest(".busca-produto__item");
         if (!item || Number(item.dataset.indice) === estado.ativo) return;
         estado.ativo = Number(item.dataset.indice);
         var p = partes();
@@ -246,6 +239,18 @@
         if (anterior) anterior.classList.remove("busca-produto__item--ativo");
         item.classList.add("busca-produto__item--ativo");
     });
+
+    // Ao entrar no campo (clique, Tab ou F4) a lista já abre. Com um produto já
+    // escolhido, mostra todos de novo e seleciona o texto para trocar digitando.
+    function abrirAoEntrar(evento) {
+        if (evento.target.id !== "busca-produto") return;
+        var p = partes();
+        if (aberta(p)) return;
+        desenhar(p, p.sku.value ? "" : p.campo.value, true);
+        if (p.sku.value) p.campo.select();
+    }
+    document.addEventListener("focusin", abrirAoEntrar);
+    document.addEventListener("click", abrirAoEntrar);  // reabre depois do Esc
 
     document.addEventListener("focusout", function (evento) {
         if (evento.target.id === "busca-produto") fechar(partes());

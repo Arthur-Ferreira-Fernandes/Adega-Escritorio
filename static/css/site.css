@@ -1049,11 +1049,6 @@ a {
     border-left-color: var(--cor-dourado);
 }
 
-.busca-produto__item--esgotado {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
-
 .busca-produto__nome mark {
     background: none;
     color: var(--cor-dourado-claro);

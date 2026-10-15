@@ -47,7 +47,8 @@ class Produto(models.Model):
     )
     preco_custo = models.DecimalField(max_digits=10, decimal_places=2)
     preco_venda = models.DecimalField(max_digits=10, decimal_places=2)
-    quantidade_estoque = models.PositiveIntegerField(default=0)
+    # Pode ficar negativo: a venda não espera a contagem ser lançada no sistema.
+    quantidade_estoque = models.IntegerField(default=0)
     estoque_minimo = models.PositiveIntegerField(
         "Estoque mínimo",
         default=5,

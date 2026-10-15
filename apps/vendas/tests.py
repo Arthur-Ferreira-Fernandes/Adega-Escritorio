@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -40,9 +41,12 @@ class VendaModelTests(TestCase):
         self.assertEqual(item.quantidade, 5)
         self.assertEqual(self.venda.total, Decimal("250.00"))
 
-    def test_adicionar_item_bloqueia_estoque_insuficiente(self):
-        with self.assertRaises(ValidationError):
-            self.venda.adicionar_item(self.produto, 999)
+    def test_vender_sem_estoque_deixa_estoque_negativo(self):
+        self.venda.adicionar_item(self.produto, 12)
+        self.venda.receber(Venda.FormaPagamento.CARTAO)
+        self.produto.refresh_from_db()
+        self.assertEqual(self.venda.status, Venda.Status.CONCLUIDA)
+        self.assertEqual(self.produto.quantidade_estoque, -2)
 
     def test_adicionar_item_bloqueia_quantidade_zero(self):
         with self.assertRaises(ValidationError):
@@ -110,8 +114,10 @@ class VendaModelTests(TestCase):
 
     def test_receber_desfaz_pagamento_se_finalizar_falhar(self):
         self.venda.adicionar_item(self.produto, 2)
-        Produto.objects.filter(pk=self.produto.pk).update(quantidade_estoque=1)
-        with self.assertRaises(ValidationError):
+        with (
+            mock.patch.object(Venda, "finalizar", side_effect=ValidationError("falhou")),
+            self.assertRaises(ValidationError),
+        ):
             self.venda.receber(Venda.FormaPagamento.CARTAO)
         self.venda.refresh_from_db()
         self.assertEqual(self.venda.status, Venda.Status.ABERTA)

@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models import F
 from django.utils import timezone
 from django.utils.formats import number_format
 
@@ -59,11 +60,6 @@ class Venda(models.Model):
 
         item_existente = self.itens.filter(produto=produto).first()
         quantidade_total = quantidade + (item_existente.quantidade if item_existente else 0)
-        if produto.quantidade_estoque < quantidade_total:
-            raise ValidationError(
-                f"Estoque insuficiente para {produto.nome} "
-                f"(disponível: {produto.quantidade_estoque})."
-            )
 
         if item_existente:
             item_existente.quantidade = quantidade_total
@@ -173,28 +169,18 @@ class Venda(models.Model):
                 "para finalizar a venda."
             )
 
+        # O estoque pode ficar negativo: a contagem é corrigida depois, pela
+        # entrada de estoque ou pela edição do produto.
         with transaction.atomic():
-            produto_ids = {item.produto_id for item in itens}
-            produtos = {
-                produto.id: produto
-                for produto in Produto.objects.select_for_update().filter(id__in=produto_ids)
-            }
             necessario_por_produto = {}
             for item in itens:
                 necessario_por_produto[item.produto_id] = (
                     necessario_por_produto.get(item.produto_id, 0) + item.quantidade
                 )
             for produto_id, necessario in necessario_por_produto.items():
-                produto = produtos[produto_id]
-                if produto.quantidade_estoque < necessario:
-                    raise ValidationError(
-                        f"Estoque insuficiente para {produto.nome} no momento de finalizar "
-                        f"(disponível: {produto.quantidade_estoque}, necessário: {necessario})."
-                    )
-            for produto_id, necessario in necessario_por_produto.items():
-                produto = produtos[produto_id]
-                produto.quantidade_estoque -= necessario
-                produto.save(update_fields=["quantidade_estoque"])
+                Produto.objects.filter(pk=produto_id).update(
+                    quantidade_estoque=F("quantidade_estoque") - necessario
+                )
             self.status = self.Status.CONCLUIDA
             self.finalizada_em = timezone.now()
             self.save(update_fields=["status", "finalizada_em"])
