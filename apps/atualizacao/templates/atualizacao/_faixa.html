@@ -1,0 +1,23 @@
+{% if atualizacao_disponivel and request.resolver_match.app_name != "atualizacao" %}
+<div class="faixa-atualizacao">
+    <span>Versão <strong>{{ atualizacao_disponivel.versao }}</strong> do Adega disponível (você usa a {{ versao_app }}).</span>
+    <a href="{% url 'atualizacao:painel' %}" class="botao botao--pequeno">Ver e atualizar</a>
+</div>
+{% elif atualizado_de %}
+<div class="faixa-atualizacao faixa-atualizacao--concluida" data-versao="{{ versao_app }}" hidden>
+    <span>Adega atualizado da versão {{ atualizado_de }} para a <strong>{{ versao_app }}</strong>.</span>
+    <button type="button" class="botao botao--secundario botao--pequeno" data-fechar-faixa>Ok</button>
+</div>
+<script>
+    (function () {
+        var faixa = document.currentScript.previousElementSibling;
+        var chave = "adega-atualizado-" + faixa.dataset.versao;
+        try { if (localStorage.getItem(chave)) return; } catch (e) {}
+        faixa.hidden = false;
+        faixa.querySelector("[data-fechar-faixa]").addEventListener("click", function () {
+            faixa.remove();
+            try { localStorage.setItem(chave, "1"); } catch (e) {}
+        });
+    })();
+</script>
+{% endif %}

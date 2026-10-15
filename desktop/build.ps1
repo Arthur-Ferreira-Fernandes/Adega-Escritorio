@@ -11,6 +11,9 @@ python -m venv .venv-desktop
 # Pasta de dados descartável: o build importa as configurações, que criam
 # a pasta de dados — não pode ser a pasta real desta máquina.
 $env:ADEGA_DATA_DIR = Join-Path $env:TEMP "adega-build"
+# Vai dentro do executável: é como o programa sabe a própria versão e liga o
+# atualizador (apps/atualizacao). Sem BOM, para o Python ler limpo.
+[System.IO.File]::WriteAllText((Join-Path $PWD "desktop\versao.txt"), $Versao)
 .\.venv-desktop\Scripts\python manage.py collectstatic --noinput --clear --settings=config.settings.desktop
 .\.venv-desktop\Scripts\pyinstaller --noconfirm desktop\adega.spec
 

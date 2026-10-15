@@ -1615,3 +1615,68 @@ a {
 .tabela-recolhivel__botao {
     margin-top: 0.25rem;
 }
+
+/* Atualização do programa */
+
+.faixa-atualizacao {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--cor-dourado);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--cor-dourado) 12%, var(--cor-superficie));
+    font-size: 0.92rem;
+}
+
+.faixa-atualizacao--concluida {
+    border-color: var(--cor-sucesso);
+    background: color-mix(in srgb, var(--cor-sucesso) 12%, var(--cor-superficie));
+}
+
+.ponto-novidade {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-left: 0.3rem;
+    border-radius: 50%;
+    background: var(--cor-dourado);
+    vertical-align: middle;
+}
+
+.barra-lateral__versao {
+    margin: 0;
+    padding: 0 1.5rem 0.75rem;
+    color: var(--cor-texto-suave);
+    font-size: 0.75rem;
+}
+
+.novidades {
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    background: var(--cor-superficie-alt);
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+
+.novidades p {
+    margin: 0.2rem 0;
+}
+
+.novidades__titulo {
+    font-weight: 700;
+    color: var(--cor-dourado-claro);
+}
+
+.novidades__item {
+    padding-left: 1rem;
+    text-indent: -0.75rem;
+}
+
+.novidades__item::before {
+    content: "• ";
+    color: var(--cor-dourado);
+}

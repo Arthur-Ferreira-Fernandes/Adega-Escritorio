@@ -1,0 +1,19 @@
+{# Recarrega sozinho enquanto baixa e confere; depois o programa fecha para instalar. #}
+<div id="progresso-atualizacao"
+     {% if instalacao.fase == "baixando" or instalacao.fase == "verificando" %}hx-get="{% url 'atualizacao:progresso' %}" hx-trigger="every 1s" hx-swap="outerHTML"{% endif %}>
+    {% if instalacao.fase == "baixando" %}
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Baixando a atualização…</h2>
+    <div class="barra-meta" role="progressbar">
+        <span style="width: {% if instalacao.total %}{% widthratio instalacao.baixado instalacao.total 100 %}{% else %}5{% endif %}%;"></span>
+    </div>
+    <p class="nota">{{ instalacao.baixado|filesizeformat }}{% if instalacao.total %} de {{ instalacao.total|filesizeformat }}{% endif %}. Pode continuar usando o sistema enquanto baixa.</p>
+    {% elif instalacao.fase == "verificando" %}
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Conferindo o arquivo baixado…</h2>
+    {% elif instalacao.fase == "instalando" %}
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Instalando…</h2>
+    <p class="nota">{{ instalacao.mensagem }}</p>
+    {% elif instalacao.fase == "erro" %}
+    <h2 class="titulo-pagina texto-perigo" style="font-size: 1.1rem;">A atualização não foi concluída</h2>
+    <p class="nota">{{ instalacao.mensagem }} Nada foi alterado no programa; dá para tentar de novo.</p>
+    {% endif %}
+</div>

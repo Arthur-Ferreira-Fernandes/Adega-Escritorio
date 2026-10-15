@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block titulo %}Atualizações · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<h1 class="titulo-pagina">Atualizações do programa</h1>
+<p class="subtitulo-pagina">
+    Versão instalada: <strong>{{ versao_app }}</strong>
+    {% if canal == "testes" %}<span class="emblema emblema--aberta">Canal de testes</span>{% endif %}
+</p>
+
+{% if instalacao %}
+<div class="cartao cartao--destaque" style="margin-bottom: 1.5rem; max-width: 720px;">
+    {% include "atualizacao/_progresso.html" %}
+</div>
+{% endif %}
+
+{% if release %}
+<div class="cartao cartao--destaque" style="margin-bottom: 1.5rem; max-width: 720px;">
+    <h2 class="titulo-pagina" style="font-size: 1.2rem;">Versão {{ release.versao }} disponível</h2>
+    <p class="nota" style="margin-top: 0;">{{ release.nome }}{% if release.pre_release %} · versão de teste{% endif %}</p>
+    {% if release.novidades %}
+    <h3 class="subtitulo-secao">O que mudou</h3>
+    <div class="novidades">
+        {% for tipo, texto in release.novidades %}
+        <p class="novidades__{{ tipo }}">{{ texto }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="aviso-nota" style="margin: 1.25rem 0;">
+        Durante a atualização o Adega fecha por cerca de 1 minuto — também para quem usa pelo celular — e abre sozinho na versão nova.
+        Vendas, comandas, caixa e cadastros ficam guardados: a atualização não mexe nos dados, e um backup é feito ao reabrir.
+        {% if comandas_abertas %}<br><strong>{{ comandas_abertas }} comanda{{ comandas_abertas|pluralize }} aberta{{ comandas_abertas|pluralize }}</strong> continua{{ comandas_abertas|pluralize:"m" }} aberta{{ comandas_abertas|pluralize }} depois da atualização.{% endif %}
+    </div>
+    {% if not instalacao or instalacao.fase == "erro" %}
+    <form method="post" action="{% url 'atualizacao:instalar' %}"
+          onsubmit="return confirm('Atualizar o Adega agora? O programa vai fechar e abrir sozinho em cerca de 1 minuto.')">
+        {% csrf_token %}
+        <button type="submit" class="botao">Atualizar agora</button>
+    </form>
+    {% endif %}
+</div>
+{% elif not instalacao %}
+<div class="cartao" style="margin-bottom: 1.5rem; max-width: 720px;">
+    <p style="margin: 0;">
+        {% if estado.erro %}Não foi possível consultar as atualizações (sem internet?). O Adega tenta de novo sozinho a cada 6 horas.
+        {% elif estado.verificado_em %}O Adega está na versão mais recente.
+        {% else %}Verificando atualizações…{% endif %}
+    </p>
+</div>
+{% endif %}
+
+<form method="post" action="{% url 'atualizacao:verificar' %}">
+    {% csrf_token %}
+    <button type="submit" class="botao botao--secundario">Verificar agora</button>
+    {% if estado.verificado_em %}<span class="nota">Última verificação: {{ estado.verificado_em|date:"d/m/Y H:i" }}</span>{% endif %}
+</form>
+{% endblock %}

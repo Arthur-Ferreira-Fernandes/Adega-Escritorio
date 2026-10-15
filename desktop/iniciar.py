@@ -270,6 +270,11 @@ def main():
     servidor = create_server(get_wsgi_application(), host=host, port=settings.PORTA, threads=8)
     threading.Thread(target=servidor.run, daemon=True).start()
     threading.Thread(target=backup_periodico, args=(settings,), daemon=True).start()
+    if settings.ATUALIZACAO_ATIVA:
+        from apps.atualizacao import servicos as atualizacao
+
+        atualizacao.registrar_versao_iniciada()
+        atualizacao.iniciar_verificacao_periodica()
 
     url = f"http://localhost:{settings.PORTA}/"
     if not get_user_model().objects.filter(is_superuser=True).exists():

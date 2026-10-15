@@ -29,6 +29,8 @@ datas = (
         (os.path.join(SPECPATH, "adega.ico"), "desktop"),
         (os.path.join(SPECPATH, "adega.png"), "desktop"),
     ]
+    # Gravado pelo build.ps1: sem ele o programa não sabe a versão e não se atualiza.
+    + ([(os.path.join(SPECPATH, "versao.txt"), "desktop")] if os.path.exists(os.path.join(SPECPATH, "versao.txt")) else [])
 )
 
 a = Analysis(
@@ -55,6 +57,8 @@ if sys.platform == "win32":
                 StringStruct("FileDescription", "Adega Escritório"),
                 StringStruct("ProductName", "Adega Escritório"),
                 StringStruct("OriginalFilename", "Adega.exe"),
+                StringStruct("ProductVersion", open(os.path.join(SPECPATH, "versao.txt"), encoding="utf-8").read().strip()
+                             if os.path.exists(os.path.join(SPECPATH, "versao.txt")) else "dev"),
             ])]),
             VarFileInfo([VarStruct("Translation", [0x0416, 1200])]),
         ],

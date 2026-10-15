@@ -32,7 +32,15 @@ Para computadores Windows 10/11 comuns, o sistema também é distribuído como u
 
 ### Gerar o instalador
 
-- **Pelo GitHub (recomendado):** crie e envie uma tag de versão (`git tag v1.0.0 && git push --tags`). O workflow `.github/workflows/instalador-windows.yml` roda os testes, gera o instalador e o anexa a uma Release. Também dá para disparar pela aba **Actions → Instalador Windows → Run workflow** e baixar o artefato.
+- **Pelo GitHub (recomendado):** crie e envie uma tag de versão com as novidades na mensagem. O workflow `.github/workflows/instalador-windows.yml` roda os testes, gera o instalador e o publica numa Release, e as adegas recebem o aviso de atualização (veja abaixo). Também dá para disparar pela aba **Actions → Instalador Windows → Run workflow** e baixar o artefato, mas assim não sai Release.
+
+  ```bash
+  git tag -a v1.1.0 -m "- Relatórios em abas
+  - Contagem de estoque"
+  git push origin v1.1.0
+  ```
+
+  A mensagem da tag aparece no programa como "O que mudou". Escreva para quem usa a adega e use linhas com `-`: linhas começando com `#` são descartadas pelo git.
 - **Num Windows local** (Python 3.12 e Inno Setup 6 instalados): `powershell -ExecutionPolicy Bypass -File desktop\build.ps1 -Versao 1.0.0`. O resultado sai em `dist\`.
 
 ### Instalar na adega
@@ -53,7 +61,9 @@ Tudo fica em `%LOCALAPPDATA%\Adega`. O menu Iniciar tem o atalho **Dados e backu
 - `adega.env`: configuração desta instalação, incluindo a `SECRET_KEY`, que é gerada automaticamente.
 - `logs\`: registros do sistema.
 
-**Atualizar:** basta rodar o instalador da versão nova. Os dados não são tocados, e as migrations rodam sozinhas ao abrir o sistema (com backup feito logo antes).
+**Atualizar:** o próprio Adega avisa. Ao abrir, e a cada 6 horas, ele consulta a última Release do GitHub (só a versão instalada pelo `.exe` faz isso; sem internet, nada acontece). Havendo versão nova, os administradores veem uma faixa no topo e o item **Administrativa → Atualizações**, com as novidades e o botão **Atualizar agora**. O programa baixa o instalador, confere o SHA-256 publicado pelo GitHub, instala em modo silencioso e se fecha; o instalador o reabre na versão nova em cerca de 1 minuto. Os dados não são tocados, e as migrations rodam sozinhas ao abrir (com backup feito logo antes). Rodar o instalador novo à mão continua funcionando. O registro da instalação fica em `logs\atualizacao.log`.
+
+**Testar uma versão antes de mandar para a adega:** tags com hífen (`v1.2.0-teste`) viram *pré-release*, e só os computadores com `CANAL_ATUALIZACAO=testes` no `adega.env` as recebem. Use isso num computador de teste; quando estiver tudo certo, publique a tag sem hífen (`v1.2.0`).
 
 **Restaurar um backup:** feche o Adega, apague `adega.sqlite3`, `adega.sqlite3-wal` e `adega.sqlite3-shm`, copie o backup desejado de `backups\` para o lugar e renomeie para `adega.sqlite3`.
 

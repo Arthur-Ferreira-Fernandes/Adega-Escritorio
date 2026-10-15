@@ -42,8 +42,21 @@ jobs:
           name: AdegaSetup
           path: dist/AdegaSetup-*.exe
 
+      # A mensagem da tag (git tag -a v1.2.0 -m "...") vira o "O que mudou"
+      # que o programa mostra antes de atualizar. Tag sem mensagem usa a do commit.
+      - name: Notas da versão
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > notas.md
+
       - name: Publicar na Release
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
           files: dist/AdegaSetup-*.exe
+          # Tag com hífen (v1.3.0-teste) vira pré-release: só os computadores com
+          # CANAL_ATUALIZACAO=testes recebem. As outras chegam a todas as adegas.
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          body_path: notas.md

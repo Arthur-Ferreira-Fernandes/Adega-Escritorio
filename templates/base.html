@@ -85,6 +85,9 @@
                         {% endif %}
                         <a href="{% url 'financeiro:inicio' %}" class="{% if request.resolver_match.view_name == 'financeiro:inicio' %}ativo{% endif %}">Área financeira</a>
                         <a href="{% url 'clientes:inicio' %}" class="{% if request.resolver_match.view_name == 'clientes:inicio' %}ativo{% endif %}">Área de clientes</a>
+                        {% if atualizacao_ativa and user.is_superuser %}
+                        <a href="{% url 'atualizacao:painel' %}" class="{% if request.resolver_match.app_name == 'atualizacao' %}ativo{% endif %}">Atualizações{% if atualizacao_disponivel %} <span class="ponto-novidade" title="Versão nova disponível"></span>{% endif %}</a>
+                        {% endif %}
                     </div>
                 </details>
             </nav>
@@ -99,11 +102,13 @@
                         </form>
                     </div>
                 </details>
+                {% if versao_app %}<p class="barra-lateral__versao">Versão {{ versao_app }}</p>{% endif %}
             </div>
         </aside>
         {% include "partials/_atalhos.html" %}
         {% endif %}
         <main class="conteudo">
+            {% include "atualizacao/_faixa.html" %}
             {% include "partials/_mensagens.html" %}
             {% block conteudo %}{% endblock %}
         </main>

@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "apps.usuarios",
     "apps.configuracoes",
     "apps.auditoria",
+    "apps.atualizacao",
 ]
 
 MIDDLEWARE = [
@@ -60,6 +61,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.notificacoes.context_processors.notificacoes",
+                "apps.atualizacao.context_processors.atualizacao",
             ],
         },
     },
@@ -108,6 +110,12 @@ LOGIN_URL = "/admin/login/"
 # Tela de criação do primeiro administrador (usuarios:primeiro_acesso). Só a
 # versão desktop liga isso; no Docker o primeiro acesso é pelo createsuperuser.
 PRIMEIRO_ACESSO_PELA_TELA = False
+
+# Atualização automática: só a versão desktop instalada liga (desktop.py).
+VERSAO = None
+ATUALIZACAO_ATIVA = False
+ATUALIZACAO_REPOSITORIO = "Arthur-Ferreira-Fernandes/Adega-Escritorio"
+ATUALIZACAO_CANAL = "estavel"
 
 USE_THOUSAND_SEPARATOR = True
 

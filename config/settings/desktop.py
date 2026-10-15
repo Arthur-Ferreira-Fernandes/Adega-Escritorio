@@ -12,6 +12,7 @@ ACESSO_REDE=False por ACESSO_REDE=True nesse arquivo e reiniciar o programa.
 
 import os
 import socket
+import sys
 from pathlib import Path
 
 import environ
@@ -98,6 +99,15 @@ MIDDLEWARE = [
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [p for p in [BASE_DIR / "static"] if p.exists()]
 MEDIA_ROOT = DATA_DIR / "media"
+
+# desktop/versao.txt é gravado pelo build (desktop/build.ps1) e vai dentro do
+# executável; rodando pelo código-fonte ele não existe e o atualizador fica
+# desligado. CANAL_ATUALIZACAO=testes no adega.env também oferece as versões
+# de teste (tags com hífen, ex.: v1.3.0-teste), para validar antes da adega.
+ARQUIVO_VERSAO = BASE_DIR / "desktop" / "versao.txt"
+VERSAO = ARQUIVO_VERSAO.read_text(encoding="utf-8").strip() if ARQUIVO_VERSAO.exists() else None
+ATUALIZACAO_ATIVA = bool(VERSAO) and sys.platform == "win32"
+ATUALIZACAO_CANAL = env("CANAL_ATUALIZACAO", default="estavel")
 
 LOG_DIR = DATA_DIR / "logs"
 LOGGING["handlers"]["arquivo"]["filename"] = str(LOG_DIR / "app.log")

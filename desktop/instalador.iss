@@ -25,6 +25,8 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 CloseApplications=yes
+; Quem reabre é o [Run] abaixo; reabrir também por aqui abriria duas vezes.
+RestartApplications=no
 
 [Languages]
 Name: "ptbr"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
@@ -46,3 +48,5 @@ Name: "{userstartup}\Adega Escritório"; Filename: "{app}\Adega.exe"; AppUserMod
 
 [Run]
 Filename: "{app}\Adega.exe"; Description: "Abrir o Adega Escritório agora"; Flags: nowait postinstall skipifsilent
+; Atualização pelo próprio programa (instalação silenciosa): reabre sozinho no fim.
+Filename: "{app}\Adega.exe"; Flags: nowait skipifnotsilent

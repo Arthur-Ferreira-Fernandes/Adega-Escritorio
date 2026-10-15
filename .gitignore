@@ -36,3 +36,6 @@ env/
 build/
 dist/
 .venv-desktop/
+
+# Versão gravada pelo build do instalador (desktop/build.ps1)
+desktop/versao.txt
