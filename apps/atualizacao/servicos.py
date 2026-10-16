@@ -191,6 +191,10 @@ def verificar():
         return None
     disponivel = release if release and mais_nova(release["versao"], settings.VERSAO) else None
     _atualizar_estado(verificado_em=timezone.now(), erro="", erro_detalhe="", disponivel=disponivel)
+    # O sino mostra a versão nova já na próxima página, sem esperar os 30 s.
+    from apps.notificacoes.servicos import marcar_para_sincronizar
+
+    marcar_para_sincronizar()
     if disponivel:
         log.info("Atualização disponível", extra={"versao": disponivel["versao"]})
     return disponivel

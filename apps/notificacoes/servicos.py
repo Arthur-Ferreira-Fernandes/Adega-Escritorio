@@ -17,9 +17,14 @@ INTERVALO_SINCRONIZACAO = 30
 CHAVE_SINCRONIZADO = "notificacoes:sincronizado"
 
 
+# Só quem pode agir sobre elas vê no sino (atualizar exige administrador).
+SO_ADMINISTRADORES = [Notificacao.Tipo.ATUALIZACAO]
+
+
 def sincronizar():
     _sincronizar_caixa()
     _sincronizar_estoque()
+    _sincronizar_atualizacao()
 
 
 def sincronizar_se_preciso():
@@ -32,9 +37,16 @@ def marcar_para_sincronizar(**kwargs):
     cache.delete(CHAVE_SINCRONIZADO)
 
 
-def contexto_sino():
+def visiveis(usuario):
+    notificacoes = Notificacao.objects.filter(resolvida=False)
+    if not getattr(usuario, "is_superuser", False):
+        notificacoes = notificacoes.exclude(tipo__in=SO_ADMINISTRADORES)
+    return notificacoes
+
+
+def contexto_sino(usuario=None):
     sincronizar_se_preciso()
-    ativas = list(Notificacao.objects.filter(resolvida=False).order_by("-criado_em"))
+    ativas = list(visiveis(usuario).order_by("-criado_em"))
     return {"notificacoes": ativas, "total_nao_lidas": sum(1 for n in ativas if not n.lida)}
 
 
@@ -74,6 +86,24 @@ def _sincronizar_caixa():
                 Notificacao.Nivel.AVISO,
             )
     _aplicar(Notificacao.Tipo.CAIXA_SANGRIA, desejadas)
+
+
+def _sincronizar_atualizacao():
+    from django.conf import settings
+
+    desejadas = {}
+    if settings.ATUALIZACAO_ATIVA:
+        from apps.atualizacao import servicos as atualizacao
+
+        release = atualizacao.estado()["disponivel"]
+        if release:
+            desejadas[f"versao:{release['versao']}"] = (
+                f"Versão {release['versao']} do Adega disponível. Clique para ver as novidades e atualizar.",
+                reverse("atualizacao:painel"),
+                Notificacao.Nivel.AVISO,
+            )
+    # Sem versão nova (ou já atualizado), o aviso some sozinho.
+    _aplicar(Notificacao.Tipo.ATUALIZACAO, desejadas)
 
 
 def _sincronizar_estoque():

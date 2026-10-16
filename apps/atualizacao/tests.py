@@ -215,3 +215,40 @@ class TelasTests(BaseAtualizacao):
     def test_desligado_fora_do_programa_instalado(self):
         self.assertEqual(self.client.get(reverse("atualizacao:painel")).status_code, 404)
         self.assertNotContains(self.client.get(reverse("inicio")), "Atualizações")
+
+
+class SinoTests(BaseAtualizacao):
+    def setUp(self):
+        super().setUp()
+        self.dono = User.objects.create_superuser(username="dono", password="x")
+        self.caixa = User.objects.create_user(username="caixa", password="x")
+
+    def sino(self, usuario):
+        self.client.force_login(usuario)
+        return self.client.get(reverse("notificacoes:sino")).content.decode()
+
+    def test_versao_nova_aparece_no_sino_so_para_administrador(self):
+        with self.responder(_release("v1.2.0")):
+            servicos.verificar()
+        self.assertIn("Versão 1.2.0 do Adega disponível", self.sino(self.dono))
+        self.assertIn(reverse("atualizacao:painel"), self.sino(self.dono))
+        self.assertNotIn("do Adega disponível", self.sino(self.caixa))
+
+    def test_some_quando_nao_ha_mais_versao_nova(self):
+        with self.responder(_release("v1.2.0")):
+            servicos.verificar()
+        self.assertIn("Versão 1.2.0", self.sino(self.dono))
+        with override_settings(VERSAO="1.2.0"), self.responder(_release("v1.2.0")):
+            servicos.verificar()  # ex.: depois de atualizar
+            self.assertNotIn("Versão 1.2.0", self.sino(self.dono))
+
+    def test_atendente_marcar_como_lidas_nao_afeta_o_aviso_do_administrador(self):
+        from apps.notificacoes.models import Notificacao
+
+        with self.responder(_release("v1.2.0")):
+            servicos.verificar()
+        self.sino(self.dono)
+        self.client.force_login(self.caixa)
+        self.client.post(reverse("notificacoes:marcar_lidas"))
+        aviso = Notificacao.objects.get(tipo=Notificacao.Tipo.ATUALIZACAO)
+        self.assertFalse(aviso.lida)
