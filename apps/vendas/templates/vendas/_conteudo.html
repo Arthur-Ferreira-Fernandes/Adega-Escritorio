@@ -100,12 +100,27 @@
             <tbody>
                 {% for item in itens %}
                 <tr>
-                    <td>{{ item.produto.nome }}</td>
+                    <td>
+                        {{ item.produto.nome }}{% if item.produto.e_kit %} <span class="emblema">kit</span>{% endif %}
+                        {% if item.desconto %}<small class="item-desconto">desconto R$ {{ item.desconto }}{% if item.desconto_motivo %} · {{ item.desconto_motivo }}{% endif %}</small>{% endif %}
+                    </td>
                     <td>{{ item.quantidade }}</td>
                     <td>R$ {{ item.preco_unitario }}</td>
                     <td>R$ {{ item.subtotal }}</td>
                     {% if venda.status == "aberta" %}
-                    <td>
+                    <td class="item-acoes">
+                        <details class="desconto-item">
+                            <summary class="botao botao--secundario botao--pequeno">Desconto</summary>
+                            <form method="post" action="{% url 'vendas:desconto_item' pk=venda.pk item_id=item.pk %}"
+                                  hx-post="{% url 'vendas:desconto_item' pk=venda.pk item_id=item.pk %}"
+                                  hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
+                                  class="desconto-item__form">
+                                {% csrf_token %}
+                                <input type="text" name="desconto" placeholder="R$ ou %" value="{% if item.desconto %}{{ item.desconto }}{% endif %}" aria-label="Desconto em {{ item.produto.nome }}" autocomplete="off">
+                                <input type="text" name="motivo" placeholder="Motivo" value="{{ item.desconto_motivo }}" aria-label="Motivo" autocomplete="off">
+                                <button type="submit" class="botao botao--pequeno">Aplicar</button>
+                            </form>
+                        </details>
                         <form method="post" action="{% url 'vendas:remover_item' pk=venda.pk item_id=item.pk %}"
                               hx-post="{% url 'vendas:remover_item' pk=venda.pk item_id=item.pk %}"
                               hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo">
@@ -149,11 +164,82 @@
     </div>
 
     <div class="cartao pdv-resumo">
+        {% if venda.status == "aberta" %}
+        <form method="post" action="{% url 'vendas:definir_cliente' pk=venda.pk %}"
+              hx-post="{% url 'vendas:definir_cliente' pk=venda.pk %}" hx-trigger="change"
+              hx-target="#venda-conteudo" hx-swap="innerHTML" class="campo venda-cliente">
+            {% csrf_token %}
+            <label for="venda-cliente">Cliente</label>
+            <select name="cliente" id="venda-cliente">
+                <option value="">Sem cliente</option>
+                {% for cliente in clientes %}
+                <option value="{{ cliente.pk }}"{% if cliente.pk == venda.cliente_id %} selected{% endif %}>{{ cliente.nome }}{% if cliente.limite_fiado %} · fiado{% endif %}</option>
+                {% endfor %}
+            </select>
+            {% if fiado_disponivel is not None %}<small class="nota">Fiado disponível: R$ {{ fiado_disponivel }}</small>{% endif %}
+        </form>
+        {% endif %}
+        {% if venda.desconto or venda.taxa_servico or venda.couvert %}
+        <table class="valores-venda">
+            <tr><td>Subtotal</td><td>R$ {{ venda.subtotal }}</td></tr>
+            {% if venda.desconto %}<tr class="valores-venda__desconto"><td>Desconto{% if venda.desconto_motivo %} <small>({{ venda.desconto_motivo }})</small>{% endif %}</td><td>− R$ {{ venda.desconto }}</td></tr>{% endif %}
+            {% if venda.taxa_servico %}<tr><td>Serviço ({{ venda.servico_percentual|floatformat:"-2" }}%)</td><td>R$ {{ venda.taxa_servico }}</td></tr>{% endif %}
+            {% if venda.couvert %}<tr><td>Couvert ({{ venda.quantidade_pessoas }} × R$ {{ venda.couvert_unitario }})</td><td>R$ {{ venda.couvert }}</td></tr>{% endif %}
+        </table>
+        {% endif %}
         <div class="stat" style="margin-bottom: 1rem;">
             <span class="stat__valor">R$ {{ venda.total }}</span>
             <span class="stat__rotulo">Total</span>
         </div>
-        {% if venda.valor_por_pessoa %}
+        {% if venda.status == "aberta" and itens %}
+        <details class="ajustes-venda"{% if venda.desconto or venda.dividir_em %} open{% endif %}>
+            <summary>Desconto, serviço e dividir a conta</summary>
+            <form method="post" action="{% url 'vendas:desconto' pk=venda.pk %}"
+                  hx-post="{% url 'vendas:desconto' pk=venda.pk %}"
+                  hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
+                  class="ajustes-venda__linha">
+                {% csrf_token %}
+                <label for="desconto-venda" data-atalho="Ctrl+D">Desconto</label>
+                <input type="text" name="desconto" id="desconto-venda" placeholder="R$ ou %" autocomplete="off"
+                       value="{% if venda.desconto %}{{ venda.desconto }}{% endif %}">
+                <input type="text" name="motivo" placeholder="Motivo" autocomplete="off" value="{{ venda.desconto_motivo }}" aria-label="Motivo do desconto">
+                <button type="submit" class="botao botao--secundario botao--pequeno">Aplicar</button>
+            </form>
+            {% if not user.is_superuser %}<p class="nota">Até {{ config.desconto_maximo_percentual|floatformat:"-2" }}% sem administrador.</p>{% endif %}
+            {% if config.taxa_servico_percentual or venda.servico_percentual %}
+            <form method="post" action="{% url 'vendas:servico' pk=venda.pk %}"
+                  hx-post="{% url 'vendas:servico' pk=venda.pk %}" hx-target="#venda-conteudo" hx-swap="innerHTML" class="ajustes-venda__linha">
+                {% csrf_token %}
+                <input type="hidden" name="cobrar" value="{% if venda.servico_percentual %}0{% else %}1{% endif %}">
+                <span>Serviço {% if venda.servico_percentual %}({{ venda.servico_percentual|floatformat:"-2" }}%) incluído{% else %}não cobrado{% endif %}</span>
+                <button type="submit" class="botao botao--secundario botao--pequeno">{% if venda.servico_percentual %}Tirar{% else %}Cobrar {{ config.taxa_servico_percentual|floatformat:"-2" }}%{% endif %}</button>
+            </form>
+            {% endif %}
+            {% if config.couvert_por_pessoa or venda.couvert_unitario %}
+            <form method="post" action="{% url 'vendas:couvert' pk=venda.pk %}"
+                  hx-post="{% url 'vendas:couvert' pk=venda.pk %}" hx-target="#venda-conteudo" hx-swap="innerHTML" class="ajustes-venda__linha">
+                {% csrf_token %}
+                <input type="hidden" name="cobrar" value="{% if venda.couvert_unitario %}0{% else %}1{% endif %}">
+                <span>Couvert {% if venda.couvert_unitario %}incluído{% if not venda.quantidade_pessoas %} (informe as pessoas da mesa){% endif %}{% else %}não cobrado{% endif %}</span>
+                <button type="submit" class="botao botao--secundario botao--pequeno">{% if venda.couvert_unitario %}Tirar{% else %}Cobrar R$ {{ config.couvert_por_pessoa }}/pessoa{% endif %}</button>
+            </form>
+            {% endif %}
+            <form method="post" action="{% url 'vendas:dividir' pk=venda.pk %}"
+                  hx-post="{% url 'vendas:dividir' pk=venda.pk %}" hx-target="#venda-conteudo" hx-swap="innerHTML" class="ajustes-venda__linha">
+                {% csrf_token %}
+                <label for="dividir-em">Dividir em</label>
+                <input type="number" name="dividir_em" id="dividir-em" min="0" max="50" value="{{ venda.dividir_em|default:venda.quantidade_pessoas|default:'' }}" style="width: 4.5rem;">
+                <span>partes</span>
+                <button type="submit" class="botao botao--secundario botao--pequeno">{% if venda.dividir_em %}Atualizar{% else %}Dividir{% endif %}</button>
+            </form>
+        </details>
+        {% endif %}
+        {% if venda.dividir_em %}
+        <div class="stat" style="margin-bottom: 1rem;">
+            <span class="stat__valor">R$ {{ venda.valor_da_parte }}</span>
+            <span class="stat__rotulo">Cada parte ({{ venda.dividir_em }}){% if parte_atual and falta_receber > 0 %} · recebendo a {{ parte_atual }}ª{% endif %}</span>
+        </div>
+        {% elif venda.valor_por_pessoa %}
         <div class="stat" style="margin-bottom: 1rem;">
             <span class="stat__valor">R$ {{ venda.valor_por_pessoa }}</span>
             <span class="stat__rotulo">Valor por pessoa ({{ venda.quantidade_pessoas }} pessoas)</span>
@@ -206,8 +292,8 @@
               data-falta="{{ falta_receber_bruto }}"{% if not itens %} data-sem-itens{% endif %}>
             {% csrf_token %}
             <div class="campo">
-                <label for="id_valor_novo" data-atalho="F9">Valor recebido <small>(vazio = R$ {{ falta_receber }})</small></label>
-                <input type="text" name="valor" id="id_valor_novo" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ {{ falta_receber }}" data-max-digitos="10">
+                <label for="id_valor_novo" data-atalho="F9">{% if valor_proxima_parte %}Parte {{ parte_atual }} de {{ venda.dividir_em }}{% else %}Valor recebido <small>(vazio = R$ {{ falta_receber }})</small>{% endif %}</label>
+                <input type="text" name="valor" id="id_valor_novo" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ {{ falta_receber }}" data-max-digitos="10"{% if valor_proxima_parte %} value="{{ valor_proxima_parte|stringformat:'s' }}"{% endif %}>
                 <span id="aviso-valor-pagamento" class="texto-perigo" style="display: none;"></span>
             </div>
             {# Enter no campo de valor = Dinheiro (primeiro botão do formulário). #}
@@ -215,6 +301,8 @@
                 <button type="submit" name="forma_pagamento" value="dinheiro" class="botao" data-atalho="F6" {% if not itens %}disabled{% endif %}>Dinheiro</button>
                 <button type="submit" name="forma_pagamento" value="cartao" class="botao" data-atalho="F7" data-sem-troco {% if not itens %}disabled{% endif %}>Cartão</button>
                 <button type="submit" name="forma_pagamento" value="pix" class="botao" data-atalho="F8" data-sem-troco {% if not itens %}disabled{% endif %}>Pix</button>
+                <button type="submit" name="forma_pagamento" value="fiado" class="botao botao--secundario" data-sem-troco
+                        {% if not itens or fiado_disponivel is None %}disabled data-indisponivel title="Escolha um cliente com limite de fiado"{% endif %}>Fiado</button>
             </div>
             <p class="campo-scanner__dica">Um clique recebe e finaliza a venda. Para pagamento dividido, digite o valor de cada parte.</p>
         </form>

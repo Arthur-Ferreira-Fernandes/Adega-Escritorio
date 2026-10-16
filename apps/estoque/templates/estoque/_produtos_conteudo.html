@@ -43,17 +43,18 @@
     <tbody>
         {% for produto in produtos %}
         <tr>
-            <td>{{ produto.nome }}</td>
+            <td>{{ produto.nome }}{% if produto.e_kit %} <span class="emblema">kit</span>{% endif %}</td>
             <td>{{ produto.sku }}</td>
             <td>{{ produto.categoria }}</td>
             <td>R$ {{ produto.preco_venda }}</td>
-            <td>{{ produto.quantidade_estoque }}</td>
+            <td>{% if produto.e_kit %}<span class="nota">monta {{ produto.estoque_disponivel }}</span>{% else %}{{ produto.quantidade_estoque }}{% endif %}</td>
             <td>{{ produto.estoque_minimo }}</td>
             <td>{% if produto.ativo %}Sim{% else %}Não{% endif %}</td>
             <td style="display: flex; gap: 0.75rem; align-items: center;">
                 <a href="{% url 'estoque:produtos_editar' pk=produto.pk %}"
                    hx-get="{% url 'estoque:produtos_editar' pk=produto.pk %}"
                    hx-target="#estoque-conteudo" hx-swap="innerHTML" hx-indicator="#estoque-conteudo">Editar</a>
+                <a href="{% url 'estoque:kit' pk=produto.pk %}" title="Transformar em kit/combo ou mudar os componentes">{% if produto.e_kit %}Componentes{% else %}Kit{% endif %}</a>
                 <form method="post" action="{% url 'estoque:produtos_excluir' pk=produto.pk %}"
                       hx-post="{% url 'estoque:produtos_excluir' pk=produto.pk %}"
                       hx-target="#estoque-conteudo" hx-swap="innerHTML" hx-indicator="#estoque-conteudo"

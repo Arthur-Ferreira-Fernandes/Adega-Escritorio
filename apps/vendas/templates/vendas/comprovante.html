@@ -151,9 +151,39 @@
             .nao-imprimir { display: none; }
             body { padding: 0; }
         }
+
+        .valores { margin: 0 0 1rem auto; border-collapse: collapse; width: auto; min-width: 50%; }
+        .valores td { border: none; padding: 0.15rem 0.4rem; }
+        .valores td:last-child { text-align: right; }
+        .desconto-item { display: block; color: #555; font-size: 0.8em; }
+
+        /* Impressora térmica: bobina de 80 ou 58 mm, letra de máquina, sem
+           enfeite — o que cabe na largura e sai legível na impressão térmica. */
+        body.termica { padding: 0.5rem; font-family: "Courier New", monospace; font-size: 12px; }
+        body.termica .comprovante { max-width: 72mm; }
+        body.termica.largura-58 .comprovante { max-width: 48mm; font-size: 10.5px; }
+        body.termica .cabecalho { flex-direction: column; text-align: center; gap: 0.25rem; border-bottom: 1px dashed #000; }
+        body.termica .cabecalho img { width: 36px; height: 36px; }
+        body.termica .cabecalho h1 { font-size: 1.1em; }
+        body.termica .titulo-doc { margin: 0.5rem 0 0; font-size: 1em; }
+        body.termica .aviso-fiscal { margin-bottom: 0.5rem; }
+        body.termica .dados-venda { grid-template-columns: 1fr; gap: 0.1rem; font-size: 1em; margin-bottom: 0.5rem; }
+        body.termica table { font-size: 1em; margin-bottom: 0.5rem; }
+        body.termica th, body.termica td { padding: 0.15rem 0.1rem; border-bottom: 1px dashed #bbb; }
+        body.termica th { font-size: 0.85em; letter-spacing: 0; }
+        body.termica .coluna-unitario { display: none; }
+        body.termica .valores { width: 100%; margin-bottom: 0.5rem; }
+        body.termica .total { font-size: 1.15em; margin-bottom: 0.4rem; }
+        body.termica .rodape { margin-top: 0.75rem; font-size: 1em; border-top: 1px dashed #000; padding-top: 0.5rem; }
+        @media print {
+            @page { margin: 2mm; }
+            body.termica { padding: 0; }
+            body.termica.largura-80 { width: 72mm; }
+            body.termica.largura-58 { width: 48mm; }
+        }
     </style>
 </head>
-<body>
+<body class="{% if formato != 'a4' %}termica largura-{{ formato|slice:':2' }}{% endif %}">
     <div class="comprovante">
         <div class="cabecalho">
             <img src="{% static 'img/logo-pequeno.jpg' %}" alt="Adega &amp; Tabacaria Escritório">
@@ -183,26 +213,36 @@
             <thead>
                 <tr>
                     <th>Produto</th>
-                    <th>Quantidade</th>
-                    <th>Preço unitário</th>
+                    <th>Qtd.</th>
+                    <th class="coluna-unitario">Preço unitário</th>
                     <th>Subtotal</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in itens %}
                 <tr>
-                    <td>{{ item.produto.nome }}</td>
+                    <td>{{ item.produto.nome }}{% if item.desconto %}<span class="desconto-item">desconto R$&nbsp;{{ item.desconto }}</span>{% endif %}</td>
                     <td>{{ item.quantidade }}</td>
-                    <td>R$ {{ item.preco_unitario }}</td>
-                    <td>R$ {{ item.subtotal }}</td>
+                    <td class="coluna-unitario">R$&nbsp;{{ item.preco_unitario }}</td>
+                    <td>R$&nbsp;{{ item.subtotal }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <p class="total">Total: R$ {{ venda.total }}</p>
-        {% if venda.valor_por_pessoa %}
-        <p class="total">Valor por pessoa ({{ venda.quantidade_pessoas }} pessoas): R$ {{ venda.valor_por_pessoa }}</p>
+        {% if venda.desconto or venda.taxa_servico or venda.couvert %}
+        <table class="valores">
+            <tr><td>Subtotal</td><td>R$&nbsp;{{ venda.subtotal }}</td></tr>
+            {% if venda.desconto %}<tr><td>Desconto</td><td>− R$&nbsp;{{ venda.desconto }}</td></tr>{% endif %}
+            {% if venda.taxa_servico %}<tr><td>Serviço ({{ venda.servico_percentual|floatformat:"-2" }}%)</td><td>R$&nbsp;{{ venda.taxa_servico }}</td></tr>{% endif %}
+            {% if venda.couvert %}<tr><td>Couvert ({{ venda.quantidade_pessoas }} × R$&nbsp;{{ venda.couvert_unitario }})</td><td>R$&nbsp;{{ venda.couvert }}</td></tr>{% endif %}
+        </table>
+        {% endif %}
+        <p class="total">Total: R$&nbsp;{{ venda.total }}</p>
+        {% if venda.dividir_em %}
+        <p class="total">Dividido em {{ venda.dividir_em }}: R$&nbsp;{{ venda.valor_da_parte }} cada</p>
+        {% elif venda.valor_por_pessoa %}
+        <p class="total">Valor por pessoa ({{ venda.quantidade_pessoas }} pessoas): R$&nbsp;{{ venda.valor_por_pessoa }}</p>
         {% endif %}
 
         <table>
@@ -216,9 +256,9 @@
             <tbody>
                 {% for pagamento in pagamentos %}
                 <tr>
-                    <td>{{ pagamento.get_forma_pagamento_display }}</td>
-                    <td>R$ {{ pagamento.valor }}</td>
-                    <td>{% if pagamento.troco %}R$ {{ pagamento.troco }}{% else %}—{% endif %}</td>
+                    <td>{{ pagamento.get_forma_pagamento_display }}{% if pagamento.forma_pagamento == "fiado" and conta_fiado %} <small>(vence {{ conta_fiado.vencimento|date:"d/m/Y" }})</small>{% endif %}</td>
+                    <td>R$&nbsp;{{ pagamento.valor }}</td>
+                    <td>{% if pagamento.troco %}R$&nbsp;{{ pagamento.troco }}{% else %}—{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block titulo %}Kit {{ produto.nome }} · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<h1 class="titulo-pagina">Kit / combo: {{ produto.nome }}</h1>
+<p class="subtitulo-pagina">Quando o kit é vendido, sai do estoque cada produto abaixo, na quantidade indicada. O kit em si não tem estoque.</p>
+
+<div class="grade-stats" style="margin-bottom: 1.5rem;">
+    <div class="stat">
+        <span class="stat__valor">R$&nbsp;{{ produto.preco_venda }}</span>
+        <span class="stat__rotulo">Preço de venda do kit</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">R$&nbsp;{{ custo }}</span>
+        <span class="stat__rotulo">Custo dos componentes</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor{% if margem is not None and margem < 0 %} texto-perigo{% endif %}">{% if margem is not None %}{{ margem|floatformat:1 }}%{% else %}—{% endif %}</span>
+        <span class="stat__rotulo">Margem</span>
+    </div>
+    <div class="stat">
+        <span class="stat__valor">{% if pode_montar is not None %}{{ pode_montar }}{% else %}—{% endif %}</span>
+        <span class="stat__rotulo">Dá para montar com o estoque atual</span>
+    </div>
+</div>
+
+<div class="cartao" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Componentes</h2>
+    <table class="tabela">
+        <thead><tr><th>Produto</th><th>Quantidade no kit</th><th>Estoque</th><th>Custo</th><th></th></tr></thead>
+        <tbody>
+            {% for item in componentes %}
+            <tr>
+                <td>{{ item.componente.nome }}</td>
+                <td>{{ item.quantidade }}</td>
+                <td class="{% if item.componente.quantidade_estoque < item.quantidade %}texto-perigo{% endif %}">{{ item.componente.quantidade_estoque }}</td>
+                <td>R$&nbsp;{{ item.componente.preco_custo }} × {{ item.quantidade }}</td>
+                <td>
+                    <form method="post" action="{% url 'estoque:kit_remover' pk=produto.pk componente_id=item.pk %}" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="botao botao--perigo botao--pequeno">Tirar</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Nenhum componente ainda: adicione abaixo para {{ produto.nome }} virar um kit.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="cartao cartao--destaque" style="max-width: 720px;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Adicionar componente</h2>
+    <form method="post" class="formulario">
+        {% csrf_token %}
+        <div class="campo busca-produto">
+            <label for="busca-produto">Produto</label>
+            <input type="text" id="busca-produto" autocomplete="off" placeholder="Digite o nome ou passe o leitor…"
+                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="busca-produto-lista">
+            <input type="hidden" name="produto_busca" id="id_produto_busca">
+            <div id="busca-produto-lista" class="busca-produto__lista" role="listbox" hidden></div>
+            {{ produtos_busca|json_script:"produtos-dados" }}
+        </div>
+        <div class="campo">
+            <label for="id_quantidade">Quantidade no kit</label>
+            <input type="number" name="quantidade" id="id_quantidade" value="1" min="1">
+        </div>
+        <button type="submit" class="botao">Adicionar</button>
+    </form>
+    <p class="nota">Mesmo produto de novo troca a quantidade. <a href="{% url 'estoque:produtos' %}">Voltar para os produtos</a></p>
+</div>
+{% endblock %}

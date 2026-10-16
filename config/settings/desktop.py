@@ -136,6 +136,7 @@ ARQUIVO_VERSAO = BASE_DIR / "desktop" / "versao.txt"
 VERSAO = ARQUIVO_VERSAO.read_text(encoding="utf-8").strip() if ARQUIVO_VERSAO.exists() else None
 ATUALIZACAO_ATIVA = bool(VERSAO) and sys.platform == "win32"
 ATUALIZACAO_CANAL = env("CANAL_ATUALIZACAO", default="estavel")
+GAVETA_DISPONIVEL = True
 
 LOG_DIR = DATA_DIR / "logs"
 LOGGING["handlers"]["arquivo"]["filename"] = str(LOG_DIR / "app.log")

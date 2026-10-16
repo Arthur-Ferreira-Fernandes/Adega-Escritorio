@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block titulo %}Pedido #{{ pedido.pk }} · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block conteudo %}
+<div class="cabecalho-pagina" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1 class="titulo-pagina">Pedido #{{ pedido.pk }} — {{ pedido.fornecedor }}</h1>
+        <p class="subtitulo-pagina">
+            <span class="emblema emblema--{% if pedido.status == 'recebido' %}concluida{% elif pedido.status == 'cancelado' %}cancelada{% else %}aberta{% endif %}">{{ pedido.get_status_display }}</span>
+            criado em {{ pedido.criado_em|date:"d/m/Y H:i" }}{% if pedido.recebido_em %} · recebido em {{ pedido.recebido_em|date:"d/m/Y H:i" }}{% endif %}
+        </p>
+    </div>
+    <div class="acoes-topo"><a href="{% url 'estoque:pedidos' %}" class="botao botao--secundario">Todos os pedidos</a></div>
+</div>
+
+{% if pedido.status == "aberto" %}
+<div class="grade-duas" style="margin-bottom: 1.5rem;">
+    <div class="cartao">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Itens</h2>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="salvar">
+            <table class="tabela">
+                <thead><tr><th>Produto</th><th>Quantidade</th><th>Custo unitário</th><th>Total</th></tr></thead>
+                <tbody>
+                    {% for item in itens %}
+                    <tr>
+                        <td>{{ item.produto.nome }}</td>
+                        <td><input type="number" name="quantidade_{{ item.pk }}" value="{{ item.quantidade }}" min="0" class="campo-inline" style="width: 5rem;"></td>
+                        <td><input type="text" name="custo_{{ item.pk }}" value="{{ item.custo_unitario|stringformat:'s' }}" class="campo-inline" inputmode="decimal"></td>
+                        <td>R$&nbsp;{{ item.total }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">Pedido sem itens.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="campo" style="margin-bottom: 0.75rem;">
+                <label for="observacao">Observação para o fornecedor</label>
+                <input type="text" name="observacao" id="observacao" value="{{ pedido.observacao }}" maxlength="255" placeholder="Ex.: entregar até sexta">
+            </div>
+            <p style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <button type="submit" class="botao botao--secundario">Salvar alterações</button>
+                <span class="nota">Quantidade 0 tira o item. Total estimado: <strong>R$&nbsp;{{ pedido.total }}</strong></span>
+            </p>
+        </form>
+        <form method="post" class="formulario" style="margin-top: 1rem;">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="adicionar">
+            <div class="campo busca-produto">
+                <label for="busca-produto">Adicionar produto</label>
+                <input type="text" id="busca-produto" autocomplete="off" placeholder="Nome ou código…"
+                       role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="busca-produto-lista">
+                <input type="hidden" name="produto_busca" id="id_produto_busca">
+                <div id="busca-produto-lista" class="busca-produto__lista" role="listbox" hidden></div>
+                {{ produtos_busca|json_script:"produtos-dados" }}
+            </div>
+            <div class="campo">
+                <label for="id_quantidade">Quantidade</label>
+                <input type="number" name="quantidade" id="id_quantidade" value="1" min="1">
+            </div>
+            <button type="submit" class="botao botao--secundario">Adicionar</button>
+        </form>
+    </div>
+    <div class="cartao">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Enviar ao fornecedor</h2>
+        <textarea id="texto-pedido" class="texto-pedido" rows="10" readonly>{{ texto_whatsapp }}</textarea>
+        <p style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="botao botao--secundario"
+                    onclick="var t = document.getElementById('texto-pedido'); t.select(); navigator.clipboard ? navigator.clipboard.writeText(t.value) : document.execCommand('copy'); this.textContent = 'Copiado!';">Copiar texto</button>
+            {% if link_whatsapp %}<a href="{{ link_whatsapp }}" target="_blank" rel="noopener" class="botao">Abrir no WhatsApp</a>
+            {% else %}<span class="nota">Cadastre o telefone do fornecedor para abrir direto no WhatsApp.</span>{% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="cartao cartao--destaque" style="margin-bottom: 1.5rem;">
+    <h2 class="titulo-pagina" style="font-size: 1.1rem;">Receber a mercadoria</h2>
+    <p class="nota" style="margin-top: 0;">Confira o que chegou: ajuste a quantidade (0 = não veio), o custo da nota e a validade. Ao confirmar, as entradas de estoque são lançadas.</p>
+    <form method="post" onsubmit="return confirm('Confirmar o recebimento? As entradas de estoque serão lançadas.')">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="receber">
+        <table class="tabela">
+            <thead><tr><th>Produto</th><th>Pedido</th><th>Chegou</th><th>Custo unitário</th><th>Validade (opcional)</th></tr></thead>
+            <tbody>
+                {% for item in itens %}
+                <tr>
+                    <td>{{ item.produto.nome }}</td>
+                    <td>{{ item.quantidade }}</td>
+                    <td><input type="number" name="recebido_{{ item.pk }}" value="{{ item.quantidade }}" min="0" class="campo-inline" style="width: 5rem;"></td>
+                    <td><input type="text" name="custo_{{ item.pk }}" value="{{ item.custo_unitario|stringformat:'s' }}" class="campo-inline" inputmode="decimal"></td>
+                    <td><input type="date" name="validade_{{ item.pk }}" class="campo-inline" style="width: 10rem;"></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="botao"{% if not itens %} disabled{% endif %}>Confirmar recebimento</button>
+    </form>
+</div>
+<form method="post" onsubmit="return confirm('Cancelar este pedido?')">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="cancelar">
+    <button type="submit" class="botao botao--perigo botao--pequeno">Cancelar pedido</button>
+</form>
+{% else %}
+<div class="cartao">
+    <table class="tabela">
+        <thead><tr><th>Produto</th><th>Pedido</th><th>Recebido</th><th>Custo unitário</th><th>Total</th></tr></thead>
+        <tbody>
+            {% for item in itens %}
+            <tr>
+                <td>{{ item.produto.nome }}</td>
+                <td>{{ item.quantidade }}</td>
+                <td>{{ item.quantidade_recebida|default:"—" }}</td>
+                <td>R$&nbsp;{{ item.custo_unitario }}</td>
+                <td>R$&nbsp;{{ item.total }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

@@ -17,7 +17,8 @@ function verificarLimitePagamento(form) {
         aviso.style.display = "none";
     }
     form.querySelectorAll("[data-sem-troco]").forEach((botao) => {
-        botao.disabled = excede;
+        // data-indisponivel: bloqueado pelo servidor (ex.: fiado sem cliente).
+        botao.disabled = excede || botao.hasAttribute("data-indisponivel");
     });
 }
 

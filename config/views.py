@@ -19,7 +19,7 @@ def _resumo_do_dono():
     resumo = analises.resumo_do_dia()
     abertas = Venda.objects.filter(status=Venda.Status.ABERTA)
     atencao = []
-    negativos = Produto.objects.filter(ativo=True, quantidade_estoque__lt=0).count()
+    negativos = Produto.objects.filter(ativo=True, e_kit=False, quantidade_estoque__lt=0).count()
     if negativos:
         atencao.append({
             "texto": f"{negativos} produto{'s' if negativos > 1 else ''} com estoque negativo",
@@ -71,7 +71,7 @@ def inicio(request):
         "faturamento_hoje": faturamento_hoje,
         "comandas_abertas": Venda.objects.filter(status=Venda.Status.ABERTA).count(),
         "estoque_baixo": Produto.objects.filter(
-            ativo=True, quantidade_estoque__lte=F("estoque_minimo")
+            ativo=True, e_kit=False, quantidade_estoque__lte=F("estoque_minimo")
         ).count(),
         "a_pagar_vencido": a_pagar_vencido,
         "a_receber_vencido": a_receber_vencido,

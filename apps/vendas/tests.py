@@ -228,6 +228,7 @@ class VendaViewTests(TestCase):
                 "preco": "50.00",
                 "estoque": 10,
                 "minimo": 5,
+                "kit": False,
             }],
         )
         self.assertContains(resposta, 'id="produtos-dados"')

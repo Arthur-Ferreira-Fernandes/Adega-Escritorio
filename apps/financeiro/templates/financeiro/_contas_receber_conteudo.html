@@ -49,7 +49,7 @@
             <td>{{ conta.vencimento|date:"d/m/Y" }}</td>
             <td>
                 {% if conta.recebido %}
-                <span class="emblema emblema--concluida">Recebido em {{ conta.recebido_em|date:"d/m/Y" }}</span>
+                <span class="emblema emblema--concluida">Recebido em {{ conta.recebido_em|date:"d/m/Y" }}{% if conta.forma_recebimento %} · {{ conta.get_forma_recebimento_display }}{% endif %}</span>
                 {% else %}
                 <span class="emblema emblema--aberta">Pendente</span>
                 {% endif %}
@@ -61,7 +61,13 @@
                       hx-target="#financeiro-conteudo" hx-swap="innerHTML" hx-indicator="#financeiro-conteudo"
                       style="margin: 0;">
                     {% csrf_token %}
-                    <button type="submit" class="botao botao--secundario">Marcar como recebida</button>
+                    {# Em dinheiro, o valor entra no caixa aberto (senão o fechamento acusaria falta). #}
+                    <select name="forma" aria-label="Forma de recebimento" class="campo-inline">
+                        <option value="dinheiro">Dinheiro (entra no caixa)</option>
+                        <option value="pix">Pix</option>
+                        <option value="cartao">Cartão</option>
+                    </select>
+                    <button type="submit" class="botao botao--secundario">Receber</button>
                 </form>
                 {% endif %}
                 <a href="{% url 'financeiro:contas_receber_editar' pk=conta.pk %}"

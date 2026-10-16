@@ -1680,3 +1680,126 @@ a {
     content: "• ";
     color: var(--cor-dourado);
 }
+
+/* Venda: cliente, desconto, serviço, couvert e divisão */
+
+.pagamento-rapido__botoes {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.venda-cliente {
+    margin-bottom: 1rem;
+}
+
+.venda-cliente select {
+    width: 100%;
+    min-width: 0;
+}
+
+.valores-venda {
+    width: 100%;
+    margin-bottom: 0.75rem;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.valores-venda td {
+    padding: 0.25rem 0;
+    color: var(--cor-texto-suave);
+}
+
+.valores-venda td:last-child {
+    text-align: right;
+    white-space: nowrap;
+    color: var(--cor-texto);
+}
+
+.valores-venda__desconto td:last-child {
+    color: var(--cor-sucesso);
+}
+
+.ajustes-venda {
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.85rem;
+    border: 1px solid var(--cor-borda);
+    border-radius: 8px;
+}
+
+.ajustes-venda summary {
+    cursor: pointer;
+    color: var(--cor-texto-suave);
+    font-size: 0.85rem;
+}
+
+.ajustes-venda__linha {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.6rem 0 0;
+    font-size: 0.85rem;
+}
+
+.ajustes-venda__linha label {
+    color: var(--cor-texto-suave);
+}
+
+.ajustes-venda__linha input,
+.desconto-item__form input,
+.campo-inline {
+    min-width: 0;
+    width: 7rem;
+    padding: 0.35rem 0.5rem;
+    background: var(--cor-superficie-alt);
+    border: 1px solid var(--cor-borda);
+    border-radius: 6px;
+    color: var(--cor-texto);
+    font-size: 0.85rem;
+}
+
+.ajustes-venda__linha span {
+    flex: 1;
+}
+
+.item-acoes {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.item-acoes form {
+    margin: 0;
+}
+
+.desconto-item summary {
+    list-style: none;
+}
+
+.desconto-item summary::-webkit-details-marker {
+    display: none;
+}
+
+.desconto-item__form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.4rem;
+}
+
+.item-desconto {
+    display: block;
+    color: var(--cor-sucesso);
+    font-size: 0.75rem;
+}
+
+.texto-pedido {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--cor-superficie-alt);
+    border: 1px solid var(--cor-borda);
+    border-radius: 8px;
+    color: var(--cor-texto);
+    font-family: inherit;
+    font-size: 0.85rem;
+    resize: vertical;
+}

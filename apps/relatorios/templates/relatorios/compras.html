@@ -17,7 +17,27 @@
         </div>
     </div>
     {% for grupo in previsao.fornecedores %}
-    <h3 class="subtitulo-secao">{{ grupo.fornecedor }} <span class="nota">· R$&nbsp;{{ grupo.total }}</span></h3>
+    <form method="post" action="{% url 'estoque:pedido_gerar' %}" class="grupo-compra">
+        {% csrf_token %}
+        <div class="secao-titulo" style="margin: 1.25rem 0 0.6rem;">
+            <h3 class="subtitulo-secao" style="margin: 0;">{{ grupo.fornecedor }} <span class="nota">· R$&nbsp;{{ grupo.total }}</span></h3>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                {% if grupo.fornecedor_id %}
+                <input type="hidden" name="fornecedor" value="{{ grupo.fornecedor_id }}">
+                {% else %}
+                <select name="fornecedor" required class="campo-inline" style="width: auto;" aria-label="Fornecedor do pedido">
+                    <option value="">Escolha o fornecedor…</option>
+                    {% for fornecedor in fornecedores %}<option value="{{ fornecedor.pk }}">{{ fornecedor.nome }}</option>{% endfor %}
+                </select>
+                {% endif %}
+                <button type="submit" class="botao botao--pequeno">Gerar pedido</button>
+            </div>
+        </div>
+        {% for item in grupo.itens %}
+        <input type="hidden" name="produto" value="{{ item.produto.pk }}">
+        <input type="hidden" name="quantidade" value="{{ item.comprar }}">
+        {% endfor %}
+    </form>
     <table class="tabela" style="margin-bottom: 1.25rem;">
         <thead><tr><th>Produto</th><th>Estoque</th><th>Vende por dia</th><th>Acaba em</th><th>Comprar</th><th>Custo estimado</th></tr></thead>
         <tbody>
@@ -36,6 +56,42 @@
     {% endfor %}
     {% else %}
     <p>Nenhum produto precisando de reposição agora.</p>
+    {% endif %}
+</div>
+
+<div class="cartao" style="margin-bottom: 1.5rem;" id="validade">
+    <div class="secao-titulo">
+        <h2 class="titulo-pagina" style="font-size: 1.1rem;">Validade</h2>
+        {% include "relatorios/_exportar.html" with tabela="validade" %}
+    </div>
+    <p class="nota" style="margin-top: 0;">Lotes que ainda devem estar na prateleira e vencem em até {{ validades.dias }} dias. Estimativa: o mais antigo sai primeiro. A validade é informada na entrada de estoque ou no recebimento do pedido.</p>
+    {% if validades.vencidos or validades.vencendo %}
+    <table class="tabela">
+        <thead><tr><th>Produto</th><th>Validade</th><th>Situação</th><th>Na prateleira (estimado)</th><th>Valor (custo)</th></tr></thead>
+        <tbody>
+            {% for linha in validades.vencidos %}
+            <tr>
+                <td>{{ linha.produto.nome }}</td>
+                <td>{{ linha.validade|date:"d/m/Y" }}</td>
+                <td class="texto-perigo"><strong>Vencido</strong></td>
+                <td>{{ linha.quantidade }}</td>
+                <td>R$&nbsp;{{ linha.valor }}</td>
+            </tr>
+            {% endfor %}
+            {% for linha in validades.vencendo %}
+            <tr>
+                <td>{{ linha.produto.nome }}</td>
+                <td>{{ linha.validade|date:"d/m/Y" }}</td>
+                <td>{% if linha.dias == 0 %}<span class="texto-perigo">Vence hoje</span>{% else %}Vence em {{ linha.dias }} dia{{ linha.dias|pluralize }}{% endif %}</td>
+                <td>{{ linha.quantidade }}</td>
+                <td>R$&nbsp;{{ linha.valor }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="nota">Valor total em risco: <strong>R$&nbsp;{{ validades.valor }}</strong>. Boa hora para uma promoção ou para colocar na frente da prateleira.</p>
+    {% else %}
+    <p>Nada vencendo nos próximos {{ validades.dias }} dias.</p>
     {% endif %}
 </div>
 

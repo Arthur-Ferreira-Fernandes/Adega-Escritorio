@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -7,6 +8,7 @@ from django.views.generic import TemplateView
 
 from apps.auditoria import servicos as auditoria
 from apps.auditoria.models import RegistroAuditoria
+from apps.caixa.models import Caixa
 
 from .forms import ContaPagarForm, ContaReceberForm
 from .models import ContaPagar, ContaReceber
@@ -210,14 +212,29 @@ def contas_receber_excluir(request, pk):
 @login_required
 @require_POST
 def contas_receber_marcar_recebida(request, pk):
-    conta = get_object_or_404(ContaReceber, pk=pk)
-    if not conta.recebido:
-        conta.recebido = True
-        conta.recebido_em = timezone.localdate()
-        conta.save(update_fields=["recebido", "recebido_em"])
+    conta = get_object_or_404(ContaReceber.objects.select_related("cliente"), pk=pk)
+    forma = request.POST.get("forma") or ContaReceber.FormaRecebimento.PIX
+    if forma not in ContaReceber.FormaRecebimento.values:
+        messages.error(request, "Forma de recebimento inválida.")
+    elif not conta.recebido:
+        caixa = Caixa.aberto_atual()
+        if forma == ContaReceber.FormaRecebimento.DINHEIRO and caixa is None:
+            messages.error(request, "Para receber em dinheiro, abra o caixa: o valor precisa entrar nele.")
+            return _renderizar_contas_receber(request, _contexto_contas_receber())
+        with transaction.atomic():
+            conta.recebido = True
+            conta.recebido_em = timezone.localdate()
+            conta.forma_recebimento = forma
+            conta.save(update_fields=["recebido", "recebido_em", "forma_recebimento"])
+            if forma == ContaReceber.FormaRecebimento.DINHEIRO:
+                caixa.registrar_recebimento(request.user, conta.valor, f"Recebimento: {conta.descricao} ({conta.cliente})")
         auditoria.registrar(
             request.user, RegistroAuditoria.Acao.EDICAO, conta,
-            detalhes="Marcada como recebida",
+            detalhes=f"Recebida em {conta.get_forma_recebimento_display()}",
         )
-        messages.success(request, "Conta marcada como recebida.")
+        if forma == ContaReceber.FormaRecebimento.DINHEIRO:
+            from apps.caixa import gaveta
+
+            gaveta.abrir_ao_receber_dinheiro()
+        messages.success(request, f"Conta recebida em {conta.get_forma_recebimento_display()}.")
     return _renderizar_contas_receber(request, _contexto_contas_receber())

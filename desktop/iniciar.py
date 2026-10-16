@@ -47,11 +47,16 @@ if sys.platform.startswith("linux"):
     JS_ABRIR_LINK = "location.href = link.href;"
 else:
     JS_ABRIR_LINK = "window.pywebview.api.abrir_janela(link.href);"
+# Link para fora do sistema (WhatsApp, GitHub...) abre no navegador do computador.
 JS_JANELAS_NOVAS = """
 document.addEventListener("click", function (evento) {
     var link = evento.target.closest("a[target=_blank]");
     if (!link || !window.pywebview) return;
     evento.preventDefault();
+    if (link.host !== location.host) {
+        window.pywebview.api.abrir_navegador(link.href);
+        return;
+    }
     %s
 }, true);
 """ % JS_ABRIR_LINK
@@ -163,6 +168,10 @@ class Api:
 
     def abrir_janela(self, url):
         criar_janela(NOME_APP, url, width=900, height=800)
+
+    def abrir_navegador(self, url):
+        if url.startswith(("https://", "http://")):
+            webbrowser.open(url)
 
 
 def instalar_atalho_linux(icone):

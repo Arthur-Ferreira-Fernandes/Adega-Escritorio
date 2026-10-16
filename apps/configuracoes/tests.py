@@ -68,6 +68,12 @@ class AdministracaoViewTests(TestCase):
                 "taxa_cartao": "2.5",
                 "taxa_pix": "0.99",
                 "dias_cobertura_compra": "10",
+                "desconto_maximo_percentual": "15",
+                "taxa_servico_percentual": "10",
+                "couvert_por_pessoa": "R$ 8,00",
+                "prazo_fiado_dias": "15",
+                "formato_comprovante": "80mm",
+                "impressora_gaveta": "",
                 "salvar_configuracoes": "1",
             },
         )
@@ -76,3 +82,5 @@ class AdministracaoViewTests(TestCase):
         self.assertEqual(config.meta_faturamento_mensal, Decimal("60000.00"))
         self.assertEqual((config.taxa_cartao, config.taxa_pix), (Decimal("2.50"), Decimal("0.99")))
         self.assertEqual(config.dias_cobertura_compra, 10)
+        self.assertEqual((config.taxa_servico_percentual, config.couvert_por_pessoa), (Decimal("10.00"), Decimal("8.00")))
+        self.assertEqual((config.prazo_fiado_dias, config.formato_comprovante), (15, "80mm"))

@@ -116,6 +116,8 @@ VERSAO = None
 ATUALIZACAO_ATIVA = False
 ATUALIZACAO_REPOSITORIO = "Arthur-Ferreira-Fernandes/Adega-Escritorio"
 ATUALIZACAO_CANAL = "estavel"
+# Gaveta de dinheiro pela impressora do caixa: só na versão desktop.
+GAVETA_DISPONIVEL = False
 
 USE_THOUSAND_SEPARATOR = True
 

@@ -67,6 +67,12 @@ class EntradaEstoqueForm(forms.Form):
     custo_unitario = DecimalMonetarioField(
         label="Custo unitário pago", max_digits=10, decimal_places=2
     )
+    validade = forms.DateField(
+        label="Validade (opcional)",
+        required=False,
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+        help_text="Para cervejas e perecíveis: o sistema avisa antes de vencer.",
+    )
 
     def clean_produto_busca(self):
         produto = Produto.objects.filter(sku=self.cleaned_data["produto_busca"].strip()).first()

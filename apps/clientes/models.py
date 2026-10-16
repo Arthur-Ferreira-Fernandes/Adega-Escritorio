@@ -8,6 +8,13 @@ class Cliente(models.Model):
     email = models.EmailField(blank=True)
     endereco = models.CharField(max_length=255, blank=True)
     observacoes = models.TextField(blank=True)
+    limite_fiado = models.DecimalField(
+        "Limite de fiado",
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Quanto o cliente pode ficar devendo. Zero = não compra fiado.",
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -17,6 +24,14 @@ class Cliente(models.Model):
 
     def __str__(self):
         return self.nome
+
+    def saldo_fiado(self):
+        """Quanto o cliente deve hoje (contas a receber em aberto)."""
+        from decimal import Decimal
+
+        from config.agregados import Soma
+
+        return self.contas_a_receber.filter(recebido=False).aggregate(t=Soma("valor"))["t"] or Decimal("0")
 
 
 class Fornecedor(models.Model):

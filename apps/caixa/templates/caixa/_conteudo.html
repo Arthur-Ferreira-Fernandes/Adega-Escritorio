@@ -8,6 +8,12 @@
         <span class="stat__valor">R$ {{ caixa.total_reforcos }}</span>
         <span class="stat__rotulo">Reforços</span>
     </div>
+    {% if caixa.total_recebimentos %}
+    <div class="stat">
+        <span class="stat__valor">R$ {{ caixa.total_recebimentos }}</span>
+        <span class="stat__rotulo">Fiado recebido em dinheiro</span>
+    </div>
+    {% endif %}
     <div class="stat">
         <span class="stat__valor">R$ {{ caixa.total_sangrias }}</span>
         <span class="stat__rotulo">Sangrias</span>
@@ -25,6 +31,14 @@
 <p class="subtitulo-pagina" style="margin-bottom: 1.5rem;">
     <span class="emblema emblema--aberta">Aberto</span>
     desde {{ caixa.aberto_em|date:"d/m/Y H:i" }} por {{ caixa.aberto_por }}
+    {% if gaveta_configurada %}
+    <form method="post" action="{% url 'caixa:abrir_gaveta' %}"
+          hx-post="{% url 'caixa:abrir_gaveta' %}" hx-target="#caixa-conteudo" hx-swap="innerHTML"
+          style="display: inline; margin-left: 1rem;">
+        {% csrf_token %}
+        <button type="submit" class="botao botao--secundario botao--pequeno">Abrir gaveta</button>
+    </form>
+    {% endif %}
 </p>
 
 <div class="grade-entradas" style="margin-bottom: 1.5rem;">

@@ -10,5 +10,6 @@ urlpatterns = [
     path("sangria/", views.caixa_sangria, name="sangria"),
     path("reforco/", views.caixa_reforco, name="reforco"),
     path("fechar/", views.caixa_fechar, name="fechar"),
+    path("gaveta/", views.caixa_abrir_gaveta, name="abrir_gaveta"),
     path("<int:pk>/relatorio/", views.caixa_relatorio, name="relatorio"),
 ]

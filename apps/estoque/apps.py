@@ -11,10 +11,10 @@ class EstoqueConfig(AppConfig):
     def ready(self):
         from apps.vendas.models import Venda
 
-        from .models import AjusteEstoque, Categoria, EntradaEstoque, Produto
+        from .models import AjusteEstoque, Categoria, ComponenteKit, EntradaEstoque, Produto
         from .servicos import limpar_cache_produtos
 
-        for modelo in (Produto, Categoria, EntradaEstoque, AjusteEstoque):
+        for modelo in (Produto, Categoria, EntradaEstoque, AjusteEstoque, ComponenteKit):
             post_save.connect(limpar_cache_produtos, sender=modelo, dispatch_uid=f"busca:{modelo.__name__}")
             post_delete.connect(limpar_cache_produtos, sender=modelo, dispatch_uid=f"busca-del:{modelo.__name__}")
         # Venda concluída baixa o estoque (por update(), sem salvar o Produto).

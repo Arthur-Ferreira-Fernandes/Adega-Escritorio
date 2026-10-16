@@ -35,6 +35,12 @@ class ContaReceber(models.Model):
     vencimento = models.DateField()
     recebido = models.BooleanField(default=False)
     recebido_em = models.DateField(null=True, blank=True)
+    class FormaRecebimento(models.TextChoices):
+        DINHEIRO = "dinheiro", "Dinheiro"
+        PIX = "pix", "Pix"
+        CARTAO = "cartao", "Cartão"
+
+    forma_recebimento = models.CharField(max_length=10, blank=True, choices=FormaRecebimento.choices)
 
     class Meta:
         verbose_name = "Conta a receber"

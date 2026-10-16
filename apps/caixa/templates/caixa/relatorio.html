@@ -207,6 +207,7 @@
 
         <p class="total">Valor de abertura: R$ {{ caixa.valor_abertura }}</p>
         <p class="total">Total de reforços: R$ {{ caixa.total_reforcos }}</p>
+        {% if caixa.total_recebimentos %}<p class="total">Fiado recebido em dinheiro: R$ {{ caixa.total_recebimentos }}</p>{% endif %}
         <p class="total">Total de sangrias: R$ {{ caixa.total_sangrias }}</p>
         <p class="total">Total de vendas em dinheiro: R$ {{ caixa.total_vendas_dinheiro }}</p>
         <p class="total">Saldo esperado: R$ {{ caixa.saldo_esperado }}</p>

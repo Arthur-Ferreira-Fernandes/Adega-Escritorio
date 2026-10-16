@@ -35,11 +35,13 @@ def _montar_busca():
             "categoria": produto.categoria.nome,
             "codigo": produto.codigo_barras or "",
             "preco": str(produto.preco_venda),
-            "estoque": produto.quantidade_estoque,
+            "estoque": produto.estoque_disponivel(),  # num kit, quantos dá para montar
             "minimo": produto.estoque_minimo,
+            "kit": produto.e_kit,
         }
         for produto in Produto.objects.filter(ativo=True)
         .select_related("categoria")
+        .prefetch_related("componentes__componente")
         .order_by("categoria__nome", "nome")
     ]
 

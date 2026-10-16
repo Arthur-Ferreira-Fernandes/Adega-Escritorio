@@ -65,6 +65,7 @@
                         <a href="{% url 'estoque:entradas' %}" data-atalho="Ctrl+I" class="{% if request.resolver_match.view_name == 'estoque:entradas' %}ativo{% endif %}">Registrar entrada</a>
                         <a href="{% url 'estoque:contagem' %}" data-atalho="Ctrl+J" class="{% if request.resolver_match.view_name == 'estoque:contagem' %}ativo{% endif %}">Contagem de estoque</a>
                         <a href="{% url 'relatorios:compras' %}" class="{% if request.resolver_match.view_name == 'relatorios:compras' %}ativo{% endif %}">Lista de compras</a>
+                        <a href="{% url 'estoque:pedidos' %}" class="{% if request.resolver_match.view_name == 'estoque:pedidos' or request.resolver_match.view_name == 'estoque:pedido' %}ativo{% endif %}">Pedidos de compra</a>
                     </div>
                 </details>
                 <details class="barra-lateral__grupo" open>

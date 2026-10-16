@@ -55,6 +55,14 @@
             {% endfor %}
             <button type="submit" name="salvar_configuracoes" class="botao">Salvar configurações</button>
         </form>
+        {% if config_form.impressora_gaveta %}
+        <form method="post" action="{% url 'caixa:abrir_gaveta' %}" style="margin-top: 1rem;">
+            {% csrf_token %}
+            <input type="hidden" name="voltar" value="configuracoes">
+            <button type="submit" class="botao botao--secundario botao--pequeno">Testar gaveta</button>
+            <span class="nota">Usa a impressora salva acima. Salve antes de testar uma impressora nova.</span>
+        </form>
+        {% endif %}
     </div>
 </div>
 

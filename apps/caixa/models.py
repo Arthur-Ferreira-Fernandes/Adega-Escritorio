@@ -154,6 +154,7 @@ class Caixa(models.Model):
             caixa._totais = {
                 "sangrias": movimentos[(caixa.pk, MovimentoCaixa.Tipo.SANGRIA)],
                 "reforcos": movimentos[(caixa.pk, MovimentoCaixa.Tipo.REFORCO)],
+                "recebimentos": movimentos[(caixa.pk, MovimentoCaixa.Tipo.RECEBIMENTO)],
                 "vendas_dinheiro": sum((valor for _, valor in trecho), Decimal("0")),
             }
         return caixas
@@ -189,10 +190,25 @@ class Caixa(models.Model):
             or Decimal("0")
         )
 
+    def total_recebimentos(self):
+        return self._total("recebimentos", lambda: (
+            self.movimentos.filter(tipo=MovimentoCaixa.Tipo.RECEBIMENTO).aggregate(t=Soma("valor"))["t"]
+            or Decimal("0")
+        ))
+
+    def registrar_recebimento(self, usuario, valor, descricao):
+        if self.status != self.Status.ABERTO:
+            raise ValidationError("Abra o caixa para receber em dinheiro.")
+        return MovimentoCaixa.objects.create(
+            caixa=self, tipo=MovimentoCaixa.Tipo.RECEBIMENTO, valor=valor,
+            descricao=descricao[:255], criado_por=usuario,
+        )
+
     def saldo_esperado(self):
         return (
             self.valor_abertura
             + self.total_reforcos()
+            + self.total_recebimentos()
             + self.total_vendas_dinheiro()
             - self.total_sangrias()
         )
@@ -205,9 +221,11 @@ class MovimentoCaixa(models.Model):
     class Tipo(models.TextChoices):
         SANGRIA = "sangria", "Sangria"
         REFORCO = "reforco", "Reforço"
+        # Dinheiro que entra fora de uma venda (ex.: cliente pagando o fiado).
+        RECEBIMENTO = "recebimento", "Recebimento"
 
     caixa = models.ForeignKey(Caixa, on_delete=models.CASCADE, related_name="movimentos")
-    tipo = models.CharField(max_length=10, choices=Tipo.choices)
+    tipo = models.CharField(max_length=12, choices=Tipo.choices)
     valor = models.DecimalField(max_digits=10, decimal_places=2)
     descricao = models.CharField(max_length=255)
     criado_em = models.DateTimeField(auto_now_add=True)

@@ -14,7 +14,10 @@ from django.views.generic import TemplateView
 
 from apps.auditoria import servicos as auditoria
 from apps.auditoria.models import RegistroAuditoria
+from apps.caixa import gaveta
 from apps.caixa.models import Caixa
+from apps.clientes.models import Cliente
+from apps.configuracoes.models import Configuracao
 from apps.estoque.forms import ProdutoRapidoForm
 from apps.estoque.models import Produto
 from apps.estoque.servicos import dados_para_busca, gerar_sku, mais_vendidos
@@ -71,6 +74,7 @@ def nova_venda(request):
                 quantidade_pessoas=form.cleaned_data["quantidade_pessoas"],
                 criado_por=request.user,
             )
+            venda.aplicar_padroes_de_comanda()  # serviço e couvert configurados
             return redirect("vendas:detalhe", pk=venda.pk)
     else:
         form = NovaVendaForm()
@@ -88,6 +92,10 @@ def venda_rapida(request):
     return redirect("vendas:detalhe", pk=venda.pk)
 
 
+def _clientes_para_venda():
+    return list(Cliente.objects.only("pk", "nome", "limite_fiado").order_by("nome"))
+
+
 def _contexto_venda(venda, **extra):
     # Calculados uma vez só: a tela usa cada um em vários lugares, e cada uso
     # de venda.falta_receber / venda.pagamentos.all seria uma consulta nova.
@@ -101,6 +109,18 @@ def _contexto_venda(venda, **extra):
         "pagamentos": pagamentos,
         "falta_receber": falta_receber,
         "troco_total": sum((p.troco for p in pagamentos), Decimal("0")),
+        "clientes": _clientes_para_venda() if venda.status == Venda.Status.ABERTA else [],
+        "config": Configuracao.obter(),
+        "parte_atual": (
+            min(venda.partes_pagas(recebido) + 1, venda.dividir_em) if venda.dividir_em else None
+        ),
+        "valor_proxima_parte": (
+            min(venda.valor_da_parte, falta_receber) if venda.dividir_em and falta_receber > 0 else None
+        ),
+        "fiado_disponivel": (
+            max(venda.cliente.limite_fiado - venda.cliente.saldo_fiado(), Decimal("0"))
+            if venda.cliente and venda.cliente.limite_fiado > 0 else None
+        ),
         "item_form": ItemVendaForm(),
         "escanear_form": EscanearCodigoForm(),
         "pessoas_form": QuantidadePessoasForm(
@@ -185,6 +205,7 @@ def venda_atualizar_pessoas(request, pk):
     if form.is_valid():
         venda.quantidade_pessoas = form.cleaned_data["quantidade_pessoas"]
         venda.save(update_fields=["quantidade_pessoas"])
+        venda.recalcular_total()  # o couvert é por pessoa
         messages.success(request, "Quantidade de pessoas na mesa atualizada.")
     else:
         messages.error(request, "Informe uma quantidade de pessoas válida.")
@@ -234,6 +255,89 @@ def venda_finalizar(request, pk):
     return _responder_venda(request, venda)
 
 
+def _executar(request, venda, acao, sucesso):
+    try:
+        acao()
+        if sucesso:
+            messages.success(request, sucesso)
+    except ValidationError as erro:
+        venda.refresh_from_db()
+        messages.error(request, "; ".join(erro.messages))
+    return _responder_venda(request, venda)
+
+
+@login_required
+@require_POST
+def venda_definir_cliente(request, pk):
+    venda = get_object_or_404(Venda, pk=pk)
+    cliente_id = request.POST.get("cliente") or None
+    cliente = get_object_or_404(Cliente, pk=cliente_id) if cliente_id else None
+
+    def definir():
+        if venda.status != Venda.Status.ABERTA:
+            raise ValidationError("Só é possível trocar o cliente de uma venda aberta.")
+        if venda.pagamentos.filter(forma_pagamento=Venda.FormaPagamento.FIADO).exists():
+            raise ValidationError("Esta venda já tem pagamento fiado: remova-o antes de trocar o cliente.")
+        venda.cliente = cliente
+        venda.save(update_fields=["cliente"])
+
+    return _executar(request, venda, definir, f"Cliente: {cliente}." if cliente else "Venda sem cliente.")
+
+
+@login_required
+@require_POST
+def venda_desconto(request, pk, item_id=None):
+    venda = get_object_or_404(Venda, pk=pk)
+    item = get_object_or_404(ItemVenda, pk=item_id, venda=venda) if item_id else None
+
+    def aplicar():
+        valor = venda.aplicar_desconto(
+            request.user, request.POST.get("desconto", ""), request.POST.get("motivo", ""), item=item
+        )
+        alvo = f"em {item.produto.nome}" if item else "na venda"
+        auditoria.registrar(
+            request.user, RegistroAuditoria.Acao.EDICAO, venda,
+            detalhes=f"Desconto {alvo}: R$ {number_format(valor, decimal_pos=2)} — {request.POST.get('motivo', '').strip()}",
+        )
+
+    return _executar(request, venda, aplicar, "Desconto aplicado." if request.POST.get("desconto", "").strip() else "Desconto removido.")
+
+
+@login_required
+@require_POST
+def venda_servico(request, pk):
+    venda = get_object_or_404(Venda, pk=pk)
+    cobrar = request.POST.get("cobrar") == "1"
+    return _executar(request, venda, lambda: venda.definir_servico(cobrar),
+                     "Taxa de serviço incluída." if cobrar else "Taxa de serviço retirada.")
+
+
+@login_required
+@require_POST
+def venda_couvert(request, pk):
+    venda = get_object_or_404(Venda, pk=pk)
+    cobrar = request.POST.get("cobrar") == "1"
+    return _executar(request, venda, lambda: venda.definir_couvert(cobrar),
+                     "Couvert incluído." if cobrar else "Couvert retirado.")
+
+
+@login_required
+@require_POST
+def venda_dividir(request, pk):
+    venda = get_object_or_404(Venda, pk=pk)
+    texto = request.POST.get("dividir_em", "").strip()
+
+    def dividir():
+        venda._exigir_aberta()
+        partes = int(texto) if texto.isdigit() else 0
+        if partes > 50:
+            raise ValidationError("Divida em no máximo 50 partes.")
+        venda.dividir_em = partes if partes >= 2 else None
+        venda.save(update_fields=["dividir_em"])
+
+    return _executar(request, venda, dividir, None)
+
+
 @login_required
 @require_POST
 def venda_adicionar_pagamento(request, pk):
@@ -261,6 +365,8 @@ def venda_adicionar_pagamento(request, pk):
         )
     if pagamento.troco:
         texto += f" Troco: R$ {number_format(pagamento.troco, decimal_pos=2)}."
+    if pagamento.forma_pagamento == Venda.FormaPagamento.DINHEIRO:
+        gaveta.abrir_ao_receber_dinheiro()
     messages.success(request, texto)
     return _responder_venda(request, venda)
 
@@ -362,5 +468,7 @@ def venda_comprovante(request, pk):
         "venda": venda,
         "itens": venda.itens.select_related("produto"),
         "pagamentos": venda.pagamentos.all(),
+        "conta_fiado": venda.contas_a_receber.first(),
+        "formato": Configuracao.obter().formato_comprovante,
     }
     return render(request, "vendas/comprovante.html", contexto)

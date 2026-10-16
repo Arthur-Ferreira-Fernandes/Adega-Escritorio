@@ -9,6 +9,7 @@ class Notificacao(models.Model):
         ESTOQUE_MINIMO = "estoque_minimo", "Estoque no mínimo"
         RESUMO_CAIXA = "resumo_caixa", "Resumo do fechamento de caixa"
         ATUALIZACAO = "atualizacao", "Atualização do programa disponível"
+        VALIDADE = "validade", "Produtos perto da validade"
 
     class Nivel(models.TextChoices):
         AVISO = "aviso", "Aviso"

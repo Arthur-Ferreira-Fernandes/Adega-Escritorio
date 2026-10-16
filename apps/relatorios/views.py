@@ -220,7 +220,15 @@ def compras(request):
     base = _base(request)
     previsao = analises.previsao_de_compras()
     perdas = analises.perdas_de_estoque(base["inicio"], base["fim"])
+    validades = analises.validades()
     exportar = request.GET.get("exportar")
+    if exportar == "validade":
+        return resposta_csv(
+            f"validades_{timezone.localdate():%Y-%m-%d}",
+            ["Produto", "Validade", "Dias", "Quantidade estimada na prateleira", "Valor (custo)", "Fornecedor"],
+            [[l["produto"].nome, l["validade"], l["dias"], l["quantidade"], l["valor"], l["entrada"].fornecedor]
+             for l in validades["vencidos"] + validades["vencendo"]],
+        )
     if exportar == "compras":
         return resposta_csv(
             f"lista_de_compras_{timezone.localdate():%Y-%m-%d}",
@@ -234,4 +242,9 @@ def compras(request):
             ["Produto", "Ajustes", "Unidades (diferença)", "Valor (custo)"],
             [[l["produto"].nome, l["ajustes"], l["diferenca"], l["valor"]] for l in perdas["linhas"]],
         )
-    return _analise(request, "compras", "compras", {**base, "previsao": previsao, "perdas": perdas})
+    from apps.clientes.models import Fornecedor
+
+    return _analise(request, "compras", "compras", {
+        **base, "previsao": previsao, "perdas": perdas, "validades": validades,
+        "fornecedores": Fornecedor.objects.order_by("nome"),
+    })

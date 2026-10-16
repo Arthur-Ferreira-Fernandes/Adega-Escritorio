@@ -3,7 +3,7 @@ import logging
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import number_format
@@ -41,7 +41,16 @@ def _contexto_painel():
         "sangria_form": MovimentoCaixaForm(),
         "reforco_form": MovimentoCaixaForm(),
         "fechar_form": FecharCaixaForm(),
+        "gaveta_configurada": _gaveta_configurada(),
     }
+
+
+def _gaveta_configurada():
+    from apps.configuracoes.models import Configuracao
+
+    from . import gaveta
+
+    return gaveta.disponivel() and bool(Configuracao.obter().impressora_gaveta)
 
 
 def _renderizar_painel(request):
@@ -158,6 +167,25 @@ def caixa_fechar(request):
             messages.error(request, "; ".join(erro.messages))
     else:
         messages.error(request, _erros_formulario(form, "Informe o valor contado."))
+    return _renderizar_painel(request)
+
+
+@login_required
+@require_POST
+def caixa_abrir_gaveta(request):
+    from apps.configuracoes.models import Configuracao
+
+    from . import gaveta
+
+    impressora = request.POST.get("impressora") or Configuracao.obter().impressora_gaveta
+    try:
+        gaveta.abrir(impressora)
+        messages.success(request, "Comando de abrir a gaveta enviado.")
+    except Exception as erro:
+        logger.exception("Falha ao abrir a gaveta")
+        messages.error(request, f"Não foi possível abrir a gaveta: {erro}")
+    if request.POST.get("voltar") == "configuracoes":
+        return redirect("configuracoes:administracao")
     return _renderizar_painel(request)
 
 

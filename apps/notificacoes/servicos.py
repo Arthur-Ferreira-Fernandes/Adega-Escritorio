@@ -24,6 +24,7 @@ SO_ADMINISTRADORES = [Notificacao.Tipo.ATUALIZACAO]
 def sincronizar():
     _sincronizar_caixa()
     _sincronizar_estoque()
+    _sincronizar_validade()
     _sincronizar_atualizacao()
 
 
@@ -106,6 +107,25 @@ def _sincronizar_atualizacao():
     _aplicar(Notificacao.Tipo.ATUALIZACAO, desejadas)
 
 
+def _sincronizar_validade():
+    from apps.relatorios.analises import validades
+
+    dados = validades()
+    desejadas = {}
+    if dados["vencidos"] or dados["vencendo"]:
+        partes = []
+        if dados["vencendo"]:
+            partes.append(f"{len(dados['vencendo'])} lote{'s' if len(dados['vencendo']) > 1 else ''} vence{'m' if len(dados['vencendo']) > 1 else ''} em até {dados['dias']} dias")
+        if dados["vencidos"]:
+            partes.append(f"{len(dados['vencidos'])} já vencido{'s' if len(dados['vencidos']) > 1 else ''}")
+        desejadas["validade"] = (
+            "Validade: " + " e ".join(partes) + ".",
+            reverse("relatorios:compras") + "#validade",
+            Notificacao.Nivel.PERIGO if dados["vencidos"] else Notificacao.Nivel.AVISO,
+        )
+    _aplicar(Notificacao.Tipo.VALIDADE, desejadas)
+
+
 def _sincronizar_estoque():
     link = reverse("estoque:produtos")
     _aplicar(Notificacao.Tipo.ESTOQUE_MINIMO, {
@@ -115,6 +135,6 @@ def _sincronizar_estoque():
             Notificacao.Nivel.AVISO,
         )
         for pk, nome, quantidade in Produto.objects.filter(
-            ativo=True, quantidade_estoque__lte=F("estoque_minimo")
+            ativo=True, e_kit=False, quantidade_estoque__lte=F("estoque_minimo")
         ).values_list("pk", "nome", "quantidade_estoque")
     })

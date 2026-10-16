@@ -79,7 +79,7 @@ def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
         )
 
     estoque_baixo_qs = Produto.objects.filter(
-        ativo=True, quantidade_estoque__lte=F("estoque_minimo")
+        ativo=True, e_kit=False, quantidade_estoque__lte=F("estoque_minimo")
     ).select_related("categoria")
     if categoria:
         estoque_baixo_qs = estoque_baixo_qs.filter(categoria=categoria)

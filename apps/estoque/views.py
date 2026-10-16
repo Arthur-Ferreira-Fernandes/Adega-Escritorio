@@ -1,6 +1,9 @@
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import F, Q
 from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,10 +14,13 @@ from django.views.generic import TemplateView
 
 from apps.auditoria import servicos as auditoria
 from apps.auditoria.models import RegistroAuditoria
+from apps.clientes.models import Fornecedor
 from apps.relatorios.exportar import resposta_csv
 
 from .forms import CategoriaForm, EntradaEstoqueForm, ProdutoForm
-from .models import AjusteEstoque, Categoria, EntradaEstoque, Produto
+from .models import (
+    AjusteEstoque, Categoria, ComponenteKit, EntradaEstoque, ItemPedidoCompra, PedidoCompra, Produto,
+)
 from .servicos import dados_para_busca
 
 
@@ -39,7 +45,7 @@ def _renderizar(request, contexto, *, template_htmx, template_completo):
 
 def _contexto_produtos(form_ativo=False, form=None, editando=None):
     return {
-        "produtos": Produto.objects.select_related("categoria").all(),
+        "produtos": Produto.objects.select_related("categoria").prefetch_related("componentes__componente"),
         "form_ativo": form_ativo,
         "form": form,
         "editando": editando,
@@ -224,7 +230,8 @@ def _contexto_entradas(form=None):
         "entradas": EntradaEstoque.objects.select_related(
             "produto", "fornecedor", "criado_por"
         )[:50],
-        "produtos_busca": dados_para_busca(),
+        # Kit não recebe entrada: o estoque é o dos componentes.
+        "produtos_busca": [p for p in dados_para_busca() if not p["kit"]],
     }
 
 
@@ -253,6 +260,7 @@ def entradas_registrar(request):
                 fornecedor=form.cleaned_data["fornecedor"],
                 custo_unitario=form.cleaned_data["custo_unitario"],
                 usuario=request.user,
+                validade=form.cleaned_data.get("validade"),
             )
             messages.success(request, "Entrada de estoque registrada com sucesso.")
         except ValidationError as erro:
@@ -321,7 +329,7 @@ def contagem(request):
     filtro = request.GET.get("filtro", "todos")
     categoria_id = request.GET.get("categoria", "")
     busca = request.GET.get("busca", "").strip()
-    produtos = Produto.objects.filter(ativo=True).select_related("categoria").order_by("categoria__nome", "nome")
+    produtos = Produto.objects.filter(ativo=True, e_kit=False).select_related("categoria").order_by("categoria__nome", "nome")
     if filtro == "negativos":
         produtos = produtos.filter(quantidade_estoque__lt=0)
     elif filtro == "baixo":
@@ -338,6 +346,188 @@ def contagem(request):
         "categorias": Categoria.objects.all(),
         "categoria_id": categoria_id,
         "busca": busca,
-        "negativos": Produto.objects.filter(ativo=True, quantidade_estoque__lt=0).count(),
+        "negativos": Produto.objects.filter(ativo=True, e_kit=False, quantidade_estoque__lt=0).count(),
         "ultimos_ajustes": AjusteEstoque.objects.select_related("produto", "criado_por")[:15],
+    })
+
+
+@login_required
+def kit(request, pk):
+    """Monta um kit/combo: os produtos que saem do estoque quando ele é vendido."""
+    produto = get_object_or_404(Produto, pk=pk)
+    if request.method == "POST":
+        componente = Produto.objects.filter(sku=request.POST.get("produto_busca", "").strip()).first()
+        quantidade = request.POST.get("quantidade", "1")
+        if componente is None:
+            messages.error(request, "Escolha um produto da lista.")
+        elif not quantidade.isdigit() or int(quantidade) < 1:
+            messages.error(request, "Informe uma quantidade inteira maior que zero.")
+        elif componente.pk == produto.pk or componente.e_kit:
+            messages.error(request, "Um kit não pode conter ele mesmo nem outro kit.")
+        elif produto.usado_em_kits.exists():
+            messages.error(request, f"{produto.nome} já é componente de outro kit e não pode virar kit.")
+        else:
+            item, criado = ComponenteKit.objects.get_or_create(
+                kit=produto, componente=componente, defaults={"quantidade": int(quantidade)}
+            )
+            if not criado:
+                item.quantidade = int(quantidade)
+                item.save()
+            auditoria.registrar(
+                request.user, RegistroAuditoria.Acao.EDICAO, produto,
+                detalhes=f"Kit: {item.quantidade}x {componente.nome}",
+            )
+            messages.success(request, f"{componente.nome} no kit.")
+        return redirect("estoque:kit", pk=produto.pk)
+
+    produto.refresh_from_db()
+    componentes = list(produto.componentes.select_related("componente"))
+    custo = sum((c.componente.preco_custo * c.quantidade for c in componentes), Decimal("0"))
+    return render(request, "estoque/kit.html", {
+        "produto": produto,
+        "componentes": componentes,
+        "custo": custo,
+        "margem": ((produto.preco_venda - custo) / produto.preco_venda * 100) if produto.preco_venda and componentes else None,
+        "pode_montar": produto.estoque_disponivel() if componentes else None,
+        "produtos_busca": [p for p in dados_para_busca() if not p["kit"] and p["sku"] != produto.sku],
+    })
+
+
+@login_required
+@require_POST
+def kit_remover(request, pk, componente_id):
+    item = get_object_or_404(ComponenteKit, pk=componente_id, kit_id=pk)
+    nome = item.componente.nome
+    item.delete()
+    auditoria.registrar(request.user, RegistroAuditoria.Acao.EDICAO, item.kit, detalhes=f"Kit: tirou {nome}")
+    messages.success(request, f"{nome} saiu do kit.")
+    return redirect("estoque:kit", pk=pk)
+
+
+# Pedidos de compra ------------------------------------------------------------
+
+
+def _decimal(texto, padrao):
+    from decimal import InvalidOperation
+
+    texto = (texto or "").strip().replace("R$", "").strip()
+    if not texto:
+        return padrao
+    if "," in texto:
+        texto = texto.replace(".", "").replace(",", ".")
+    try:
+        return Decimal(texto).quantize(Decimal("0.01"))
+    except InvalidOperation:
+        raise ValidationError(f"Valor inválido: {texto}")
+
+
+def _inteiro(texto, padrao):
+    texto = (texto or "").strip()
+    return int(texto) if texto.isdigit() else padrao
+
+
+@login_required
+def pedidos_lista(request):
+    return render(request, "estoque/pedidos.html", {
+        "pedidos": PedidoCompra.objects.select_related("fornecedor", "criado_por").prefetch_related("itens")[:100],
+    })
+
+
+@login_required
+@require_POST
+def pedido_gerar(request):
+    """Cria o pedido a partir da lista de compras de um fornecedor."""
+    fornecedor = get_object_or_404(Fornecedor, pk=request.POST.get("fornecedor"))
+    produtos = Produto.objects.in_bulk([int(i) for i in request.POST.getlist("produto") if i.isdigit()])
+    with transaction.atomic():
+        pedido = PedidoCompra.objects.create(fornecedor=fornecedor, criado_por=request.user)
+        for produto_id, quantidade in zip(request.POST.getlist("produto"), request.POST.getlist("quantidade")):
+            produto = produtos.get(int(produto_id)) if produto_id.isdigit() else None
+            if produto and _inteiro(quantidade, 0) > 0:
+                ItemPedidoCompra.objects.create(
+                    pedido=pedido, produto=produto, quantidade=int(quantidade), custo_unitario=produto.preco_custo
+                )
+    auditoria.registrar(request.user, RegistroAuditoria.Acao.CRIACAO, pedido)
+    messages.success(request, f"Pedido #{pedido.pk} criado. Confira as quantidades antes de enviar ao fornecedor.")
+    return redirect("estoque:pedido", pk=pedido.pk)
+
+
+def _texto_whatsapp(pedido):
+    linhas = [f"Olá, {pedido.fornecedor.nome}! Pedido da Adega & Tabacaria Escritório (nº {pedido.pk}):", ""]
+    linhas += [f"• {item.quantidade} × {item.produto.nome}" for item in pedido.itens.select_related("produto")]
+    if pedido.observacao:
+        linhas += ["", pedido.observacao]
+    linhas += ["", "Obrigado!"]
+    return "\n".join(linhas)
+
+
+@login_required
+def pedido(request, pk):
+    from urllib.parse import quote
+
+    from apps.relatorios.analises import _link_whatsapp
+
+    pedido = get_object_or_404(PedidoCompra.objects.select_related("fornecedor"), pk=pk)
+    if request.method == "POST":
+        acao = request.POST.get("acao")
+        try:
+            if pedido.status != PedidoCompra.Status.ABERTO:
+                raise ValidationError("Este pedido não está mais aberto.")
+            if acao == "salvar":
+                with transaction.atomic():
+                    pedido.observacao = request.POST.get("observacao", "")[:255]
+                    pedido.save(update_fields=["observacao"])
+                    for item in pedido.itens.all():
+                        quantidade = _inteiro(request.POST.get(f"quantidade_{item.pk}"), item.quantidade)
+                        if quantidade <= 0:
+                            item.delete()
+                            continue
+                        item.quantidade = quantidade
+                        item.custo_unitario = _decimal(request.POST.get(f"custo_{item.pk}"), item.custo_unitario)
+                        item.save()
+                messages.success(request, "Pedido atualizado.")
+            elif acao == "adicionar":
+                produto = Produto.objects.filter(sku=request.POST.get("produto_busca", "").strip(), e_kit=False).first()
+                quantidade = _inteiro(request.POST.get("quantidade"), 0)
+                if produto is None or quantidade <= 0:
+                    raise ValidationError("Escolha um produto da lista e uma quantidade maior que zero.")
+                item, criado = ItemPedidoCompra.objects.get_or_create(
+                    pedido=pedido, produto=produto,
+                    defaults={"quantidade": quantidade, "custo_unitario": produto.preco_custo},
+                )
+                if not criado:
+                    item.quantidade += quantidade
+                    item.save(update_fields=["quantidade"])
+                messages.success(request, f"{produto.nome} no pedido.")
+            elif acao == "cancelar":
+                pedido.status = PedidoCompra.Status.CANCELADO
+                pedido.save(update_fields=["status"])
+                auditoria.registrar(request.user, RegistroAuditoria.Acao.EDICAO, pedido, detalhes="Cancelado")
+                messages.success(request, "Pedido cancelado.")
+            elif acao == "receber":
+                from datetime import date
+
+                recebidos = {}
+                for item in pedido.itens.all():
+                    validade = request.POST.get(f"validade_{item.pk}") or None
+                    recebidos[item.pk] = (
+                        _inteiro(request.POST.get(f"recebido_{item.pk}"), item.quantidade),
+                        _decimal(request.POST.get(f"custo_{item.pk}"), item.custo_unitario),
+                        date.fromisoformat(validade) if validade else None,
+                    )
+                entradas = pedido.receber(request.user, recebidos)
+                auditoria.registrar(request.user, RegistroAuditoria.Acao.EDICAO, pedido, detalhes="Recebido")
+                messages.success(request, f"Mercadoria recebida: {len(entradas)} entrada{'s' if len(entradas) != 1 else ''} de estoque lançada{'s' if len(entradas) != 1 else ''}.")
+        except (ValidationError, ValueError) as erro:
+            messages.error(request, "; ".join(getattr(erro, "messages", [str(erro)])))
+        return redirect("estoque:pedido", pk=pedido.pk)
+
+    texto = _texto_whatsapp(pedido)
+    whatsapp = _link_whatsapp(pedido.fornecedor.telefone)
+    return render(request, "estoque/pedido.html", {
+        "pedido": pedido,
+        "itens": list(pedido.itens.select_related("produto")),
+        "texto_whatsapp": texto,
+        "link_whatsapp": f"{whatsapp}?text={quote(texto)}" if whatsapp else "",
+        "produtos_busca": [p for p in dados_para_busca() if not p["kit"]],
     })

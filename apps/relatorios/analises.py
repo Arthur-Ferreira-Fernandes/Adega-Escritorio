@@ -236,7 +236,7 @@ def produtos_parados(dias, hoje=None):
         .values_list("produto_id", "ultima")
     )
     linhas = []
-    for produto in Produto.objects.filter(ativo=True).select_related("categoria"):
+    for produto in Produto.objects.filter(ativo=True, e_kit=False).select_related("categoria"):
         ultima = ultima_venda.get(produto.pk)
         ultima_data = timezone.localtime(ultima).date() if ultima else None
         referencia = ultima_data or timezone.localtime(produto.criado_em).date()
@@ -322,13 +322,14 @@ def lucro_real(inicio, fim):
     )
     for forma, rotulo in Venda.FormaPagamento.choices:
         valor = recebido.get(forma) or ZERO
-        taxa = _q(valor * taxas_percentuais[forma] / 100)
+        percentual = taxas_percentuais.get(forma, ZERO)  # fiado: sem maquininha
+        taxa = _q(valor * percentual / 100)
         taxas += taxa
         por_forma.append({
             "forma": rotulo,
             "valor": valor,
             "participacao": _pct(valor, faturamento),
-            "taxa_percentual": taxas_percentuais[forma],
+            "taxa_percentual": percentual,
             "taxa": taxa,
         })
 
@@ -575,10 +576,10 @@ def analise_clientes(inicio, fim, dias_sumido=30, hoje=None):
 
 def _ultimo_fornecedor_por_produto():
     fornecedores = {}
-    for produto_id, nome in EntradaEstoque.objects.order_by("criado_em").values_list(
-        "produto_id", "fornecedor__nome"
+    for produto_id, fornecedor_id, nome in EntradaEstoque.objects.order_by("criado_em").values_list(
+        "produto_id", "fornecedor_id", "fornecedor__nome"
     ):
-        fornecedores[produto_id] = nome  # a última entrada sobrescreve as anteriores
+        fornecedores[produto_id] = (fornecedor_id, nome)  # a última entrada sobrescreve as anteriores
     return fornecedores
 
 
@@ -593,7 +594,7 @@ def previsao_de_compras(dias_base=30, hoje=None):
     fornecedores = _ultimo_fornecedor_por_produto()
 
     grupos = defaultdict(list)
-    for produto in Produto.objects.filter(ativo=True).select_related("categoria"):
+    for produto in Produto.objects.filter(ativo=True, e_kit=False).select_related("categoria"):
         media = Decimal(vendido.get(produto.pk, 0)) / dias_base
         estoque = produto.quantidade_estoque
         dias_restantes = int(estoque / media) if media and estoque > 0 else (0 if media else None)
@@ -606,7 +607,7 @@ def previsao_de_compras(dias_base=30, hoje=None):
         )
         if not acabando or sugestao <= 0:
             continue
-        grupos[fornecedores.get(produto.pk, "Sem fornecedor registrado")].append({
+        grupos[fornecedores.get(produto.pk, (None, "Sem fornecedor registrado"))].append({
             "produto": produto,
             "estoque": estoque,
             "media_dia": media.quantize(Decimal("0.1")),
@@ -617,9 +618,10 @@ def previsao_de_compras(dias_base=30, hoje=None):
         })
 
     resultado = []
-    for fornecedor, itens in sorted(grupos.items()):
+    for (fornecedor_id, fornecedor), itens in sorted(grupos.items(), key=lambda g: (g[0][0] is None, g[0][1])):
         itens.sort(key=lambda i: (i["dias_restantes"] is None, i["dias_restantes"] or 0, i["produto"].nome))
         resultado.append({
+            "fornecedor_id": fornecedor_id,
             "fornecedor": fornecedor,
             "itens": itens,
             "total": sum((i["custo_estimado"] for i in itens), ZERO),
@@ -629,6 +631,53 @@ def previsao_de_compras(dias_base=30, hoje=None):
         "total": sum((g["total"] for g in resultado), ZERO),
         "cobertura": cobertura,
         "dias_base": dias_base,
+    }
+
+
+def validades(dias=30, hoje=None):
+    """Lotes ainda na prateleira que vencem em até `dias` dias (ou já venceram).
+
+    O sistema não acompanha o lote em cada venda: supõe que o mais antigo sai
+    primeiro. O estoque atual é coberto pelas entradas mais recentes; as que
+    sobram dessa conta já foram vendidas.
+    """
+    hoje = hoje or timezone.localdate()
+    limite = hoje + timedelta(days=dias)
+    suspeitos = set(
+        EntradaEstoque.objects.filter(
+            validade__lte=limite, produto__ativo=True, produto__e_kit=False, produto__quantidade_estoque__gt=0
+        ).values_list("produto_id", flat=True)
+    )
+    linhas = []
+    entradas_por_produto = defaultdict(list)
+    for entrada in (
+        EntradaEstoque.objects.filter(produto_id__in=suspeitos)
+        .select_related("produto", "fornecedor").order_by("-criado_em", "-pk")
+    ):
+        entradas_por_produto[entrada.produto].append(entrada)
+    for produto, entradas in entradas_por_produto.items():
+        restante = produto.quantidade_estoque
+        for entrada in entradas:
+            if restante <= 0:
+                break
+            na_prateleira = min(restante, entrada.quantidade)
+            restante -= na_prateleira
+            if entrada.validade and entrada.validade <= limite:
+                linhas.append({
+                    "produto": produto,
+                    "entrada": entrada,
+                    "validade": entrada.validade,
+                    "dias": (entrada.validade - hoje).days,
+                    "quantidade": na_prateleira,
+                    "valor": _q(na_prateleira * entrada.custo_unitario),
+                })
+    linhas.sort(key=lambda linha: (linha["validade"], linha["produto"].nome))
+    vencidos = [l for l in linhas if l["dias"] < 0]
+    return {
+        "vencidos": vencidos,
+        "vencendo": [l for l in linhas if l["dias"] >= 0],
+        "valor": sum((l["valor"] for l in linhas), ZERO),
+        "dias": dias,
     }
 
 
