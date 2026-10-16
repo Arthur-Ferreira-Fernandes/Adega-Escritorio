@@ -8,13 +8,13 @@ from apps.estoque.models import Produto
 from apps.financeiro.models import ContaPagar, ContaReceber
 from apps.vendas.models import ItemVenda, Venda
 from config.agregados import Soma
+from config.datas import periodo
 
 
 def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
     itens = ItemVenda.objects.filter(
         venda__status=Venda.Status.CONCLUIDA,
-        venda__criado_em__date__gte=data_inicio,
-        venda__criado_em__date__lte=data_fim,
+        **periodo("venda__criado_em", data_inicio, data_fim),
     )
     if categoria:
         itens = itens.filter(produto__categoria=categoria)

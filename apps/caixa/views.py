@@ -29,12 +29,14 @@ def _renderizar(request, contexto, *, template_htmx, template_completo):
 
 def _contexto_painel():
     caixa = Caixa.aberto_atual()
+    if caixa:
+        Caixa.calcular_totais([caixa])
     return {
         "caixa": caixa,
         "movimentos": caixa.movimentos.select_related("criado_por").all() if caixa else [],
-        "historico": Caixa.objects.filter(status=Caixa.Status.FECHADO).select_related(
-            "aberto_por", "fechado_por"
-        )[:10],
+        "historico": Caixa.calcular_totais(
+            Caixa.objects.filter(status=Caixa.Status.FECHADO).select_related("aberto_por", "fechado_por")[:10]
+        ),
         "abrir_form": AbrirCaixaForm(),
         "sangria_form": MovimentoCaixaForm(),
         "reforco_form": MovimentoCaixaForm(),
@@ -166,6 +168,7 @@ def caixa_relatorio(request, pk):
         pk=pk,
         status=Caixa.Status.FECHADO,
     )
+    Caixa.calcular_totais([caixa])
     contexto = {
         "caixa": caixa,
         "movimentos": caixa.movimentos.select_related("criado_por").all(),

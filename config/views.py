@@ -12,6 +12,7 @@ from apps.financeiro.models import ContaPagar, ContaReceber
 from apps.relatorios import analises
 from apps.vendas.models import MINUTOS_COMANDA_PARADA, Venda
 from config.agregados import Soma
+from config.datas import periodo
 
 
 def _resumo_do_dono():
@@ -51,7 +52,7 @@ def inicio(request):
 
     faturamento_hoje = (
         Venda.objects.filter(
-            status=Venda.Status.CONCLUIDA, finalizada_em__date=hoje
+            status=Venda.Status.CONCLUIDA, **periodo("finalizada_em", hoje)
         ).aggregate(t=Soma("total"))["t"]
         or Decimal("0")
     )

@@ -111,3 +111,47 @@ class CaixaViewTests(TestCase):
         self.client.post(reverse("caixa:abrir"), {"valor_abertura": "100.00"})
         self.client.post(reverse("caixa:fechar"), {"valor_contado": "100.00"})
         self.assertIsNone(Caixa.aberto_atual())
+
+
+
+class CalcularTotaisTests(TestCase):
+    """O cálculo em lote (listas de caixas) tem que bater com o de cada caixa."""
+
+    def test_lote_igual_ao_calculo_individual(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.estoque.models import Categoria, Produto
+        from apps.vendas.models import Venda
+
+        usuario = User.objects.create_user(username="lote", password="x")
+        produto = Produto.objects.create(
+            nome="Vinho", sku="V1", categoria=Categoria.objects.create(nome="C"),
+            preco_venda=Decimal("10"), preco_custo=Decimal("4"), quantidade_estoque=100,
+        )
+        agora = timezone.now()
+        for dias in (3, 2, 1):
+            caixa = Caixa.abrir(usuario, Decimal("50"))
+            Caixa.objects.filter(pk=caixa.pk).update(aberto_em=agora - timedelta(days=dias, hours=5))
+            caixa.refresh_from_db()
+            for horas, forma in ((4, Venda.FormaPagamento.DINHEIRO), (3, Venda.FormaPagamento.PIX), (1, Venda.FormaPagamento.DINHEIRO)):
+                venda = Venda.objects.create(criado_por=usuario)
+                venda.adicionar_item(produto, dias)
+                venda.receber(forma)
+                Venda.objects.filter(pk=venda.pk).update(finalizada_em=agora - timedelta(days=dias, hours=horas))
+            caixa.registrar_reforco(usuario, Decimal("20"), "troco")
+            caixa.registrar_sangria(usuario, Decimal("15"), "depósito")
+            caixa.fechar(usuario, Decimal("70"))
+            Caixa.objects.filter(pk=caixa.pk).update(fechado_em=agora - timedelta(days=dias, hours=2))
+        Caixa.abrir(usuario, Decimal("30"))  # o aberto também entra na lista
+
+        def resumo(caixa):
+            return (caixa.total_sangrias(), caixa.total_reforcos(), caixa.total_vendas_dinheiro(),
+                    caixa.saldo_esperado(), caixa.diferenca())
+
+        individual = {c.pk: resumo(c) for c in Caixa.objects.all()}
+        lote = {c.pk: resumo(c) for c in Caixa.calcular_totais(Caixa.objects.all())}
+        self.assertEqual(individual, lote)
+        # Cada caixa fechado pega só a venda em dinheiro de 4h antes (a de 1h é depois do fechamento).
+        self.assertEqual(sorted(v[2] for v in individual.values()), [Decimal("0"), Decimal("10"), Decimal("20"), Decimal("30")])

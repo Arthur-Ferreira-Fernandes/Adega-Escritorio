@@ -58,6 +58,12 @@ class Venda(models.Model):
         verbose_name = "Venda"
         verbose_name_plural = "Vendas"
         ordering = ["-criado_em"]
+        # Relatórios e tela inicial filtram por status + data: sem índice, o
+        # SQLite leria todas as vendas de todos os anos a cada consulta.
+        indexes = [
+            models.Index(fields=["status", "finalizada_em"], name="venda_status_finalizada"),
+            models.Index(fields=["criado_em"], name="venda_criada_em"),
+        ]
 
     def __str__(self):
         return self.identificador or f"Venda #{self.pk}"

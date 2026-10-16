@@ -24,6 +24,7 @@ from apps.estoque.models import AjusteEstoque, EntradaEstoque, Produto
 from apps.financeiro.models import ContaPagar
 from apps.vendas.models import ItemRemovido, ItemVenda, PagamentoVenda, Venda
 from config.agregados import Soma
+from config.datas import periodo
 
 ZERO = Decimal("0")
 DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
@@ -55,16 +56,14 @@ def _soma(queryset, campo):
 def vendas_concluidas(inicio, fim):
     return Venda.objects.filter(
         status=Venda.Status.CONCLUIDA,
-        finalizada_em__date__gte=inicio,
-        finalizada_em__date__lte=fim,
+        **periodo("finalizada_em", inicio, fim),
     )
 
 
 def itens_concluidos(inicio, fim):
     return ItemVenda.objects.filter(
         venda__status=Venda.Status.CONCLUIDA,
-        venda__finalizada_em__date__gte=inicio,
-        venda__finalizada_em__date__lte=fim,
+        **periodo("venda__finalizada_em", inicio, fim),
     )
 
 
@@ -336,7 +335,7 @@ def lucro_real(inicio, fim):
     # Só a perda entra: sobra na contagem é, quase sempre, mercadoria que chegou
     # sem entrada registrada (estoque negativo corrigido), não lucro.
     ajustes = AjusteEstoque.objects.filter(
-        criado_em__date__gte=inicio, criado_em__date__lte=fim, diferenca__lt=0
+        **periodo("criado_em", inicio, fim), diferenca__lt=0
     )
     perdas = _q(-sum((a.valor_diferenca for a in ajustes), ZERO))
     despesas = _soma(
@@ -462,7 +461,7 @@ def desempenho_equipe(inicio, fim):
         dados[responsavel]["valor_cancelado"] += venda["total"]
 
     for linha in (
-        ItemRemovido.objects.filter(removido_em__date__gte=inicio, removido_em__date__lte=fim)
+        ItemRemovido.objects.filter(**periodo("removido_em", inicio, fim))
         .values("removido_por").annotate(n=Count("pk"), t=Soma("valor"))
     ):
         dados[linha["removido_por"]]["removidos"] = linha["n"]
@@ -490,9 +489,9 @@ def desempenho_equipe(inicio, fim):
 
 def quebra_de_caixa(inicio, fim):
     linhas = []
-    for caixa in Caixa.objects.filter(
-        status=Caixa.Status.FECHADO, fechado_em__date__gte=inicio, fechado_em__date__lte=fim
-    ).select_related("fechado_por"):
+    for caixa in Caixa.calcular_totais(Caixa.objects.filter(
+        status=Caixa.Status.FECHADO, **periodo("fechado_em", inicio, fim)
+    ).select_related("fechado_por")):
         linhas.append({
             "caixa": caixa,
             "fechado_por_id": caixa.fechado_por_id,
@@ -635,7 +634,7 @@ def previsao_de_compras(dias_base=30, hoje=None):
 
 def perdas_de_estoque(inicio, fim):
     ajustes = AjusteEstoque.objects.filter(
-        criado_em__date__gte=inicio, criado_em__date__lte=fim
+        **periodo("criado_em", inicio, fim)
     ).select_related("produto", "criado_por")
     por_produto = defaultdict(lambda: {"ajustes": 0, "diferenca": 0, "valor": ZERO})
     for ajuste in ajustes:

@@ -160,7 +160,7 @@
         </div>
         {% endif %}
         {% if venda.status == "aberta" %}
-        {% if venda.pagamentos.all %}
+        {% if pagamentos %}
         <table class="tabela" style="margin-bottom: 1rem;">
             <thead>
                 <tr>
@@ -171,7 +171,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for pagamento in venda.pagamentos.all %}
+                {% for pagamento in pagamentos %}
                 <tr>
                     <td>{{ pagamento.get_forma_pagamento_display }}</td>
                     <td>R$ {{ pagamento.valor }}</td>
@@ -189,25 +189,25 @@
             </tbody>
         </table>
         {% endif %}
-        {% if venda.troco_total %}
+        {% if troco_total %}
         <div class="stat stat--troco" style="margin-bottom: 1rem;">
-            <span class="stat__valor">R$ {{ venda.troco_total }}</span>
+            <span class="stat__valor">R$ {{ troco_total }}</span>
             <span class="stat__rotulo">Troco a devolver</span>
         </div>
         {% endif %}
         <div class="stat" style="margin-bottom: 1rem;">
-            <span class="stat__valor">R$ {{ venda.falta_receber }}</span>
+            <span class="stat__valor">R$ {{ falta_receber }}</span>
             <span class="stat__rotulo">Falta receber</span>
         </div>
-        {% if venda.falta_receber > 0 %}
+        {% if falta_receber > 0 %}
         <form method="post" action="{% url 'vendas:adicionar_pagamento' pk=venda.pk %}" class="formulario pagamento-rapido"
               hx-post="{% url 'vendas:adicionar_pagamento' pk=venda.pk %}"
               hx-target="#venda-conteudo" hx-swap="innerHTML" hx-indicator="#venda-conteudo"
               data-falta="{{ falta_receber_bruto }}"{% if not itens %} data-sem-itens{% endif %}>
             {% csrf_token %}
             <div class="campo">
-                <label for="id_valor_novo" data-atalho="F9">Valor recebido <small>(vazio = R$ {{ venda.falta_receber }})</small></label>
-                <input type="text" name="valor" id="id_valor_novo" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ {{ venda.falta_receber }}" data-max-digitos="10">
+                <label for="id_valor_novo" data-atalho="F9">Valor recebido <small>(vazio = R$ {{ falta_receber }})</small></label>
+                <input type="text" name="valor" id="id_valor_novo" class="campo-monetario" inputmode="numeric" autocomplete="off" placeholder="R$ {{ falta_receber }}" data-max-digitos="10">
                 <span id="aviso-valor-pagamento" class="texto-perigo" style="display: none;"></span>
             </div>
             {# Enter no campo de valor = Dinheiro (primeiro botão do formulário). #}
@@ -235,7 +235,7 @@
         </form>
         {% else %}
         <p><strong>Pagamento:</strong></p>
-        {% if venda.pagamentos.all %}
+        {% if pagamentos %}
         <table class="tabela" style="margin-bottom: 1rem;">
             <thead>
                 <tr>
@@ -245,7 +245,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for pagamento in venda.pagamentos.all %}
+                {% for pagamento in pagamentos %}
                 <tr>
                     <td>{{ pagamento.get_forma_pagamento_display }}</td>
                     <td>R$ {{ pagamento.valor }}</td>
@@ -254,9 +254,9 @@
                 {% endfor %}
             </tbody>
         </table>
-        {% if venda.troco_total %}
+        {% if troco_total %}
         <div class="stat stat--troco" style="margin-bottom: 1rem;">
-            <span class="stat__valor">R$ {{ venda.troco_total }}</span>
+            <span class="stat__valor">R$ {{ troco_total }}</span>
             <span class="stat__rotulo">Troco total</span>
         </div>
         {% endif %}

@@ -4,7 +4,7 @@ from decimal import Decimal
 from unittest import mock
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -313,3 +313,41 @@ class TelasTests(BaseAnalise):
         self.assertIn("Cerveja;Bebidas;2;10,00;20,00;4,00;12,00", vendas)
         produtos = self.client.get(reverse("estoque:produtos"), {"exportar": "1"}).content.decode()
         self.assertIn("Cerveja;CERVEJA;;Bebidas;4,00;10,00;60,00;48", produtos)
+
+
+@override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "teste-desempenho"}})
+class CacheDesempenhoTests(BaseAnalise):
+    """Guardar em memória não pode mostrar dado velho depois de uma mudança."""
+
+    def setUp(self):
+        super().setUp()
+        from django.core.cache import cache
+
+        cache.clear()
+
+    def test_busca_de_produtos_atualiza_quando_o_estoque_muda(self):
+        from apps.estoque.servicos import dados_para_busca
+
+        cerveja = self.produto("Cerveja", estoque=10)
+        self.assertEqual(dados_para_busca()[0]["estoque"], 10)
+        self.vender([(cerveja, 3)])  # concluir a venda baixa o estoque
+        self.assertEqual(dados_para_busca()[0]["estoque"], 7)
+        cerveja.refresh_from_db()
+        cerveja.ajustar_contagem(quantidade_contada=2, usuario=self.usuario)
+        self.assertEqual(dados_para_busca()[0]["estoque"], 2)
+        Produto.objects.create(nome="Gelo", sku="GELO", categoria=self.categoria,
+                               preco_venda=Decimal("5"), preco_custo=Decimal("2"))
+        self.assertEqual(len(dados_para_busca()), 2)
+
+    def test_sino_recalcula_depois_de_vender_mas_nao_a_cada_item(self):
+        from apps.notificacoes import servicos as sino
+
+        cerveja = self.produto("Cerveja", estoque=10, minimo=5)
+        sino.contexto_sino()
+        venda = Venda.objects.create(criado_por=self.usuario)
+        venda.adicionar_item(cerveja, 6)
+        with mock.patch.object(sino, "sincronizar") as sincronizar:
+            sino.contexto_sino()
+        sincronizar.assert_not_called()  # lançar item não muda o estoque
+        venda.receber(Venda.FormaPagamento.PIX)
+        self.assertEqual(sino.contexto_sino()["total_nao_lidas"], 1)  # estoque 4 <= mínimo 5

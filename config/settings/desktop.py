@@ -83,12 +83,28 @@ DATABASES = {
             # duas vendas simultâneas (o SQLite ignora o FOR UPDATE).
             "transaction_mode": "IMMEDIATE",
             "timeout": 20,
-            "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;",
+            # cache_size/mmap: mais do banco fica em memória, menos leitura no
+            # disco (notebook com HD lento); temp_store: ordenações em memória.
+            "init_command": (
+                "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; "
+                "PRAGMA cache_size=-16000; PRAGMA temp_store=MEMORY; PRAGMA mmap_size=134217728;"
+            ),
         },
+        # Reaproveita a conexão entre os cliques em vez de abrir uma por página.
+        "CONN_MAX_AGE": None,
+        "CONN_HEALTH_CHECKS": True,
     }
 }
 
+# Sessão de login lida da memória (o banco fica de reserva): uma consulta a
+# menos em cada clique.
+SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+if sys.argv[1:2] == ["test"]:
+    # O cache em memória sobreviveria de um teste para outro (o banco não):
+    # nos testes nada fica guardado. Os testes do cache ligam o LocMem por conta.
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}}
 
 # Sem Nginx: o WhiteNoise serve os arquivos estáticos direto do Django.
 MIDDLEWARE = [
@@ -99,6 +115,18 @@ MIDDLEWARE = [
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [p for p in [BASE_DIR / "static"] if p.exists()]
 MEDIA_ROOT = DATA_DIR / "media"
+
+# No programa instalado os arquivos estáticos ganham um código no nome
+# (site.3f2a1b….css): o navegador guarda em cache para sempre, em vez de
+# baixar tudo de novo a cada minuto. O build liga isso para o collectstatic
+# gerar os nomes; em testes e no desenvolvimento fica desligado.
+if getattr(sys, "frozen", False) or env.bool("ADEGA_ESTATICOS_VERSIONADOS", default=False):
+    from django.conf import global_settings
+
+    STORAGES = {
+        **global_settings.STORAGES,
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"},
+    }
 
 # desktop/versao.txt é gravado pelo build (desktop/build.ps1) e vai dentro do
 # executável; rodando pelo código-fonte ele não existe e o atualizador fica

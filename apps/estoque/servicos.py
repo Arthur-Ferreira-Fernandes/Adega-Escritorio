@@ -1,13 +1,33 @@
 from datetime import timedelta
 
+from django.core.cache import cache
 from django.db.models import Sum
 from django.utils import timezone
 
 from .models import Produto
 
+# A busca e os "mais vendidos" aparecem a cada item lançado na venda: ficam
+# guardados em memória e são refeitos quando produtos ou estoque mudam
+# (limpar_cache_produtos, ligado em apps.py) ou, no máximo, a cada 10 minutos.
+CHAVE_BUSCA = "estoque:busca"
+CHAVE_MAIS_VENDIDOS = "estoque:mais_vendidos"
+VALIDADE_CACHE = 10 * 60
+
+
+def limpar_cache_produtos(**kwargs):
+    cache.delete_many([CHAVE_BUSCA, CHAVE_MAIS_VENDIDOS])
+
 
 def dados_para_busca():
     """Produtos ativos no formato da lista de busca (static/js/busca-produto.js)."""
+    dados = cache.get(CHAVE_BUSCA)
+    if dados is None:
+        dados = _montar_busca()
+        cache.set(CHAVE_BUSCA, dados, VALIDADE_CACHE)
+    return dados
+
+
+def _montar_busca():
     return [
         {
             "sku": produto.sku,
@@ -26,6 +46,17 @@ def dados_para_busca():
 
 def mais_vendidos(dias=30, limite=12):
     """Produtos ativos mais vendidos em quantidade: os botões rápidos da venda."""
+    produtos = cache.get(CHAVE_MAIS_VENDIDOS)
+    if produtos is None:
+        produtos = [
+            {"sku": p.sku, "nome": p.nome, "preco_venda": p.preco_venda}
+            for p in _calcular_mais_vendidos(dias, limite)
+        ]
+        cache.set(CHAVE_MAIS_VENDIDOS, produtos, VALIDADE_CACHE)
+    return produtos
+
+
+def _calcular_mais_vendidos(dias, limite):
     from apps.vendas.models import ItemVenda, Venda
 
     desde = timezone.now() - timedelta(days=dias)

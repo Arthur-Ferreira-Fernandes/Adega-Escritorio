@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
@@ -18,6 +19,7 @@ from apps.estoque.forms import ProdutoRapidoForm
 from apps.estoque.models import Produto
 from apps.estoque.servicos import dados_para_busca, gerar_sku, mais_vendidos
 from apps.relatorios.exportar import resposta_csv
+from config.datas import inicio_do_dia
 
 from .forms import (
     EscanearCodigoForm,
@@ -87,10 +89,18 @@ def venda_rapida(request):
 
 
 def _contexto_venda(venda, **extra):
+    # Calculados uma vez só: a tela usa cada um em vários lugares, e cada uso
+    # de venda.falta_receber / venda.pagamentos.all seria uma consulta nova.
+    pagamentos = list(venda.pagamentos.all())
+    recebido = sum((p.valor for p in pagamentos), Decimal("0"))
+    falta_receber = venda.total - recebido
     return {
         **extra,
         "venda": venda,
-        "itens": venda.itens.select_related("produto"),
+        "itens": list(venda.itens.select_related("produto")),
+        "pagamentos": pagamentos,
+        "falta_receber": falta_receber,
+        "troco_total": sum((p.troco for p in pagamentos), Decimal("0")),
         "item_form": ItemVendaForm(),
         "escanear_form": EscanearCodigoForm(),
         "pessoas_form": QuantidadePessoasForm(
@@ -98,7 +108,7 @@ def _contexto_venda(venda, **extra):
         ),
         "produtos_busca": dados_para_busca(),
         "produtos_rapidos": mais_vendidos() if venda.status == Venda.Status.ABERTA else [],
-        "falta_receber_bruto": str(venda.falta_receber),
+        "falta_receber_bruto": str(falta_receber),
     }
 
 
@@ -286,9 +296,9 @@ def historico(request):
     vendas = Venda.objects.select_related("cliente").prefetch_related("pagamentos")
     if form.is_valid():
         if form.cleaned_data.get("data_inicio"):
-            vendas = vendas.filter(criado_em__date__gte=form.cleaned_data["data_inicio"])
+            vendas = vendas.filter(criado_em__gte=inicio_do_dia(form.cleaned_data["data_inicio"]))
         if form.cleaned_data.get("data_fim"):
-            vendas = vendas.filter(criado_em__date__lte=form.cleaned_data["data_fim"])
+            vendas = vendas.filter(criado_em__lt=inicio_do_dia(form.cleaned_data["data_fim"] + timedelta(days=1)))
         if form.cleaned_data.get("status"):
             vendas = vendas.filter(status=form.cleaned_data["status"])
         if form.cleaned_data.get("forma_pagamento"):

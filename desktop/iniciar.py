@@ -220,33 +220,40 @@ def identificar_app():
     return icone, None
 
 
-def abrir_janela(url, titulo, pasta_dados):
-    import webview
+# Aparece na hora, enquanto o sistema carrega em segundo plano: num computador
+# lento são alguns segundos, e sem nada na tela a pessoa clica de novo.
+TELA_ABRINDO = """<!doctype html><html lang="pt-br"><head><meta charset="utf-8"><style>
+body{margin:0;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+background:#0c0a08;color:#e6c76a;font-family:Georgia,serif;gap:1.25rem}
+.roda{width:38px;height:38px;border:3px solid #3a2f1c;border-top-color:#c9a227;border-radius:50%;
+animation:g 0.9s linear infinite}@keyframes g{to{transform:rotate(360deg)}}
+p{margin:0;font-size:1.25rem}small{color:#b3a68a;font-family:sans-serif}
+</style></head><body><div class="roda"></div><p>Abrindo o Adega…</p><small>Só um instante</small></body></html>"""
 
-    icone, gui = identificar_app()
-    webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
-    # Exportar para planilha. No Linux quem trata é ativar_downloads.
-    webview.settings["ALLOW_DOWNLOADS"] = not sys.platform.startswith("linux")
-    janela = criar_janela(
-        titulo, url, js_api=Api(), width=1280, height=800, min_size=(900, 600),
-        confirm_close=True, maximized=True,
-    )
-    janela.events.loaded += lambda: janela.evaluate_js(JS_JANELAS_NOVAS)
-    webview.start(
-        gui=gui,
-        icon=icone,
-        private_mode=False,  # janelas compartilham o login
-        storage_path=str(pasta_dados / "navegador"),
-        localization={
-            "global.quitConfirmation": "Fechar o Adega? O sistema será desligado.",
-            "global.ok": "OK",
-            "global.cancel": "Cancelar",
-            "global.quit": "Fechar",
-        },
-    )
+TELA_ERRO = """<!doctype html><html lang="pt-br"><head><meta charset="utf-8"><style>
+body{margin:0;padding:3rem;background:#0c0a08;color:#f2ead9;font-family:sans-serif}
+h1{color:#e6c76a;font-family:Georgia,serif}pre{white-space:pre-wrap;color:#b3a68a;font-size:.85rem}
+</style></head><body><h1>O Adega encontrou um erro e não pôde abrir</h1>
+<p>Tire uma foto desta tela e envie para o suporte. Os dados não foram alterados.</p><pre>{detalhes}</pre></body></html>"""
 
 
-def main():
+def _migracoes_pendentes():
+    from django.db import connection
+    from django.db.migrations.executor import MigrationExecutor
+
+    executor = MigrationExecutor(connection)
+    return bool(executor.migration_plan(executor.loader.graph.leaf_nodes()))
+
+
+def _backup_inicial(settings):
+    try:
+        fazer_backup(settings)
+    except Exception:  # um backup que falha não pode derrubar o sistema
+        log.exception("Falha no backup ao abrir")
+
+
+def preparar_sistema():
+    """Carrega o Django, confere o banco e sobe o servidor. Devolve a URL inicial."""
     import django
 
     django.setup()
@@ -254,12 +261,13 @@ def main():
     from django.contrib.auth import get_user_model
     from django.core.management import call_command
 
-    if porta_em_uso(settings.PORTA):
-        avisar("O Adega já está aberto. Procure a janela dele na barra de tarefas.")
-        return
-
-    fazer_backup(settings)
-    call_command("migrate", interactive=False, verbosity=0)
+    if _migracoes_pendentes():
+        # Versão nova que muda o banco: backup antes, sempre, e só então migra.
+        fazer_backup(settings)
+        call_command("migrate", interactive=False, verbosity=0)
+    else:
+        # Nada a mudar: o backup de cada abertura vai em segundo plano.
+        threading.Thread(target=_backup_inicial, args=(settings,), daemon=True).start()
     if not getattr(sys, "frozen", False):
         call_command("collectstatic", interactive=False, verbosity=0)
 
@@ -279,17 +287,72 @@ def main():
     url = f"http://localhost:{settings.PORTA}/"
     if not get_user_model().objects.filter(is_superuser=True).exists():
         url += "usuarios/primeiro-acesso/"
+    log.info("Adega iniciado", extra={"url": url, "rede": settings.IPS_REDE})
+    return url
+
+
+def abrir_janela(titulo, pasta_dados, preparar):
+    import html
+    import traceback
+
+    import webview
+
+    icone, gui = identificar_app()
+    webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
+    # Exportar para planilha. No Linux quem trata é ativar_downloads.
+    webview.settings["ALLOW_DOWNLOADS"] = not sys.platform.startswith("linux")
+    janela = criar_janela(
+        titulo, html=TELA_ABRINDO, js_api=Api(), width=1280, height=800, min_size=(900, 600),
+        confirm_close=True, maximized=True,
+    )
+    janela.events.loaded += lambda: janela.evaluate_js(JS_JANELAS_NOVAS)
+
+    def carregar():
+        try:
+            janela.load_url(preparar())
+        except Exception:
+            log.exception("Erro ao iniciar o Adega")
+            janela.load_html(TELA_ERRO.replace("{detalhes}", html.escape(traceback.format_exc(limit=3))))
+
+    webview.start(
+        carregar,
+        gui=gui,
+        icon=icone,
+        private_mode=False,  # janelas compartilham o login
+        storage_path=str(pasta_dados / "navegador"),
+        localization={
+            "global.quitConfirmation": "Fechar o Adega? O sistema será desligado.",
+            "global.ok": "OK",
+            "global.cancel": "Cancelar",
+            "global.quit": "Fechar",
+        },
+    )
+
+
+def main():
+    # Só lê a configuração (rápido); o Django inteiro carrega com a janela já aberta.
+    from django.conf import settings
+
+    if porta_em_uso(settings.PORTA):
+        avisar("O Adega já está aberto. Procure a janela dele na barra de tarefas.")
+        return
+
     titulo = "Adega & Tabacaria Escritório"
     if settings.IPS_REDE:
         titulo += f"  —  no celular: http://{settings.IPS_REDE[0]}:{settings.PORTA}/"
-    log.info("Adega iniciado", extra={"url": url, "rede": settings.IPS_REDE})
+
+    url = []
+
+    def preparar():
+        url.append(preparar_sistema())
+        return url[0]
 
     try:
-        abrir_janela(url, titulo, settings.DATA_DIR)
+        abrir_janela(titulo, settings.DATA_DIR, preparar)
     except Exception:
         # Sem WebView2 (Windows muito desatualizado): cai pro navegador.
         log.exception("Não foi possível abrir a janela do app; usando o navegador")
-        webbrowser.open(url)
+        webbrowser.open(url[0] if url else preparar())
         avisar("O Adega foi aberto no navegador.\n\nClique em OK somente quando quiser DESLIGAR o sistema.")
 
 

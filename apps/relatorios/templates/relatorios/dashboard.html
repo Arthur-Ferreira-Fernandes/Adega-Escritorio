@@ -1,6 +1,13 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block titulo %}Relatórios · Adega &amp; Tabacaria Escritório{% endblock %}
+
+{% block scripts %}
+{# 200 KB de Chart.js: só aqui, e não em toda página. #}
+<script src="{% static 'js/chart.umd.js' %}" defer></script>
+<script src="{% static 'js/graficos.js' %}" defer></script>
+{% endblock %}
 
 {% block conteudo %}
 <h1 class="titulo-pagina">Relatórios</h1>

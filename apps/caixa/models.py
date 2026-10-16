@@ -1,3 +1,5 @@
+from bisect import bisect_left, bisect_right
+from collections import defaultdict
 from decimal import Decimal
 
 from django.conf import settings
@@ -120,19 +122,62 @@ class Caixa(models.Model):
         self.refresh_from_db()
         return self
 
+    @classmethod
+    def calcular_totais(cls, caixas):
+        """Totais de vários caixas com 2 consultas, em vez de 3 por caixa.
+
+        Listas (histórico, quebra de caixa) chamam saldo e diferença de cada
+        linha; com os totais guardados no objeto, nenhuma consulta se repete.
+        """
+        caixas = list(caixas)
+        if not caixas:
+            return caixas
+        movimentos = defaultdict(Decimal)
+        for caixa_id, tipo, total in (
+            MovimentoCaixa.objects.filter(caixa__in=caixas)
+            .values("caixa_id", "tipo").annotate(t=Soma("valor")).values_list("caixa_id", "tipo", "t")
+        ):
+            movimentos[(caixa_id, tipo)] = total
+        agora = timezone.now()
+        pagamentos = sorted(
+            PagamentoVenda.objects.filter(
+                forma_pagamento=Venda.FormaPagamento.DINHEIRO,
+                venda__status=Venda.Status.CONCLUIDA,
+                venda__finalizada_em__gte=min(c.aberto_em for c in caixas),
+                venda__finalizada_em__lte=max(c.fechado_em or agora for c in caixas),
+            ).values_list("venda__finalizada_em", "valor")
+        )
+        momentos = [momento for momento, _ in pagamentos]
+        for caixa in caixas:
+            fim = caixa.fechado_em or agora
+            trecho = pagamentos[bisect_left(momentos, caixa.aberto_em):bisect_right(momentos, fim)]
+            caixa._totais = {
+                "sangrias": movimentos[(caixa.pk, MovimentoCaixa.Tipo.SANGRIA)],
+                "reforcos": movimentos[(caixa.pk, MovimentoCaixa.Tipo.REFORCO)],
+                "vendas_dinheiro": sum((valor for _, valor in trecho), Decimal("0")),
+            }
+        return caixas
+
+    def _total(self, nome, calcular):
+        totais = getattr(self, "_totais", None)
+        return totais[nome] if totais is not None else calcular()
+
     def total_sangrias(self):
-        return (
+        return self._total("sangrias", lambda: (
             self.movimentos.filter(tipo=MovimentoCaixa.Tipo.SANGRIA).aggregate(t=Soma("valor"))["t"]
             or Decimal("0")
-        )
+        ))
 
     def total_reforcos(self):
-        return (
+        return self._total("reforcos", lambda: (
             self.movimentos.filter(tipo=MovimentoCaixa.Tipo.REFORCO).aggregate(t=Soma("valor"))["t"]
             or Decimal("0")
-        )
+        ))
 
     def total_vendas_dinheiro(self):
+        return self._total("vendas_dinheiro", self._calcular_vendas_dinheiro)
+
+    def _calcular_vendas_dinheiro(self):
         fim = self.fechado_em or timezone.now()
         return (
             PagamentoVenda.objects.filter(

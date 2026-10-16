@@ -1,6 +1,10 @@
+from datetime import timedelta
+
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.shortcuts import render
+
+from config.datas import inicio_do_dia
 
 from .forms import FiltroAuditoriaForm
 from .models import RegistroAuditoria
@@ -18,9 +22,9 @@ def lista(request):
 
     if form.is_valid():
         if form.cleaned_data.get("data_inicio"):
-            registros = registros.filter(criado_em__date__gte=form.cleaned_data["data_inicio"])
+            registros = registros.filter(criado_em__gte=inicio_do_dia(form.cleaned_data["data_inicio"]))
         if form.cleaned_data.get("data_fim"):
-            registros = registros.filter(criado_em__date__lte=form.cleaned_data["data_fim"])
+            registros = registros.filter(criado_em__lt=inicio_do_dia(form.cleaned_data["data_fim"] + timedelta(days=1)))
         if form.cleaned_data.get("usuario"):
             registros = registros.filter(usuario=form.cleaned_data["usuario"])
         if form.cleaned_data.get("modelo"):
