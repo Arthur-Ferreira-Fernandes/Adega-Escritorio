@@ -11,12 +11,12 @@ ACESSO_REDE=False por ACESSO_REDE=True nesse arquivo e reiniciar o programa.
 """
 
 import os
+import secrets
 import socket
 import sys
 from pathlib import Path
 
 import environ
-from django.core.management.utils import get_random_secret_key
 
 DATA_DIR = Path(
     os.environ.get("ADEGA_DATA_DIR")
@@ -26,17 +26,36 @@ BACKUP_DIR = DATA_DIR / "backups"
 for pasta in (DATA_DIR, BACKUP_DIR, DATA_DIR / "logs"):
     pasta.mkdir(parents=True, exist_ok=True)
 
+def _nova_chave_secreta():
+    # Só letras, números, - e _. A chave padrão do Django pode ter "$", e o
+    # django-environ lê um valor que COMEÇA com "$" como o nome de outra
+    # variável: o programa não abria nunca mais naquele computador.
+    return secrets.token_urlsafe(50)
+
+
 ARQUIVO_CONFIG = DATA_DIR / "adega.env"
 if not ARQUIVO_CONFIG.exists():
     ARQUIVO_CONFIG.write_text(
         "# Configuração desta instalação do Adega — não copie para outro computador.\n"
-        f"SECRET_KEY={get_random_secret_key()}\n"
+        f"SECRET_KEY={_nova_chave_secreta()}\n"
         "PORTA=8000\n"
         "# True libera o acesso por outros aparelhos da rede local (celular, tablet).\n"
         "ACESSO_REDE=False\n",
         encoding="utf-8",
     )
 environ.Env.read_env(ARQUIVO_CONFIG, overwrite=True)
+if os.environ.get("SECRET_KEY", "").startswith("$"):
+    # Instalação criada com uma chave assim nunca chegou a abrir: troca a chave
+    # (só desconecta logins abertos; as senhas não dependem dela).
+    nova = _nova_chave_secreta()
+    ARQUIVO_CONFIG.write_text(
+        "".join(
+            f"SECRET_KEY={nova}\n" if linha.startswith("SECRET_KEY=") else linha
+            for linha in ARQUIVO_CONFIG.read_text(encoding="utf-8").splitlines(keepends=True)
+        ),
+        encoding="utf-8",
+    )
+    os.environ["SECRET_KEY"] = nova
 
 # base.py exige estas variáveis na importação; aqui elas são sobrescritas logo
 # abaixo, mas precisam existir (e não podem vir de um .env de desenvolvimento).
