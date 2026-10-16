@@ -65,6 +65,14 @@ Tudo fica em `%LOCALAPPDATA%\Adega`. O menu Iniciar tem o atalho **Dados e backu
 
 **Testar uma versão antes de mandar para a adega:** tags com hífen (`v1.2.0-teste`) viram *pré-release*, e só os computadores com `CANAL_ATUALIZACAO=testes` no `adega.env` as recebem. Use isso num computador de teste; quando estiver tudo certo, publique a tag sem hífen (`v1.2.0`).
 
+**Trazer os dados da versão web (Docker + Postgres):** o script `desktop/exportar_para_desktop.py` converte o banco Postgres num `adega.sqlite3` com a mesma estrutura da versão que está rodando. Ao abrir, a versão desktop faz backup e atualiza o arquivo sozinha. Os números das vendas, os usuários e as senhas são mantidos, e o Postgres é só lido, sem nenhuma alteração.
+
+1. No computador com o Docker, de preferência depois de fechar o caixa: copie `exportar_para_desktop.py` para a pasta do projeto (a mesma do `docker-compose.yml`) e rode `docker compose exec web python exportar_para_desktop.py`. Ele confere tabela por tabela e gera `adega-exportado.sqlite3` na mesma pasta.
+2. No computador com a versão desktop: feche o Adega, abra `%LOCALAPPDATA%\Adega`, renomeie o `adega.sqlite3` atual para `adega.sqlite3.novo`, apague `adega.sqlite3-wal` e `adega.sqlite3-shm` se existirem, e coloque o arquivo exportado com o nome `adega.sqlite3`.
+3. Abra o Adega e entre com o usuário e a senha da versão web.
+
+Depois disso, pare de usar a versão web para vender (`docker compose stop`), senão os dados dos dois ficam diferentes. Não use `docker compose down -v`, que apaga o banco: mantenha-o como arquivo até ter certeza de que está tudo certo.
+
 **Restaurar um backup:** feche o Adega, apague `adega.sqlite3`, `adega.sqlite3-wal` e `adega.sqlite3-shm`, copie o backup desejado de `backups\` para o lugar e renomeie para `adega.sqlite3`.
 
 ### Acesso pelo celular/tablet (rede local)
