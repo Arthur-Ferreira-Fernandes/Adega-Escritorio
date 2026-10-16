@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
+from datetime import timezone as dt_timezone
 from decimal import Decimal
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -252,6 +254,17 @@ class TelasTests(BaseAnalise):
         self.assertContains(resposta, "1 produto com estoque negativo")
         self.client.force_login(self.usuario)
         self.assertNotContains(self.client.get(reverse("inicio")), "Meta do mês")
+
+    def test_faturamento_de_hoje_continua_certo_depois_das_21h(self):
+        # 23h40 em Brasília já é o dia seguinte em UTC: "hoje" tem que ser a data local.
+        noite = timezone.now().astimezone(FUSO).replace(hour=23, minute=40)
+        cerveja = self.produto("Cerveja")
+        self.vender([(cerveja, 3)], quando=noite.replace(hour=22))
+        # O relógio do Django devolve em UTC, como o de verdade.
+        with mock.patch("django.utils.timezone.now", return_value=noite.astimezone(dt_timezone.utc)):
+            resposta = self.client.get(reverse("inicio"))
+        self.assertEqual(resposta.context["faturamento_hoje"], Decimal("30.00"))
+        self.assertEqual(resposta.context["resumo"]["faturamento"], Decimal("30.00"))
 
     def test_contagem_ajusta_estoque_e_registra_a_perda(self):
         cerveja = self.produto("Cerveja", estoque=10)

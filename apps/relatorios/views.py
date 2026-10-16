@@ -19,7 +19,7 @@ def _json_seguro(dados):
 @login_required
 def dashboard(request):
     form = FiltroRelatorioForm(request.GET or None)
-    hoje = timezone.now().date()
+    hoje = timezone.localdate()
     data_inicio = hoje - timedelta(days=30)
     data_fim = hoje
     categoria = None

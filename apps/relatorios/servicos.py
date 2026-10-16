@@ -84,7 +84,7 @@ def calcular_metricas(data_inicio, data_fim, categoria, forma_pagamento):
     if categoria:
         estoque_baixo_qs = estoque_baixo_qs.filter(categoria=categoria)
 
-    hoje = timezone.now().date()
+    hoje = timezone.localdate()
     pagar_pendente = ContaPagar.objects.filter(pago=False)
     receber_pendente = ContaReceber.objects.filter(recebido=False)
 

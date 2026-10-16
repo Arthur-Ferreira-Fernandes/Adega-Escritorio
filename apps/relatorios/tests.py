@@ -27,7 +27,7 @@ class CalcularMetricasTests(TestCase):
             preco_venda=Decimal("59.90"),
             quantidade_estoque=25,
         )
-        hoje = timezone.now().date()
+        hoje = timezone.localdate()
         venda = Venda.objects.create(criado_por=self.usuario, status=Venda.Status.CONCLUIDA)
         ItemVenda.objects.create(
             venda=venda,
@@ -68,7 +68,7 @@ class CalcularMetricasTests(TestCase):
 class SomaMonetariaTests(TestCase):
     def test_soma_devolve_sempre_duas_casas(self):
         fornecedor = Fornecedor.objects.create(nome="Fornecedor", documento="00.000.000/0001-00")
-        hoje = timezone.now().date()
+        hoje = timezone.localdate()
         for valor in ("1000.10", "978.10", "0.10"):
             ContaPagar.objects.create(
                 fornecedor=fornecedor, descricao="Conta", valor=Decimal(valor), vencimento=hoje
@@ -80,6 +80,6 @@ class SomaMonetariaTests(TestCase):
         fornecedor = Fornecedor.objects.create(nome="Fornecedor", documento="00.000.000/0001-00")
         ContaPagar.objects.create(
             fornecedor=fornecedor, descricao="Conta", valor=Decimal("4587.00"),
-            vencimento=timezone.now().date(),
+            vencimento=timezone.localdate(),
         )
         self.assertEqual(str(ContaPagar.objects.aggregate(t=Soma("valor"))["t"]), "4587.00")

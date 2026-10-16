@@ -117,7 +117,7 @@ def contas_pagar_marcar_paga(request, pk):
     conta = get_object_or_404(ContaPagar, pk=pk)
     if not conta.pago:
         conta.pago = True
-        conta.pago_em = timezone.now().date()
+        conta.pago_em = timezone.localdate()
         conta.save(update_fields=["pago", "pago_em"])
         auditoria.registrar(
             request.user, RegistroAuditoria.Acao.EDICAO, conta,
@@ -213,7 +213,7 @@ def contas_receber_marcar_recebida(request, pk):
     conta = get_object_or_404(ContaReceber, pk=pk)
     if not conta.recebido:
         conta.recebido = True
-        conta.recebido_em = timezone.now().date()
+        conta.recebido_em = timezone.localdate()
         conta.save(update_fields=["recebido", "recebido_em"])
         auditoria.registrar(
             request.user, RegistroAuditoria.Acao.EDICAO, conta,

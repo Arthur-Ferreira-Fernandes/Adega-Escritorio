@@ -47,7 +47,7 @@ def _resumo_do_dono():
 
 @login_required
 def inicio(request):
-    hoje = timezone.now().date()
+    hoje = timezone.localdate()
 
     faturamento_hoje = (
         Venda.objects.filter(

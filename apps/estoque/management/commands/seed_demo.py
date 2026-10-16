@@ -353,7 +353,7 @@ class Command(BaseCommand):
         return total_vendas, total_caixas
 
     def _criar_contas(self, fornecedores, clientes):
-        hoje = timezone.now().date()
+        hoje = timezone.localdate()
         descricoes_pagar = [
             "Compra de mercadoria", "Manutenção do estabelecimento", "Aluguel do ponto comercial",
             "Serviço de contabilidade", "Compra de embalagens", "Frete de fornecedor",
