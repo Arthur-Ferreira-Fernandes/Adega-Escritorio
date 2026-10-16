@@ -41,7 +41,7 @@ def verificar_agora(request):
     if servicos.verificar():
         messages.success(request, "Há uma versão nova disponível.")
     elif servicos.estado()["erro"]:
-        messages.error(request, "Não foi possível consultar as atualizações. Confira a internet e tente de novo.")
+        messages.error(request, f"Não foi possível consultar as atualizações. {servicos.estado()['erro']}")
     else:
         messages.info(request, f"O Adega já está na versão mais recente ({settings.VERSAO}).")
     return redirect("atualizacao:painel")

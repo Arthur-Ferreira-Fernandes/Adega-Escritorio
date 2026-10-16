@@ -43,7 +43,8 @@
 {% elif not instalacao %}
 <div class="cartao" style="margin-bottom: 1.5rem; max-width: 720px;">
     <p style="margin: 0;">
-        {% if estado.erro %}Não foi possível consultar as atualizações (sem internet?). O Adega tenta de novo sozinho a cada 6 horas.
+        {% if estado.erro %}Não foi possível consultar as atualizações. {{ estado.erro }} O Adega tenta de novo sozinho a cada 6 horas.
+        <br><small class="nota">Detalhe para o suporte: {{ estado.erro_detalhe }}</small>
         {% elif estado.verificado_em %}O Adega está na versão mais recente.
         {% else %}Verificando atualizações…{% endif %}
     </p>

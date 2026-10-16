@@ -86,7 +86,8 @@ class VersaoTests(BaseAtualizacao):
     def test_sem_internet_nao_quebra(self):
         with mock.patch("urllib.request.urlopen", side_effect=OSError("sem rede")):
             self.assertIsNone(servicos.verificar())
-        self.assertEqual(servicos.estado()["erro"], "sem rede")
+        self.assertIn("conexão com o GitHub foi recusada", servicos.estado()["erro"])
+        self.assertIn("sem rede", servicos.estado()["erro_detalhe"])
 
     def test_release_sem_instalador_e_ignorada(self):
         with self.responder(_release("v1.2.0", nome_arquivo="outra-coisa.zip")):
@@ -104,6 +105,40 @@ class VersaoTests(BaseAtualizacao):
         with override_settings(VERSAO="1.1.0"):
             servicos.registrar_versao_iniciada()
         self.assertEqual(servicos.estado()["atualizado_de"], "1.0.0")
+
+
+class ErrosDeConexaoTests(BaseAtualizacao):
+    def falhar(self, erro):
+        with mock.patch("urllib.request.urlopen", side_effect=erro):
+            self.assertIsNone(servicos.verificar())
+        return servicos.estado()["erro"]
+
+    def test_certificado_nao_e_confundido_com_falta_de_internet(self):
+        import ssl
+        import urllib.error
+
+        erro = urllib.error.URLError(ssl.SSLCertVerificationError(1, "CERTIFICATE_VERIFY_FAILED"))
+        self.assertIn("certificado de segurança", self.falhar(erro))
+        self.assertIn("CERTIFICATE_VERIFY_FAILED", servicos.estado()["erro_detalhe"])
+
+    def test_outros_motivos(self):
+        import socket
+        import urllib.error
+
+        self.assertIn("sem internet", self.falhar(urllib.error.URLError(socket.gaierror(11001, "getaddrinfo failed"))))
+        self.assertIn("demorou demais", self.falhar(urllib.error.URLError(TimeoutError())))
+        self.assertIn("limitou as consultas", self.falhar(urllib.error.HTTPError("u", 403, "rate", {}, None)))
+        self.assertIn("firewall", self.falhar(urllib.error.URLError(ConnectionResetError())))
+
+    def test_sem_versao_estavel_nao_e_erro(self):
+        import urllib.error
+
+        self.assertEqual(self.falhar(urllib.error.HTTPError("u", 404, "Not Found", {}, None)), "")
+
+    def test_usa_os_certificados_do_sistema(self):
+        with mock.patch("urllib.request.urlopen", return_value=_Resposta(json.dumps(_release("v1.0.0")).encode())) as abrir:
+            servicos.verificar()
+        self.assertIsNotNone(abrir.call_args.kwargs["context"])
 
 
 class NovidadesTests(TestCase):

@@ -18,6 +18,9 @@ hiddenimports = (
     + collect_submodules("django", filter=lambda nome: not nome.startswith("django.contrib.postgres"))
     + collect_submodules("whitenoise")
     + collect_submodules("waitress")
+    # Certificados HTTPS pelo Windows (atualização). Importado dentro de uma
+    # função; declarado aqui para não depender da análise do PyInstaller.
+    + collect_submodules("truststore")
 )
 
 datas = (

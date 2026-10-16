@@ -15,10 +15,13 @@ import json
 import logging
 import os
 import re
+import socket
+import ssl
 import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -37,7 +40,8 @@ _trava = threading.Lock()
 _estado = {
     "verificado_em": None,
     "disponivel": None,  # dados da Release mais nova que a instalada
-    "erro": "",
+    "erro": "",  # frase para a tela (explicar_erro)
+    "erro_detalhe": "",  # erro técnico, para o suporte
     "instalacao": None,  # {"fase", "baixado", "total", "mensagem"} durante a atualização
     "atualizado_de": None,  # versão anterior, quando acabou de atualizar
 }
@@ -72,12 +76,54 @@ def mais_nova(candidata, atual):
 # Consulta ao GitHub ----------------------------------------------------------
 
 
+_contexto = None
+
+
+def _contexto_ssl():
+    """Confere o certificado do GitHub pelo próprio Windows, como o navegador.
+
+    O Python do executável só conhece as autoridades que já estão guardadas no
+    Windows; o navegador baixa as que faltam. Sem o truststore, uma máquina com
+    poucas atualizações recusava a conexão e o programa dizia "sem internet".
+    """
+    global _contexto
+    if _contexto is None:
+        try:
+            import truststore
+
+            _contexto = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        except Exception:
+            _contexto = ssl.create_default_context()
+    return _contexto
+
+
 def _pedir(url, *, aceitar="application/vnd.github+json"):
     pedido = urllib.request.Request(url, headers={
         "Accept": aceitar,
         "User-Agent": f"AdegaEscritorio/{settings.VERSAO}",
     })
-    return urllib.request.urlopen(pedido, timeout=TEMPO_LIMITE)
+    return urllib.request.urlopen(pedido, timeout=TEMPO_LIMITE, context=_contexto_ssl())
+
+
+def explicar_erro(erro):
+    """Frase para a tela dizendo o motivo real (não só "sem internet")."""
+    if isinstance(erro, urllib.error.HTTPError):
+        if erro.code in (403, 429):
+            return "O GitHub limitou as consultas deste computador por um tempo. Tente de novo daqui a uma hora."
+        return f"O GitHub respondeu com erro {erro.code}. Tente de novo mais tarde."
+    motivo = getattr(erro, "reason", erro)
+    if isinstance(motivo, ssl.SSLError) or isinstance(erro, ssl.SSLError):
+        return (
+            "O Windows não confirmou o certificado de segurança do GitHub e a conexão foi recusada. "
+            "Atualizar o Windows costuma resolver; antivírus que inspecionam sites seguros também podem causar isso."
+        )
+    if isinstance(motivo, socket.gaierror):
+        return "Não foi possível encontrar o GitHub: o computador está sem internet ou o endereço está bloqueado na rede."
+    if isinstance(motivo, (TimeoutError, socket.timeout)):
+        return "O GitHub demorou demais para responder. A internet pode estar lenta; tente de novo."
+    if isinstance(motivo, OSError):
+        return "A conexão com o GitHub foi recusada. Um firewall, proxy ou antivírus pode estar bloqueando o programa."
+    return "Não foi possível consultar as atualizações."
 
 
 def _ler_release(dados):
@@ -126,20 +172,25 @@ def buscar_ultima_release():
             lista = json.load(resposta)
         releases = [r for r in map(_ler_release, (d for d in lista if not d.get("draft"))) if r]
         return max(releases, key=lambda r: chave_versao(r["versao"]), default=None)
-    with _pedir(f"{base}/latest") as resposta:
-        return _ler_release(json.load(resposta))
+    try:
+        with _pedir(f"{base}/latest") as resposta:
+            return _ler_release(json.load(resposta))
+    except urllib.error.HTTPError as erro:
+        if erro.code == 404:  # nenhuma versão estável publicada ainda
+            return None
+        raise
 
 
 def verificar():
     """Consulta o GitHub e guarda o resultado. Nunca levanta exceção."""
     try:
         release = buscar_ultima_release()
-    except Exception as erro:  # sem internet, GitHub fora, limite de consultas...
-        log.info("Não foi possível verificar atualizações", extra={"erro": str(erro)})
-        _atualizar_estado(verificado_em=timezone.now(), erro=str(erro))
+    except Exception as erro:  # sem internet, certificado, GitHub fora, limite de consultas...
+        log.info("Não foi possível verificar atualizações", extra={"erro": repr(erro)})
+        _atualizar_estado(verificado_em=timezone.now(), erro=explicar_erro(erro), erro_detalhe=repr(erro))
         return None
     disponivel = release if release and mais_nova(release["versao"], settings.VERSAO) else None
-    _atualizar_estado(verificado_em=timezone.now(), erro="", disponivel=disponivel)
+    _atualizar_estado(verificado_em=timezone.now(), erro="", erro_detalhe="", disponivel=disponivel)
     if disponivel:
         log.info("Atualização disponível", extra={"versao": disponivel["versao"]})
     return disponivel
@@ -250,7 +301,8 @@ def instalar(release):
             _encerrar_programa()
         except Exception as erro:
             log.exception("Falha na atualização")
-            _progresso(fase="erro", mensagem=str(erro) or "Não foi possível atualizar.")
+            conexao = isinstance(erro, (urllib.error.URLError, ssl.SSLError, OSError)) and not isinstance(erro, RuntimeError)
+            _progresso(fase="erro", mensagem=(explicar_erro(erro) if conexao else str(erro)) or "Não foi possível atualizar.")
 
     threading.Thread(target=trabalhar, name="instalar-atualizacao", daemon=True).start()
     return True
